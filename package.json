@@ -37,8 +37,16 @@
     "typescript": "catalog:"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
+    "apps/backend/**/*.{ts,tsx,js,jsx}": [
+      "eslint --config apps/backend/eslint.config.mjs --fix",
+      "prettier --write"
+    ],
+    "apps/frontend/**/*.{ts,tsx,js,jsx}": [
+      "eslint --config apps/frontend/eslint.config.mjs --fix",
+      "prettier --write"
+    ],
+    "packages/**/*.{ts,tsx,js,jsx}": [
+      "eslint --config packages/configs/eslint.config.mjs --fix",
       "prettier --write"
     ],
     "*.{json,md}": [
