@@ -7,7 +7,7 @@
     "lib": ["ES2022", "dom", "decorators"], // 包含的库文件，支持ES2022、DOM API和装饰器
     
     // 模块解析
-    "baseUrl": ".", // 基础路径，用于解析非相对模块名
+    // "baseUrl": ".", // 基础路径，用于解析非相对模块名
     "paths": {
       "@Big-G/*": ["packages/*"] // 路径映射，简化@Big-G包的导入
     },
@@ -22,8 +22,9 @@
     "allowSyntheticDefaultImports": true, // 允许从没有默认导出的模块中默认导入
     
     // 编译输出
-    "outDir": "./dist", // 默认输出目录（各子项目可覆盖）
-    "rootDir": ".", // 源文件根目录（各子项目可覆盖）
+    // * Nest CLI 启动时永远只会去 项目根目录（process.cwd()）找 tsconfig.json,所以这个就由子项目自己设置,不然会出问题
+    // "outDir": "./dist", // 默认输出目录（各子项目可覆盖） 
+    // "rootDir": ".", // 源文件根目录（各子项目可覆盖）
     "sourceMap": true, // 生成源映射文件，便于调试
     
     // 项目与构建优化

@@ -1,5 +1,5 @@
 {
-  "extends": ["@Big-G/configs/tsconfig"],
+  "extends": "../../packages/configs/tsconfig.json",
   "compilerOptions": {
     "baseUrl": "./",
     "target": "es5",
