@@ -24,25 +24,26 @@
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
     "@changesets/cli": "catalog:",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "concurrently": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-prettier": "catalog:",
-    "husky": "^9.1.7",
+    "husky": "catalog:",
     "inquirer": "catalog:",
-    "lint-staged": "^16.1.5",
+    "lint-staged": "catalog:",
     "prettier": "catalog:",
-    "typescript": "5.7.3"
+    "typescript": "catalog:"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
+      "eslint --config eslint.config.mjs --fix",
       "prettier --write"
     ],
     "*.{json,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "dependencies": {}
 }

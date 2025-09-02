@@ -24,7 +24,12 @@ catalogs:
     '@typescript-eslint/eslint-plugin': ^7.0.0
     '@typescript-eslint/parser': ^7.0.0
     '@typescript-eslint/typescript-estree': ^7.0.0
+    '@commitlint/cli': ^19.8.1
+    '@commitlint/config-conventional': ^19.8.1
+    '@nestjs/swagger': ^11.2.0
     axios: ^1.6.0
+    husky: '^9.1.7'
+    lint-staged: '^16.1.5'
     chokidar: ^4.0.0
     concurrently: ^8.2.2
     dayjs: ^1.11.10
@@ -49,3 +54,5 @@ catalogs:
     ts-node: ^10.9.2
     tsconfig-paths: ^4.2.0
     typescript: 5.3.3
+    class-transformer: ^0.5.1
+    class-validator: ^0.14.2
