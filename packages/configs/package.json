@@ -1,0 +1,21 @@
+{
+  "name": "@Big-G/configs",
+  "version": "1.0.0",
+  "description": "Shared configurations for monorepo",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && mkdir -p dist && cp eslint.base.mjs dist/"
+  },
+  "exports": {
+    "./eslint.base": "./dist/eslint.base.mjs",
+    "./tsconfig.base": "./dist/tsconfig.base.json"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

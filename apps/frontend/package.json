@@ -1,0 +1,29 @@
+{
+  "name": "moge-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@Big-G/types": "workspace:*",
+    "@Big-G/configs": "workspace:*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@Big-G/configs": "workspace:*",
+    "@eslint/eslintrc": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
+    "tailwindcss": "catalog:"
+  }
+}

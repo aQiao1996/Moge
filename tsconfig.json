@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    // 基础编译配置
+    "target": "ES2022", // 目标ECMAScript版本，统一使用ES2022以平衡兼容性和新特性
+    "module": "commonjs", // 模块系统格式，基础配置使用CommonJS
+    "lib": ["ES2022", "dom", "decorators"], // 包含的库文件，支持ES2022、DOM API和装饰器
+    
+    // 模块解析
+    "baseUrl": ".", // 基础路径，用于解析非相对模块名
+    "paths": {
+      "@Big-G/*": ["packages/*"] // 路径映射，简化@Big-G包的导入
+    },
+    
+    // 类型检查与声明
+    "strict": false, // 关闭严格模式检查（各子项目可根据需要开启）
+    "declaration": true, // 生成类型声明文件(.d.ts)
+    "declarationMap": true, // 生成声明文件的源映射，便于调试
+    
+    // 兼容性与互操作性
+    "esModuleInterop": true, // 允许CommonJS和ES模块互操作
+    "allowSyntheticDefaultImports": true, // 允许从没有默认导出的模块中默认导入
+    
+    // 编译输出
+    "outDir": "./dist", // 默认输出目录（各子项目可覆盖）
+    "rootDir": ".", // 源文件根目录（各子项目可覆盖）
+    "sourceMap": true, // 生成源映射文件，便于调试
+    
+    // 项目与构建优化
+    "composite": true, // 启用复合项目模式，支持monorepo构建
+    "incremental": true, // 启用增量编译，提高构建速度
+    "isolatedModules": true, // 将每个文件视为单独的模块
+    
+    // 检查与验证
+    "skipLibCheck": true, // 跳过库文件的类型检查，提高编译速度
+    "forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
+    "resolveJsonModule": true, // 允许导入JSON文件
+    
+    // 高级选项
+    "removeComments": true, // 移除编译输出中的注释
+    "useDefineForClassFields": false // 不使用defineProperty定义类字段
+  },
+  
+  // 项目引用配置（monorepo支持）
+  "references": [
+    { "path": "./packages/configs" }, // 引用配置包
+    { "path": "./packages/types" } // 引用类型定义包
+  ],
+  
+  // 包含与排除规则（子项目应根据需要扩展）
+  "include": [], // 根配置不直接包含文件，由子项目自行配置
+  "exclude": ["node_modules", "dist"] // 排除node_modules和输出目录
+}

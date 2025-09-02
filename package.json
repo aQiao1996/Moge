@@ -1,0 +1,48 @@
+{
+  "name": "moge",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node scripts/dev-selector.js",
+    "dev:shared": "pnpm --filter @moge/types dev",
+    "dev:apps": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "dev:frontend": "pnpm --filter moge-frontend dev",
+    "dev:backend": "pnpm --filter moge-backend dev",
+    "build": "concurrently \"pnpm build:shared\" \"pnpm build:apps\"",
+    "build:shared": "pnpm --filter \"@Big-G/*\" build",
+    "build:apps": "concurrently \"pnpm build:backend\" \"pnpm build:frontend\"",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "pnpm --filter backend build",
+    "clean": "pnpm -r run clean",
+    "prepare": "husky",
+    "start:frontend": "pnpm --filter frontend start",
+    "start:backend": "pnpm --filter backend start:prod"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "concurrently": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "husky": "^9.1.7",
+    "inquirer": "catalog:",
+    "lint-staged": "^16.1.5",
+    "prettier": "catalog:",
+    "typescript": "5.7.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

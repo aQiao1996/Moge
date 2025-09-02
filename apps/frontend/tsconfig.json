@@ -1,0 +1,30 @@
+{
+  "extends": ["@Big-G/configs/tsconfig"],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "preserve",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    // 路径映射，用于简化模块导入
+    "paths": {
+      "@/*": ["src/*"],
+      "api/*": ["src/api/*"]
+    },
+    "noEmit": true // 不生成输出文件（由Next.js处理）
+  },
+  // 包含的文件
+  "include": ["src", ".next/types/**/*.ts"],
+  // 排除的文件
+  "exclude": ["node_modules"]
+}

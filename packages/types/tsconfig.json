@@ -1,0 +1,14 @@
+{
+  "extends": "../configs/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2017", // 目标ECMAScript版本（覆盖基础配置）
+    "module": "commonjs", // 模块系统格式（覆盖基础配置）
+    "declaration": true, // 生成类型声明文件(.d.ts)
+    "outDir": "./dist", // 编译输出目录
+    "composite": true, // 启用复合项目模式(monorepo支持)
+    "rootDir": "./src", // 源文件根目录
+    "declarationMap": true // 生成声明文件的源映射
+  },
+  "include": ["src/**/*"], // 需要编译的源文件
+  "exclude": ["node_modules", "dist"] // 排除的目录
+}
