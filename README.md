@@ -28,9 +28,10 @@ pnpm --filter @moge/backend add -D xxx@catalog:
 ```bash
 # -F 等价于 --filter
 # @moge/backend 是子包的名称
-# @moge/utils 是共享包的名称
-# 会自动生成 "dependencies": { "@moge/utils": "workspace:*" }
-pnpm -F @moge/backend add @moge/utils
+# @moge/xxx 是共享包的名称
+# 使用的是 workspace:*协议，表示这个包来自当前 monorepo 的 workspace
+# 会自动生成 "dependencies": { "@moge/xxx": "workspace:*" }
+pnpm -F @moge/backend add '@moge/xxx@workspace:*'
 ```
 
 ### 升级 / 删除 catalog 包
