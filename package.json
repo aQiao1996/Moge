@@ -1,21 +1,21 @@
 {
-  "name": "moge",
+  "name": "@moge/root",
   "version": "1.0.0",
   "scripts": {
     "dev": "node scripts/dev-selector.js",
-    "dev:shared": "pnpm --filter @moge/types dev",
+    "dev:shared": "pnpm --filter \"@moge/{types,configs}\" dev",
     "dev:apps": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
-    "dev:frontend": "pnpm --filter moge-frontend dev",
-    "dev:backend": "pnpm --filter moge-backend dev",
+    "dev:frontend": "pnpm --filter @moge/frontend dev",
+    "dev:backend": "pnpm --filter @moge/backend dev",
     "build": "concurrently \"pnpm build:shared\" \"pnpm build:apps\"",
-    "build:shared": "pnpm --filter \"@Big-G/*\" build",
+    "build:shared": "pnpm --filter \"@moge/{types,configs}\" build",
     "build:apps": "concurrently \"pnpm build:backend\" \"pnpm build:frontend\"",
-    "build:frontend": "pnpm --filter frontend build",
-    "build:backend": "pnpm --filter backend build",
+    "build:frontend": "pnpm --filter @moge/frontend build",
+    "build:backend": "pnpm --filter @moge/backend build",
     "clean": "pnpm -r run clean",
     "prepare": "husky",
-    "start:frontend": "pnpm --filter frontend start",
-    "start:backend": "pnpm --filter backend start:prod"
+    "start:frontend": "pnpm --filter @moge/frontend start",
+    "start:backend": "pnpm --filter @moge/backend start:prod"
   },
   "workspaces": [
     "apps/*",

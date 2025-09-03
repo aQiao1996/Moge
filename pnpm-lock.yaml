@@ -72,6 +72,12 @@ catalogs:
     '@typescript-eslint/parser':
       specifier: ^7.0.0
       version: 7.18.0
+    class-transformer:
+      specifier: ^0.5.1
+      version: 0.5.1
+    class-validator:
+      specifier: ^0.14.2
+      version: 0.14.2
     concurrently:
       specifier: ^8.2.2
       version: 8.2.2
@@ -238,10 +244,10 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       class-transformer:
-        specifier: ^0.5.1
+        specifier: 'catalog:'
         version: 0.5.1
       class-validator:
-        specifier: ^0.14.2
+        specifier: 'catalog:'
         version: 0.14.2
       eslint:
         specifier: 'catalog:'
@@ -282,10 +288,10 @@ importers:
 
   apps/frontend:
     dependencies:
-      '@Big-G/configs':
+      '@moge/configs':
         specifier: workspace:*
         version: link:../../packages/configs
-      '@Big-G/types':
+      '@moge/types':
         specifier: workspace:*
         version: link:../../packages/types
       next:

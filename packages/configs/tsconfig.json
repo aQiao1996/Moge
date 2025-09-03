@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "lib": ["ES2022", "dom", "decorators"],
     "paths": {
-      "@Big-G/*": ["../*"]
+      "@moge/*": ["../*"]
     }
   },
   "include": ["src/**/*"]

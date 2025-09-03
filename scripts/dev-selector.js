@@ -11,9 +11,9 @@ async function selectAndStart() {
       choices: [
         { name: '前端 (frontend)', value: 'frontend' },
         { name: '后端 (backend)', value: 'backend' },
-        { name: '同时启动前后端', value: 'both' }
-      ]
-    }
+        { name: '同时启动前后端', value: 'both' },
+      ],
+    },
   ]);
 
   switch (project) {
@@ -24,7 +24,10 @@ async function selectAndStart() {
       execSync('concurrently -n "backend" "pnpm dev:backend"', { stdio: 'inherit' });
       break;
     case 'both':
-      execSync('concurrently -n "frontend,backend" "pnpm dev:frontend" "pnpm dev:backend"', { stdio: 'inherit' });
+      execSync(
+        'concurrently -n "frontend,backend" "pnpm dev:frontend" "pnpm dev:backend"',
+        { stdio: 'inherit' }
+      );
       break;
   }
 }

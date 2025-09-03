@@ -1,5 +1,5 @@
 {
-  "name": "@Big-G/types",
+  "name": "@moge/types",
   "version": "1.0.0",
   "description": "Shared types for Next.js and NestJS",
   "main": "./dist/index.js",
