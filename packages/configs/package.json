@@ -4,7 +4,8 @@
   "description": "Shared configurations for monorepo",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && mkdir -p dist && cp eslint.config.mjs dist/"
+    "build": "tsc && mkdir -p dist && cp eslint.config.mjs dist/",
+    "lint": "eslint . --config eslint.config.mjs --fix"
   },
   "exports": {
     "./eslint.config": "./dist/eslint.config.mjs",
@@ -13,9 +14,13 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
+    "@typescript-eslint/typescript-estree": "catalog:",
+    "typescript-eslint": "catalog:",
+    "@eslint/js": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-prettier": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "globals": "catalog:"
   }
 }

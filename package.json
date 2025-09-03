@@ -2,6 +2,7 @@
   "name": "@moge/root",
   "version": "1.0.0",
   "scripts": {
+    "lint": "pnpm --filter  @moge/configs lint",
     "dev": "node scripts/dev-selector.js",
     "dev:shared": "pnpm --filter \"@moge/{types,configs}\" dev",
     "dev:apps": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
@@ -34,15 +35,16 @@
     "inquirer": "catalog:",
     "lint-staged": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.42.0"
   },
   "lint-staged": {
     "apps/backend/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config apps/backend/eslint.config.mjs --fix",
+      "eslint --config packages/configs/eslint.config.mjs --fix",
       "prettier --write"
     ],
     "apps/frontend/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config apps/frontend/eslint.config.mjs --fix",
+      "eslint --config packages/configs/eslint.config.mjs --fix",
       "prettier --write"
     ],
     "packages/**/*.{ts,tsx,js,jsx}": [
@@ -52,6 +54,5 @@
     "*.{json,md}": [
       "prettier --write"
     ]
-  },
-  "dependencies": {}
+  }
 }

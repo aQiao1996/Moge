@@ -24,7 +24,7 @@
     "noEmit": true // 不生成输出文件（由Next.js处理）
   },
   // 包含的文件
-  "include": ["src", ".next/types/**/*.ts"],
+  "include": ["src", ".next/types/**/*.ts", "*.mjs"],
   // 排除的文件
   "exclude": ["node_modules"]
 }

@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "next start"
   },
   "dependencies": {
     "@moge/configs": "workspace:*",
@@ -17,7 +16,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "catalog:",
-    "@moge/configs": "workspace:*",
+    "@eslint/js": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

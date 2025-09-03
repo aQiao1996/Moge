@@ -27,13 +27,14 @@ catalogs:
     '@typescript-eslint/eslint-plugin': ^7.0.0
     '@typescript-eslint/parser': ^7.0.0
     '@typescript-eslint/typescript-estree': ^7.0.0
+    'typescript-eslint': ^7.0.0
     axios: ^1.6.0
     chokidar: ^4.0.0
     class-transformer: ^0.5.1
     class-validator: ^0.14.2
     concurrently: ^8.2.2
     dayjs: ^1.11.10
-    eslint: 8.57.1
+    eslint: ^9.34.0
     eslint-config-next: 15.5.2
     eslint-config-prettier: 9.1.2
     eslint-plugin-prettier: 5.5.4
