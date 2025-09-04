@@ -17,6 +17,7 @@ catalogs:
     '@nestjs/schematics': ^10.0.0
     '@nestjs/swagger': ^11.2.0
     '@nestjs/testing': ^10.4.5
+    '@prisma/client': 6.15.0
     '@tailwindcss/postcss': 4.1.12
     '@types/express': ^5.0.0
     '@types/jest': ^29.5.12

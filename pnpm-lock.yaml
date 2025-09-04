@@ -45,6 +45,9 @@ catalogs:
     '@nestjs/testing':
       specifier: ^10.4.5
       version: 10.4.20
+    '@prisma/client':
+      specifier: 6.15.0
+      version: 6.15.0
     '@tailwindcss/postcss':
       specifier: 4.1.12
       version: 4.1.12
@@ -166,6 +169,10 @@ catalogs:
 importers:
 
   .:
+    dependencies:
+      '@prisma/client':
+        specifier: 'catalog:'
+        version: 6.15.0(prisma@6.15.0(typescript@5.3.3))(typescript@5.3.3)
     devDependencies:
       '@changesets/changelog-github':
         specifier: 'catalog:'
@@ -230,6 +237,9 @@ importers:
       '@nestjs/platform-express':
         specifier: 'catalog:'
         version: 10.4.20(@nestjs/common@10.4.20(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20)
+      '@prisma/client':
+        specifier: 'catalog:'
+        version: 6.15.0(prisma@6.15.0(typescript@5.3.3))(typescript@5.3.3)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1139,6 +1149,18 @@ packages:
   '@pkgr/core@0.2.9':
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@prisma/client@6.15.0':
+    resolution: {integrity: sha512-wR2LXUbOH4cL/WToatI/Y2c7uzni76oNFND7+23ypLllBmIS8e3ZHhO+nud9iXSXKFt1SoM3fTZvHawg63emZw==}
+    engines: {node: '>=18.18'}
+    peerDependencies:
+      prisma: '*'
+      typescript: '>=5.1.0'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+      typescript:
+        optional: true
 
   '@prisma/config@6.15.0':
     resolution: {integrity: sha512-KMEoec9b2u6zX0EbSEx/dRpx1oNLjqJEBZYyK0S3TTIbZ7GEGoVyGyFRk4C72+A38cuPLbfQGQvgOD+gBErKlA==}
@@ -5916,6 +5938,11 @@ snapshots:
     optional: true
 
   '@pkgr/core@0.2.9': {}
+
+  '@prisma/client@6.15.0(prisma@6.15.0(typescript@5.3.3))(typescript@5.3.3)':
+    optionalDependencies:
+      prisma: 6.15.0(typescript@5.3.3)
+      typescript: 5.3.3
 
   '@prisma/config@6.15.0':
     dependencies:

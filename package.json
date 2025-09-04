@@ -22,6 +22,9 @@
     "apps/*",
     "packages/*"
   ],
+  "dependencies": {
+    "@prisma/client": "catalog:"
+  },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
     "@changesets/cli": "catalog:",
