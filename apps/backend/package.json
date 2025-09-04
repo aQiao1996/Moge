@@ -43,6 +43,7 @@
     "globals": "catalog:",
     "jest": "catalog:",
     "prettier": "catalog:",
+    "prisma": "catalog:",
     "source-map-support": "catalog:",
     "supertest": "catalog:",
     "ts-jest": "catalog:",

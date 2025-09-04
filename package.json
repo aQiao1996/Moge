@@ -35,8 +35,9 @@
     "inquirer": "catalog:",
     "lint-staged": "catalog:",
     "prettier": "catalog:",
+    "prisma": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.42.0"
+    "typescript-eslint": "catalog:"
   },
   "lint-staged": {
     "apps/backend/**/*.{ts,tsx,js,jsx}": [

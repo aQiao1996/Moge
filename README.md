@@ -5,6 +5,7 @@
 ```bash
 node -v # 18.18.0
 npm install pnpm -g
+pnpm -v # 10.5.0
 pnpm install
 ```
 
@@ -12,8 +13,8 @@ pnpm install
 
 ```bash
 # xxx 包名
-# 等价 pnpm add --save-dev --workspace-root xxx --catalog
-pnpm add -Dw xxx --catalog
+# 等价 pnpm add --save-dev --workspace-root xxx ----save-catalog
+pnpm add -Dw xxx ----save-catalog
 ```
 
 ### 在子包引用
