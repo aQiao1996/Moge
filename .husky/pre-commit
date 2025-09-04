@@ -12,8 +12,3 @@ echo "✅ node 版本: $(node -v)  路径: $(command -v node)"
 # 执行 lint-staged
 echo "🚀 正在执行 lint-staged..."
 pnpm lint-staged
-
-# 执行 commitlint
-echo "🚀 正在执行 commitlint..."
-printf 'commitlint --edit 参数：%q\n' "${1:-}"
-pnpm commitlint --edit "${1:-}"

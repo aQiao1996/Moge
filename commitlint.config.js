@@ -31,7 +31,7 @@ module.exports = {
     parserOpts: {
       // 自定义解析规则，支持 Emoji 开头的 type
       // 我这里只是为了配合 vscode 插件 git-commit-plugin 使用，一般公司应该不会需要 Emoji
-      headerPattern: /^(\p{Emoji}*\s*\w+)(?:\(([\w$.\-* ]+)\))?: (.+)$/u,
+      headerPattern: /^(\p{Emoji}\s*\w+)(?:\(([\w$.\-* ]+)\))?: (.+)$/u,
       headerCorrespondence: ["type", "scope", "subject"],
     },
   },
