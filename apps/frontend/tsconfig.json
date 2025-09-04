@@ -19,7 +19,7 @@
     // 路径映射，用于简化模块导入
     "paths": {
       "@/*": ["src/*"],
-      "api/*": ["src/api/*"]
+      "api/*": ["src/app/auth/api/*"]
     },
     "noEmit": true // 不生成输出文件（由Next.js处理）
   },

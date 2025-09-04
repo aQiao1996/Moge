@@ -23,7 +23,8 @@
     "packages/*"
   ],
   "dependencies": {
-    "@prisma/client": "catalog:"
+    "@prisma/client": "catalog:",
+    "next-auth": "catalog:"
   },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
