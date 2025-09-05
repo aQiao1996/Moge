@@ -1,5 +1,6 @@
 'use client';
 import { ReactNode } from 'react';
+import { AuthSettings } from '../components/AuthSetting';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -19,6 +20,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           />
         ))}
       </div>
+
+      {/* 顶部切换栏 - 不遮挡内容 */}
+      <AuthSettings />
 
       {/* 左侧品牌区 */}
       <div className="relative hidden items-center justify-center md:flex md:w-1/2">

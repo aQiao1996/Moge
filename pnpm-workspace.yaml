@@ -69,3 +69,4 @@ catalogs:
     tw-animate-css: ^1.3.8
     typescript: 5.3.3
     typescript-eslint: ^8.4.2
+    zustand: 5.0.8

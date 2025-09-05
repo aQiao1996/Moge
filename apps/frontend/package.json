@@ -21,7 +21,8 @@
     "next-auth": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwind-merge": "catalog:"
+    "tailwind-merge": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@eslint/eslintrc": "catalog:",

@@ -26,7 +26,8 @@
     "@icons-pack/react-simple-icons": "catalog:",
     "@prisma/client": "catalog:",
     "lucide-react": "catalog:",
-    "next-auth": "catalog:"
+    "next-auth": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
