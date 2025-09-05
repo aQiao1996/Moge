@@ -53,4 +53,7 @@
     color: var(--moge-input-placeholder);
     opacity: 1;
   }
+  .bg-moge-particle {
+    background-color: var(--moge-particle);
+  }
 }

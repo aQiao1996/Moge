@@ -1,47 +1,42 @@
 :root {
-  /* 1. 冰蓝→淡紫渐变 */
+  /* 背景渐变 - 冰蓝→淡紫 */
   --moge-gradient: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #f3e8ff 100%);
-
-  /* 2. 主色阶 */
-  --moge-primary-300: #7dd3fc;
-  --moge-primary-400: #38bdf8;
-  --moge-primary-500: #0ea5e9;
-
-  /* 3. 文字蓝黑 */
-  --moge-text-main: #0c1427;
+  /* 主色阶 - 提亮冰蓝 */
+  --moge-primary-300: #7dd3fc; /* 亮阶 */
+  --moge-primary-400: #38bdf8; /* 更亮的青蓝 */
+  --moge-primary-500: #0ea5e9; /* 更亮的天蓝 */
+  /* 文字 & 边框 - 蓝黑反相 */
+  --moge-text-main: #0c1427; /* 蓝黑 */
   --moge-text-sub: rgba(12, 20, 39, 0.75);
   --moge-text-muted: rgba(12, 20, 39, 0.55);
-
-  /* 4. 统一冰蓝发光（白天版透明度更低） */
+  --moge-border-light: rgba(12, 20, 39, 0.08);
+  /* 阴影 - 冰蓝辉光（白天版透明度更低） */
   --moge-glow: 0 0 20px rgba(56, 189, 248, 0.22);
   --moge-glow-strong: 0 0 12px rgba(56, 189, 248, 0.35);
   --moge-glow-weak: 0 0 6px rgba(56, 189, 248, 0.18);
-
-  /* 5. 按钮光晕（重点） */
-  --moge-glow-btn: 0 0 20px rgba(56, 189, 248, 0.32);
-
-  /* 6. 卡片/输入/按钮 玻璃 */
+  /* 粒子（35% 透明度） */
+  --moge-particle: rgba(56, 189, 248, 0.35);
+  /* 文字渐变 - 冷蓝 */
+  --moge-text-gradient-from: #0284c7;
+  --moge-text-gradient-to: #38bdf8;
+  /* 卡片 - 玻璃 */
   --moge-card-bg: rgba(255, 255, 255, 0.65);
   --moge-card-border: rgba(56, 189, 248, 0.18);
-  --moge-card-glow: 0 0 20px rgba(56, 189, 248, 0.15); /* 可选，给卡片加光 */
-
+  --moge-glow-card: 0 0 20px rgba(56, 189, 248, 0.15); /* 卡片光晕 */
+  /* 输入框 - 玻璃 */
   --moge-input-border: rgba(56, 189, 248, 0.25);
   --moge-input-bg: rgba(255, 255, 255, 0.8);
   --moge-input-placeholder: rgba(12, 20, 39, 0.45);
-
-  /* 7. 按钮玻璃 */
+  /* 分隔线 */
+  --moge-divider: rgba(56, 189, 248, 0.12);
+  /* 链接 */
+  --moge-link: #0ea5e9;
+  --moge-link-hover: #0284c7;
+  /* 按钮光晕 */
+  --moge-glow-btn: 0 0 20px rgba(56, 189, 248, 0.32);
+  /* 按钮 - 玻璃 */
   --moge-btn-border: rgba(56, 189, 248, 0.25);
   --moge-btn-bg: rgba(255, 255, 255, 0.5);
   --moge-btn-text: rgba(12, 20, 39, 0.85);
   --moge-btn-hover: rgba(56, 189, 248, 0.12);
-
-  /* 8. 粒子 & 文字渐变 */
-  --moge-particle: rgba(56, 189, 248, 0.35);
-  --moge-text-gradient-from: #0284c7;
-  --moge-text-gradient-to: #38bdf8;
-
-  /* 9. 链接 & 分隔线 */
-  --moge-link: #0ea5e9;
-  --moge-link-hover: #0284c7;
-  --moge-divider: rgba(56, 189, 248, 0.12);
 }

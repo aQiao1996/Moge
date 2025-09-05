@@ -1,42 +1,39 @@
 .dark {
+  /* 背景渐变 - 深空冷蓝 */
   --moge-gradient: linear-gradient(135deg, #0a0a0b 0%, #0d1b2a 50%, #123456 100%);
-  --moge-primary-400: #00f2fe;
-  --moge-primary-500: #4facf7;
-  --moge-text-main: #ffffff;
+  /* 主色 - 赛博荧光青 */
+  --moge-primary-400: #00f2fe; /* 更亮的青蓝 */
+  --moge-primary-500: #0284c7; /* 更亮的天蓝 */
+  /* 文字 & 边框 - 深色反相 */
+  --moge-text-main: #ffffff; /* 纯白 */
   --moge-text-sub: rgba(255, 255, 255, 0.7);
   --moge-border-light: rgba(255, 255, 255, 0.1);
+  /* 阴影 - 冰蓝辉光 */
   --moge-glow: 0 0 20px #00f2fe60;
   --moge-glow-strong: 0 0 10px #00f2fe;
   --moge-glow-weak: 0 0 5px #00f2fe;
+  /* 粒子（30% 透明度） */
   --moge-particle: #00f2fe4d;
+  /* 文字渐变 - 冷蓝 */
   --moge-text-gradient-from: #38bdf8;
-  --moge-text-gradient-to: #0ea5e9;
+  --moge-text-gradient-to: #0369a1;
+  /* 卡片 - 深玻璃 */
   --moge-card-bg: rgba(0, 0, 0, 0.2); /* 卡片底 */
   --moge-card-border: rgba(255, 255, 255, 0.1); /* 卡片边框 */
+  /* 输入框 - 深玻璃 */
   --moge-input-border: rgba(255, 255, 255, 0.1);
   --moge-input-bg: rgba(255, 255, 255, 0.05);
   --moge-input-placeholder: rgba(255, 255, 255, 0.4);
+  /* 分隔线 */
   --moge-divider: rgba(255, 255, 255, 0.1);
-  --moge-text-main: #ffffff;
-  --moge-text-sub: rgba(255, 255, 255, 0.7);
-  --moge-text-muted: rgba(255, 255, 255, 0.6);
+  /* 链接 */
   --moge-link: #00f2fe;
   --moge-link-hover: #0099a3;
+  /* 卡片光晕 */
   --moge-glow-card: 0 0 20px rgba(0, 242, 254, 0.12);
+  /* 按钮光晕 */
   --moge-glow-btn: 0 0 20px rgba(0, 242, 254, 0.6);
-  --moge-card-bg: rgba(0, 0, 0, 0.2);
-  --moge-card-border: rgba(255, 255, 255, 0.1);
-  --moge-input-border: rgba(255, 255, 255, 0.1);
-  --moge-input-bg: rgba(255, 255, 255, 0.05);
-  --moge-input-placeholder: rgba(255, 255, 255, 0.4);
-  --moge-divider: rgba(255, 255, 255, 0.1);
-  --moge-text-main: #ffffff;
-  --moge-text-sub: rgba(255, 255, 255, 0.7);
-  --moge-text-muted: rgba(255, 255, 255, 0.6);
-  --moge-link: #00f2fe;
-  --moge-link-hover: #0099a3;
-  --moge-glow-card: 0 0 20px rgba(0, 242, 254, 0.12);
-  --moge-glow-btn: 0 0 20px rgba(0, 242, 254, 0.6);
+  /* 按钮 - 深玻璃 */
   --moge-btn-border: rgba(255, 255, 255, 0.1);
   --moge-btn-bg: rgba(255, 255, 255, 0.05);
   --moge-btn-text: rgba(255, 255, 255, 0.8);
