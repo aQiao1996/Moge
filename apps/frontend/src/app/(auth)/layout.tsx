@@ -7,16 +7,23 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="bg-moge-gradient relative flex min-h-screen items-stretch overflow-hidden">
       {/* 浮动粒子背景  */}
       <div className="absolute inset-0">
-        {Array.from<undefined>({ length: 28 }).map((_, i) => (
+        {Array.from<undefined>({ length: 28 }).map(() => (
           <span
-            key={i}
-            className="animate-float bg-moge-particle absolute block h-2 w-2 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${5 + Math.random() * 5}s`,
-            }}
+            className="animate-float absolute block h-3 w-3"
+            style={
+              {
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${8 + Math.random() * 4}s`,
+                '--x-1': `${(Math.random() - 0.5) * 60}vw`,
+                '--y-1': `${(Math.random() - 0.5) * 60}vh`,
+                '--x-2': `${(Math.random() - 0.5) * 60}vw`,
+                '--y-2': `${(Math.random() - 0.5) * 60}vh`,
+                '--x-3': `${(Math.random() - 0.5) * 60}vw`,
+                '--y-3': `${(Math.random() - 0.5) * 60}vh`,
+              } as React.CSSProperties
+            }
           />
         ))}
       </div>
@@ -41,34 +48,52 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
       {/* 动画关键帧 */}
       <style jsx global>{`
-        @keyframes float {
+        @keyframes hyper {
           0% {
-            transform: translateY(0) scale(1) rotate(0deg);
-            opacity: 0.4;
+            transform: perspective(1000px) translateZ(0) translateX(0) translateY(0) scale(0.4)
+              rotateZ(0deg);
+            opacity: 0;
+            filter: blur(2px);
+          }
+          10% {
+            opacity: 1;
+            filter: blur(0);
           }
           25% {
-            transform: translateY(-25px) translateX(5px) scale(1.3) rotate(90deg);
-            opacity: 1;
+            transform: perspective(1000px) translateZ(120px) translateX(var(--x-1))
+              translateY(var(--y-1)) scale(1.8) rotateZ(270deg);
           }
           50% {
-            transform: translateY(-10px) translateX(-5px) scale(0.9) rotate(180deg);
-            opacity: 0.6;
+            transform: perspective(1000px) translateZ(-80px) translateX(var(--x-2))
+              translateY(var(--y-2)) scale(0.6) rotateZ(540deg);
           }
           75% {
-            transform: translateY(-30px) translateX(3px) scale(1.2) rotate(270deg);
+            transform: perspective(1000px) translateZ(60px) translateX(var(--x-3))
+              translateY(var(--y-3)) scale(1.4) rotateZ(810deg);
+          }
+          90% {
             opacity: 1;
+            filter: blur(0);
           }
           100% {
-            transform: translateY(0) scale(1) rotate(360deg);
-            opacity: 0.4;
+            transform: perspective(1000px) translateZ(0) translateX(0) translateY(0) scale(0.4)
+              rotateZ(1080deg);
+            opacity: 0;
+            filter: blur(2px);
           }
         }
 
         .animate-float {
-          animation: float 7s ease-in-out infinite;
+          animation: hyper 10s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
           will-change: transform, opacity;
-          filter: blur(0.5px); /* 冷光柔边 */
-          box-shadow: 0 0 8px 2px var(--moge-particle); /* 自带冰蓝光晕 */
+          border-radius: 60% 40% 70% 30% / 40% 60% 30% 70%;
+          background:
+            radial-gradient(circle at 30% 30%, #fff 0.5px, transparent 0.5px), var(--moge-particle);
+          box-shadow:
+            0 0 4px 1px #fff,
+            0 0 12px 4px var(--moge-particle),
+            0 0 24px 8px var(--moge-particle),
+            0 0 40px 12px var(--moge-particle);
         }
       `}</style>
     </div>
