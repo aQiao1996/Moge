@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,13 +25,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-stretch bg-gradient-to-br from-[#0A0A0B] via-[#0D1B2A] to-[#123456] relative overflow-hidden">
+    <div className="relative flex min-h-screen items-stretch overflow-hidden bg-gradient-to-br from-[#0A0A0B] via-[#0D1B2A] to-[#123456]">
       {/* 浮动粒子背景 */}
       <div className="absolute inset-0">
         {Array.from<undefined>({ length: 28 }).map((_, i) => (
           <span
             key={i}
-            className="absolute block w-2 h-2 bg-[#00F2FE]/30 rounded-full animate-float"
+            className="animate-float absolute block h-2 w-2 rounded-full bg-[#00F2FE]/30"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -42,9 +43,9 @@ export default function LoginPage() {
       </div>
 
       {/* 左侧品牌区 */}
-      <div className="hidden md:flex md:w-1/2 items-center justify-center relative">
+      <div className="relative hidden items-center justify-center md:flex md:w-1/2">
         <div className="text-center text-white">
-          <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] drop-shadow-[0_0_10px_#00F2FE]">
+          <h1 className="bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] bg-clip-text text-5xl font-extrabold tracking-tight text-transparent drop-shadow-[0_0_10px_#00F2FE]">
             墨阁
           </h1>
           <p className="mt-4 text-lg text-white/70 drop-shadow-[0_0_5px_#00F2FE]">
@@ -54,10 +55,10 @@ export default function LoginPage() {
       </div>
 
       {/* 右侧玻璃登录区 */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl shadow-[#00F2FE]/20">
+      <div className="flex w-full items-center justify-center p-6 md:w-1/2">
+        <Card className="w-full max-w-md border border-white/10 bg-black/20 shadow-2xl shadow-[#00F2FE]/20 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-white text-center">欢迎回来</CardTitle>
+            <CardTitle className="text-center text-2xl font-bold text-white">欢迎回来</CardTitle>
             <CardDescription className="text-center text-white/70">
               登录后可体验 AI 小说生成
             </CardDescription>
@@ -75,7 +76,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-white/5 border-white/10 text-white placeholder-white/40 focus:ring-2 focus:ring-[#00F2FE] focus:border-transparent"
+                  className="border-white/10 bg-white/5 text-white placeholder-white/40 focus:border-transparent focus:ring-2 focus:ring-[#00F2FE]"
                 />
               </div>
               <div className="space-y-2">
@@ -89,12 +90,12 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-white/5 border-white/10 text-white placeholder-white/40 focus:ring-2 focus:ring-[#00F2FE] focus:border-transparent"
+                  className="border-white/10 bg-white/5 text-white placeholder-white/40 focus:border-transparent focus:ring-2 focus:ring-[#00F2FE]"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] text-black font-bold shadow-lg shadow-[#00F2FE]/40 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60 transition-all duration-300 cursor-pointer"
+                className="w-full cursor-pointer bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] font-bold text-black shadow-lg shadow-[#00F2FE]/40 transition-all duration-300 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60"
               >
                 立即登录
               </Button>
@@ -111,21 +112,18 @@ export default function LoginPage() {
             </div>
             <Button
               variant="outline"
-              // onClick={() => void signIn('gitlab')}
-              className="w-full border-white/20 text-white/90
-           bg-gradient-to-br from-white/5 to-white/10
-           hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60
-           transition-all duration-300 cursor-pointer"
+              onClick={() => void signIn('gitlab')}
+              className="w-full cursor-pointer border-white/20 bg-gradient-to-br from-white/5 to-white/10 text-white/90 transition-all duration-300 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60"
             >
-              <SiGitlab className="w-5 h-5 mr-2" fill="currentColor" />
+              <SiGitlab className="mr-2 h-5 w-5" fill="currentColor" />
               使用 GitLab 登录
             </Button>
           </CardContent>
-          <CardFooter className="justify-center text-white/60 text-sm">
+          <CardFooter className="justify-center text-sm text-white/60">
             还没有账户？
             <Link
               href="/signup"
-              className="ml-1 text-[#00F2FE] hover:text-[#0099a3] transition-colors duration-200"
+              className="ml-1 text-[#00F2FE] transition-colors duration-200 hover:text-[#0099a3]"
             >
               立即注册
             </Link>

@@ -41,6 +41,7 @@
     "inquirer": "catalog:",
     "lint-staged": "catalog:",
     "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:"
