@@ -14,8 +14,11 @@
   --moge-glow: 0 0 20px rgba(56, 189, 248, 0.22);
   --moge-glow-strong: 0 0 12px rgba(56, 189, 248, 0.35);
   --moge-glow-weak: 0 0 6px rgba(56, 189, 248, 0.18);
-  /* 粒子（35% 透明度） */
-  --moge-particle: rgba(56, 189, 248, 0.35);
+  /* 粒子（55% 透明度） */
+  --moge-particle: rgba(56, 189, 248, 0.55);
+  /* 粒子光晕：内层纯白星闪 + 外层荧光蓝拖尾 */
+  --moge-particle-glow:
+    0 0 2px 1px #fff, 0 0 8px 2px rgba(8, 145, 178, 0.7), 0 0 16px 4px rgba(8, 145, 178, 0.4);
   /* 文字渐变 - 冷蓝 */
   --moge-text-gradient-from: #0284c7;
   --moge-text-gradient-to: #38bdf8;
