@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function SignupPage() {
   const [account, setAccount] = useState('');
@@ -88,18 +89,16 @@ export default function SignupPage() {
           />
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={loading}
+          className="from-moge-primary-400 to-moge-primary-500 h-10 w-full cursor-pointer bg-gradient-to-r text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
           style={{
-            background:
-              'linear-gradient(to right, var(--moge-primary-400), var(--moge-primary-500))',
-            boxShadow: 'var(--moge-glow-btn)',
+            boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
           }}
-          className="h-10 w-full cursor-pointer rounded-md py-2 text-base font-bold text-white/90 shadow-lg disabled:opacity-60"
         >
-          {loading ? '注册中...' : '立即注册'}
-        </button>
+          {loading ? '注册中...' : '注册'}
+        </Button>
       </form>
 
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
