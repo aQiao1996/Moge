@@ -8,17 +8,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@icons-pack/react-simple-icons": "catalog:",
     "@moge/configs": "workspace:*",
     "@moge/types": "workspace:*",
     "@radix-ui/react-label": "catalog:",
     "@radix-ui/react-slot": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
-    "lucide-react": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "lucide-react": "catalog:",
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {

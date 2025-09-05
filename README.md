@@ -13,8 +13,8 @@ pnpm install
 
 ```bash
 # xxx 包名
-# 等价 pnpm add --save-dev --workspace-root xxx ----save-catalog
-pnpm add -Dw xxx ----save-catalog
+# 等价 pnpm add --save-dev --workspace-root xxx --save-catalog
+pnpm add -Dw xxx --save-catalog
 ```
 
 ### 在子包引用

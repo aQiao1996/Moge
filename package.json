@@ -23,7 +23,9 @@
     "packages/*"
   ],
   "dependencies": {
+    "@icons-pack/react-simple-icons": "catalog:",
     "@prisma/client": "catalog:",
+    "lucide-react": "catalog:",
     "next-auth": "catalog:"
   },
   "devDependencies": {
