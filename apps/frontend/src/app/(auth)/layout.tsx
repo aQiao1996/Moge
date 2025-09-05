@@ -4,7 +4,7 @@ import { AuthSettings } from '../components/AuthSetting';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-moge-gradient relative flex min-h-screen items-stretch overflow-hidden">
+    <div className={`bg-moge-gradient relative flex min-h-screen items-stretch overflow-hidden`}>
       {/* 浮动粒子背景  */}
       <div className="absolute inset-0">
         {Array.from<undefined>({ length: 28 }).map(() => (
@@ -34,10 +34,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* 左侧品牌区 */}
       <div className="relative hidden items-center justify-center md:flex md:w-1/2">
         <div className="text-moge-text-main text-center">
-          <h1 className="from-moge-primary-400 to-moge-primary-500 drop-shadow-moge-glow-strong bg-gradient-to-r bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
+          <h1 className="brand-title from-moge-primary-400 to-moge-primary-500 drop-shadow-moge-glow-strong bg-gradient-to-r bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
             墨阁
           </h1>
-          <p className="text-moge-text-sub drop-shadow-moge-glow-weak mt-4 text-lg">
+          <p className="brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 text-lg">
             AI 生成 · 小说世界 · 无限灵感
           </p>
         </div>
@@ -94,6 +94,50 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             0 0 12px 4px var(--moge-particle),
             0 0 24px 8px var(--moge-particle),
             0 0 40px 12px var(--moge-particle);
+        }
+
+        /* 墨阁主标题 - 呼吸+3D 浮动 */
+        @keyframes brand {
+          0%,
+          100% {
+            transform: translateY(0) scale(1);
+            filter: drop-shadow(0 0 8px var(--moge-primary-400)) blur(0);
+          }
+          50% {
+            transform: translateY(-6px) scale(1.03);
+            filter: drop-shadow(0 0 16px var(--moge-primary-500)) blur(0.3px);
+          }
+        }
+
+        /* 副标题 - 扫描线 */
+        @keyframes scan {
+          0% {
+            background-position: 0% 50%;
+          }
+          100% {
+            background-position: 200% 50%;
+          }
+        }
+
+        .brand-title {
+          animation: brand 4s ease-in-out infinite;
+          will-change: transform, filter;
+        }
+
+        .brand-sub {
+          position: relative;
+          display: inline-block;
+          background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            var(--moge-scan-mid) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: scan 6s linear infinite;
         }
       `}</style>
     </div>

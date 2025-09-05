@@ -38,4 +38,8 @@
   --moge-btn-bg: rgba(255, 255, 255, 0.05);
   --moge-btn-text: rgba(255, 255, 255, 0.8);
   --moge-btn-hover: rgba(255, 255, 255, 0.1);
+  /* 扫描线起始/结束色（跟随主题文字） */
+  --moge-scan-start: rgba(255, 255, 255, 0.6);
+  --moge-scan-mid: #ffffff;
+  --moge-scan-end: rgba(255, 255, 255, 0.6);
 }
