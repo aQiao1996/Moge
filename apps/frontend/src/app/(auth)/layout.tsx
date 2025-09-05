@@ -43,20 +43,32 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <style jsx global>{`
         @keyframes float {
           0% {
-            transform: translateY(0) scale(1);
-            opacity: 0.6;
+            transform: translateY(0) scale(1) rotate(0deg);
+            opacity: 0.4;
+          }
+          25% {
+            transform: translateY(-25px) translateX(5px) scale(1.3) rotate(90deg);
+            opacity: 1;
           }
           50% {
-            transform: translateY(-20px) scale(1.1);
+            transform: translateY(-10px) translateX(-5px) scale(0.9) rotate(180deg);
+            opacity: 0.6;
+          }
+          75% {
+            transform: translateY(-30px) translateX(3px) scale(1.2) rotate(270deg);
             opacity: 1;
           }
           100% {
-            transform: translateY(0) scale(1);
-            opacity: 0.6;
+            transform: translateY(0) scale(1) rotate(360deg);
+            opacity: 0.4;
           }
         }
+
         .animate-float {
-          animation: float 6s ease-in-out infinite;
+          animation: float 7s ease-in-out infinite;
+          will-change: transform, opacity;
+          filter: blur(0.5px); /* 冷光柔边 */
+          box-shadow: 0 0 8px 2px var(--moge-particle); /* 自带冰蓝光晕 */
         }
       `}</style>
     </div>
