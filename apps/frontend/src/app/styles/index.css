@@ -1,5 +1,8 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import './moge-light.css';
+@import './moge-dark.css';
+@import './moge-utilities.css';
 
 @custom-variant dark (&:is(.dark *));
 

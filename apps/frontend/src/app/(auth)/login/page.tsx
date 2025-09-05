@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -17,11 +16,9 @@ import { SiGitlab } from '@icons-pack/react-simple-icons';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [account, setAccount] = useState(''); // 用户名/邮箱都可
+  const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  /** 弹窗状态 */
   const [open, setOpen] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogDesc, setDialogDesc] = useState('');
@@ -30,15 +27,12 @@ export default function LoginPage() {
     e.preventDefault();
     if (!account || !password) return;
     setLoading(true);
-
     const res = await signIn('credentials', {
-      redirect: false, // 我们自己控制跳转/弹窗
+      redirect: false,
       account,
       password,
     });
-
     setLoading(false);
-
     if (res?.ok) {
       setDialogTitle('登录成功');
       setDialogDesc('即将跳转到首页...');
@@ -56,14 +50,26 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/20 p-6 shadow-2xl shadow-[#00F2FE]/20 backdrop-blur-xl">
-        <h2 className="text-center text-2xl font-bold text-white">欢迎回来</h2>
-        <p className="mt-1 text-center text-sm text-white/70">登录后可体验 AI 小说生成</p>
+      {/* 卡片容器 - 变量化颜色 */}
+      <div
+        style={{
+          backgroundColor: 'var(--moge-card-bg)',
+          borderColor: 'var(--moge-card-border)',
+          boxShadow: 'var(--moge-glow-card)',
+        }}
+        className="w-full max-w-md rounded-2xl border p-6 backdrop-blur-xl"
+      >
+        <h2 style={{ color: 'var(--moge-text-main)' }} className="text-center text-2xl font-bold">
+          欢迎回来
+        </h2>
+        <p style={{ color: 'var(--moge-text-sub)' }} className="mt-1 text-center text-sm">
+          登录后可体验 AI 小说生成
+        </p>
 
         {/* 账号密码登录 */}
         <form onSubmit={void handleCredential} className="mt-5 space-y-4">
           <div>
-            <label htmlFor="account" className="block text-sm text-white/90">
+            <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
               账号
             </label>
             <input
@@ -73,12 +79,12 @@ export default function LoginPage() {
               required
               value={account}
               onChange={(e) => setAccount(e.target.value)}
-              className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm text-white/90">
+            <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
               密码
             </label>
             <input
@@ -88,14 +94,19 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
             />
           </div>
 
           <Button
             type="submit"
             disabled={loading}
-            className="h-10 w-full cursor-pointer bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] text-base text-white/90 shadow-lg shadow-[#00F2FE]/40 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60 disabled:opacity-60"
+            style={{
+              background:
+                'linear-gradient(to right, var(--moge-primary-400), var(--moge-primary-500))',
+              boxShadow: 'var(--moge-glow-btn)',
+            }}
+            className="h-10 w-full cursor-pointer text-base text-white/90 shadow-lg disabled:opacity-60"
           >
             {loading ? '登录中...' : '登录'}
           </Button>
@@ -104,36 +115,57 @@ export default function LoginPage() {
         {/* 分割线 */}
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10" />
+            <div style={{ borderColor: 'var(--moge-divider)' }} className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-black/20 px-2 text-white/60">Or</span>
+            <span style={{ color: 'var(--moge-text-muted)' }} className="px-2">
+              Or
+            </span>
           </div>
         </div>
 
         {/* GitLab 登录 */}
         <button
           onClick={() => void signIn('gitlab', { callbackUrl: '/' })}
-          className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-white/20 bg-gradient-to-br from-white/5 to-white/10 px-4 py-2 text-base text-white/90 transition-all duration-300 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60"
+          style={{
+            borderColor: 'var(--moge-card-border)',
+            background:
+              'linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(255,255,255,0.1))',
+            color: 'var(--moge-text-main)',
+          }}
+          className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border px-4 py-2 text-base transition-all duration-300 hover:shadow-lg"
         >
-          <SiGitlab className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" />
+          <SiGitlab className="h-5 w-5" fill="currentColor" />
           使用 GitLab 登录
         </button>
 
-        <p className="mt-4 text-center text-sm text-white/60">
+        <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
           还没有账户？
-          <Link href="/signup" className="ml-1 text-[#00F2FE] hover:text-[#0099a3]">
+          <Link
+            href="/signup"
+            style={{ color: 'var(--moge-link)' }}
+            className="ml-1 hover:text-[var(--moge-link-hover)]"
+          >
             立即注册
           </Link>
         </p>
       </div>
 
-      {/* 登录结果弹窗 */}
+      {/* 弹窗 - 变量化背景/文字 */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-white/10 bg-black/30 text-white backdrop-blur-xl">
+        <DialogContent
+          style={{
+            backgroundColor: 'var(--moge-card-bg)',
+            borderColor: 'var(--moge-card-border)',
+            color: 'var(--moge-text-main)',
+          }}
+          className="border backdrop-blur-xl"
+        >
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription className="text-white/70">{dialogDesc}</DialogDescription>
+            <DialogDescription style={{ color: 'var(--moge-text-sub)' }}>
+              {dialogDesc}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>

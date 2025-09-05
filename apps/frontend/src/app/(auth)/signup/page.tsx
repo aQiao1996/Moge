@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -14,14 +13,11 @@ export default function SignupPage() {
     e.preventDefault();
     if (!account || !password || password !== confirm) return;
     setLoading(true);
-
-    // 1. 调你的注册接口（示例用 /api/signup）
     const res = await fetch('/api/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ account, password }),
     });
-
     if (res.ok) {
       await signIn('email', { account, callbackUrl: '/' });
     } else {
@@ -31,14 +27,24 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/20 p-6 shadow-2xl shadow-[#00F2FE]/20 backdrop-blur-xl">
-      <h2 className="text-center text-2xl font-bold text-white">创建账户</h2>
-      <p className="mt-1 text-center text-sm text-white/70">注册后即可体验 AI 小说生成</p>
+    <div
+      style={{
+        backgroundColor: 'var(--moge-card-bg)',
+        borderColor: 'var(--moge-card-border)',
+        boxShadow: 'var(--moge-glow-card)',
+      }}
+      className="w-full max-w-md rounded-2xl border p-6 backdrop-blur-xl"
+    >
+      <h2 style={{ color: 'var(--moge-text-main)' }} className="text-center text-2xl font-bold">
+        创建账户
+      </h2>
+      <p style={{ color: 'var(--moge-text-sub)' }} className="mt-1 text-center text-sm">
+        注册后即可体验 AI 小说生成
+      </p>
 
       <form onSubmit={void handleSubmit} className="mt-5 space-y-4">
-        {/* 账号 */}
         <div>
-          <label htmlFor="account" className="block text-sm text-white/90">
+          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             账号
           </label>
           <input
@@ -48,13 +54,12 @@ export default function SignupPage() {
             required
             value={account}
             onChange={(e) => setAccount(e.target.value)}
-            className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
           />
         </div>
 
-        {/* 密码 */}
         <div>
-          <label htmlFor="password" className="block text-sm text-white/90">
+          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             密码
           </label>
           <input
@@ -64,13 +69,12 @@ export default function SignupPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
           />
         </div>
 
-        {/* 确认密码 */}
         <div>
-          <label htmlFor="confirm" className="block text-sm text-white/90">
+          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             确认密码
           </label>
           <input
@@ -80,22 +84,31 @@ export default function SignupPage() {
             required
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="h-10 w-full cursor-pointer rounded-md bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] py-2 text-base font-bold text-white/90 shadow-lg shadow-[#00F2FE]/40 transition-all duration-300 hover:shadow-[0_0_20px] hover:shadow-[#00F2FE]/60 disabled:opacity-60"
+          style={{
+            background:
+              'linear-gradient(to right, var(--moge-primary-400), var(--moge-primary-500))',
+            boxShadow: 'var(--moge-glow-btn)',
+          }}
+          className="h-10 w-full cursor-pointer rounded-md py-2 text-base font-bold text-white/90 shadow-lg disabled:opacity-60"
         >
           {loading ? '注册中...' : '立即注册'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-white/60">
+      <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
         已有账户？
-        <Link href="/login" className="ml-1 text-[#00F2FE] hover:text-[#0099a3]">
+        <Link
+          href="/login"
+          style={{ color: 'var(--moge-link)' }}
+          className="ml-1 hover:text-[var(--moge-link-hover)]"
+        >
           立即登录
         </Link>
       </p>

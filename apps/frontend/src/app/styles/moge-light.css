@@ -1,0 +1,49 @@
+:root {
+  /* 背景渐变 - 提亮版本 */
+  --moge-gradient: linear-gradient(135deg, #f0f5ff 0%, #e0ecff 50%, #d2e2ff 100%);
+  /* 主色保持饱和，但亮度提高 */
+  --moge-primary-400: #38bdf8; /* 更亮的青蓝 */
+  --moge-primary-500: #0ea5e9; /* 更亮的天蓝 */
+  /* 文字 & 边框 - 深色模式反相 */
+  --moge-text-main: #111827; /* 深灰黑 */
+  --moge-text-sub: rgba(17, 24, 39, 0.7);
+  --moge-border-light: rgba(0, 0, 0, 0.08);
+  /* 阴影 - 降低透明度，颜色偏蓝 */
+  --moge-glow: 0 0 15px rgba(56, 189, 248, 0.35);
+  --moge-glow-strong: 0 0 8px rgba(56, 189, 248, 0.45);
+  --moge-glow-weak: 0 0 4px rgba(56, 189, 248, 0.25);
+  /* 粒子（30% 透明度） */
+  --moge-particle: rgba(56, 189, 248, 0.3);
+  --moge-text-gradient-from: #00f2fe;
+  --moge-text-gradient-to: #4facf7;
+  --moge-card-bg: rgba(255, 255, 255, 0.55);
+  --moge-card-border: rgba(0, 0, 0, 0.08);
+  --moge-input-border: rgba(0, 0, 0, 0.1);
+  --moge-input-bg: rgba(255, 255, 255, 0.7);
+  --moge-input-placeholder: rgba(0, 0, 0, 0.45);
+  --moge-divider: rgba(0, 0, 0, 0.08);
+  --moge-text-main: #111827;
+  --moge-text-sub: rgba(17, 24, 39, 0.7);
+  --moge-text-muted: rgba(17, 24, 39, 0.55);
+  --moge-link: #0ea5e9;
+  --moge-link-hover: #0284c7;
+  --moge-glow-card: 0 0 15px rgba(14, 165, 233, 0.18);
+  --moge-glow-btn: 0 0 15px rgba(14, 165, 233, 0.45);
+  --moge-card-bg: rgba(255, 255, 255, 0.55);
+  --moge-card-border: rgba(0, 0, 0, 0.08);
+  --moge-divider: rgba(0, 0, 0, 0.08);
+  --moge-text-main: #111827;
+  --moge-text-sub: rgba(17, 24, 39, 0.7);
+  --moge-text-muted: rgba(17, 24, 39, 0.55);
+  --moge-link: #0ea5e9;
+  --moge-link-hover: #0284c7;
+  --moge-glow-card: 0 0 15px rgba(14, 165, 233, 0.18);
+  --moge-glow-btn: 0 0 15px rgba(14, 165, 233, 0.45);
+  --moge-input-border: rgba(0, 0, 0, 0.15);
+  --moge-input-bg: rgba(255, 255, 255, 0.75);
+  --moge-input-placeholder: rgba(0, 0, 0, 0.45);
+  --moge-btn-border: rgba(0, 0, 0, 0.15);
+  --moge-btn-bg: rgba(0, 0, 0, 0.06);
+  --moge-btn-text: rgba(0, 0, 0, 0.75);
+  --moge-btn-hover: rgba(0, 0, 0, 0.12);
+}

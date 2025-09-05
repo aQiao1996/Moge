@@ -4,13 +4,13 @@ import { AuthSettings } from '../components/AuthSetting';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-screen items-stretch overflow-hidden bg-gradient-to-br from-[#0A0A0B] via-[#0D1B2A] to-[#123456]">
-      {/* 浮动粒子背景 */}
+    <div className="bg-moge-gradient relative flex min-h-screen items-stretch overflow-hidden">
+      {/* 浮动粒子背景  */}
       <div className="absolute inset-0">
         {Array.from<undefined>({ length: 28 }).map((_, i) => (
           <span
             key={i}
-            className="animate-float absolute block h-2 w-2 rounded-full bg-[#00F2FE]/30"
+            className="animate-float bg-moge-particle absolute block h-2 w-2 rounded-full"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -21,24 +21,25 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      {/* 顶部切换栏 - 不遮挡内容 */}
+      {/* 顶部切换栏 */}
       <AuthSettings />
 
       {/* 左侧品牌区 */}
       <div className="relative hidden items-center justify-center md:flex md:w-1/2">
-        <div className="text-center text-white">
-          <h1 className="bg-gradient-to-r from-[#00F2FE] to-[#4FACF7] bg-clip-text text-5xl font-extrabold tracking-tight text-transparent drop-shadow-[0_0_10px_#00F2FE]">
+        <div className="text-moge-text-main text-center">
+          <h1 className="from-moge-primary-400 to-moge-primary-500 drop-shadow-moge-glow-strong bg-gradient-to-r bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
             墨阁
           </h1>
-          <p className="mt-4 text-lg text-white/70 drop-shadow-[0_0_5px_#00F2FE]">
+          <p className="text-moge-text-sub drop-shadow-moge-glow-weak mt-4 text-lg">
             AI 生成 · 小说世界 · 无限灵感
           </p>
         </div>
       </div>
 
-      {/* 右侧玻璃区 —— 仅放 children */}
+      {/* 右侧玻璃区 */}
       <div className="flex w-full items-center justify-center p-6 md:w-1/2">{children}</div>
 
+      {/* 动画关键帧 */}
       <style jsx global>{`
         @keyframes float {
           0% {

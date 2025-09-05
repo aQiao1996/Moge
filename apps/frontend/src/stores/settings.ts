@@ -24,6 +24,6 @@ export const useSettings = create<SettingsState>()(
       },
       setLang: (lang) => set({ lang }),
     }),
-    { name: 'settings' }
+    { name: 'moge-settings' }
   )
 );

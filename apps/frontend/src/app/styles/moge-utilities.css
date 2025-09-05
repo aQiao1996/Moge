@@ -1,0 +1,56 @@
+/* ===== Tailwind 注册工具类 ===== */
+@layer utilities {
+  .bg-moge-gradient {
+    background: var(--moge-gradient);
+  }
+  .bg-moge-primary-400 {
+    background-color: var(--moge-primary-400);
+  }
+  .bg-moge-primary-500 {
+    background-color: var(--moge-primary-500);
+  }
+  .text-moge-primary-400 {
+    color: var(--moge-primary-400);
+  }
+  .text-moge-primary-500 {
+    color: var(--moge-primary-500);
+  }
+  .text-moge-main {
+    color: var(--moge-text-main);
+  }
+  .text-moge-sub {
+    color: var(--moge-text-sub);
+  }
+  .border-moge-light {
+    border-color: var(--moge-border-light);
+  }
+  .shadow-moge-glow {
+    box-shadow: var(--moge-glow);
+  }
+  .bg-gradient-to-r {
+    background-image: linear-gradient(
+      to right,
+      var(--moge-text-gradient-from),
+      var(--moge-text-gradient-to)
+    );
+  }
+  .text-transparent {
+    color: transparent;
+  }
+  .bg-clip-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .ring-moge-primary-400 {
+    --tw-ring-color: var(--moge-primary-400);
+  }
+  .input-moge {
+    border-color: var(--moge-input-border);
+    background-color: var(--moge-input-bg);
+    color: var(--moge-text-main);
+  }
+  .input-moge::placeholder {
+    color: var(--moge-input-placeholder);
+    opacity: 1;
+  }
+}
