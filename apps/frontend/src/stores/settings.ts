@@ -21,6 +21,13 @@ export const useSettings = create<SettingsState>()(
       setTheme: (theme) => {
         set({ theme });
         document.documentElement.classList.toggle('dark', theme === 'dark');
+        fetch('/api/set-theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme }),
+        }).catch((error) => {
+          console.log('🚀 ~ settings.ts:29 ~ error:', error);
+        });
       },
       setLang: (lang) => set({ lang }),
     }),
