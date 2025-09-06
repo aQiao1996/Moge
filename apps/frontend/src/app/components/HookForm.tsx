@@ -43,7 +43,7 @@ export default function HookForm<T extends FieldValues>({
             name={f.name}
             render={({ field }) => (
               <div>
-                <label className="block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
+                <label className="mb-1 block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
                   {f.label}
                 </label>
                 {renderControl(field, f.name)}
