@@ -103,7 +103,7 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
             { name: 'conflict', label: '核心冲突' },
             { name: 'remark', label: '备注' },
           ]}
-          submitText="创建"
+          submitText="确认"
           cancelText="取消"
           onCancel={() => onOpenChange(false)}
           renderControl={renderControl}
