@@ -7,6 +7,7 @@
   /* 文字 & 边框 - 深色反相 */
   --moge-text-main: #ffffff; /* 纯白 */
   --moge-text-sub: rgba(255, 255, 255, 0.7);
+  --moge-text-muted: rgba(255, 255, 255, 0.55);
   --moge-border-light: rgba(255, 255, 255, 0.1);
   /* 阴影 - 冰蓝辉光 */
   --moge-glow: 0 0 20px #00f2fe60;
