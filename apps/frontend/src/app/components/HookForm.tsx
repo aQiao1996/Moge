@@ -71,7 +71,7 @@ export default function HookForm<T extends FieldValues>({
           <Button
             type="submit"
             disabled={loading}
-            className="from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            className={`from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 ${cancelText ? '' : 'w-full'}`}
             style={{
               boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
             }}
