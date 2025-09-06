@@ -46,7 +46,7 @@ export default function AuthSetting({ isAbsolute = true }) {
           backgroundColor: 'var(--moge-btn-bg)',
           color: 'var(--moge-btn-text)',
         }}
-        className={`h-8 w-8 rounded-full border px-1 py-1 text-xs font-semibold backdrop-blur-sm transition-transform duration-200 hover:bg-[var(--moge-btn-hover)] ${langAnim}`}
+        className={`h-8 w-8 rounded-full border px-1 py-1 text-xs font-normal backdrop-blur-sm transition-transform duration-200 hover:bg-[var(--moge-btn-hover)] ${langAnim}`}
       >
         {lang.toUpperCase()}
       </Button>
