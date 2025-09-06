@@ -46,4 +46,7 @@
   --moge-scan-start: var(--moge-text-sub);
   --moge-scan-mid: var(--moge-text-main);
   --moge-scan-end: var(--moge-text-sub);
+  /* dialog - 玻璃 */
+  --moge-dialog-bg: rgba(255, 255, 255);
+  --moge-dialog-border: rgba(56, 189, 248, 0.18);
 }

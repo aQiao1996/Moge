@@ -43,4 +43,7 @@
   --moge-scan-start: rgba(255, 255, 255, 0.6);
   --moge-scan-mid: #ffffff;
   --moge-scan-end: rgba(255, 255, 255, 0.6);
+  /* dialog - 玻璃 */
+  --moge-dialog-bg: rgba(0, 0, 0, 0.2);
+  --moge-dialog-border: rgba(255, 255, 255, 0.1);
 }

@@ -47,10 +47,10 @@ export default function Home() {
             </Button>
           </DialogTrigger>
           <DialogContent
-            className="w-full max-w-2xl border backdrop-blur-xl"
+            className="home-area w-full max-w-2xl border backdrop-blur-xl"
             style={{
-              backgroundColor: 'var(--moge-card-bg)',
-              borderColor: 'var(--moge-card-border)',
+              backgroundColor: 'var(--moge-dialog-bg)',
+              borderColor: 'var(--moge-dialog-border)',
               color: 'var(--moge-text-main)',
             }}
           >
