@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Label } from '@radix-ui/react-label';
+import { Input } from '@/components/ui/input';
 
 export default function SignupPage() {
   const [account, setAccount] = useState('');
@@ -45,47 +47,47 @@ export default function SignupPage() {
 
       <form onSubmit={void handleSubmit} className="mt-5 space-y-4">
         <div>
-          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
+          <Label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             账号
-          </label>
-          <input
+          </Label>
+          <Input
             id="account"
             type="text"
             placeholder="请输入账号"
             required
             value={account}
             onChange={(e) => setAccount(e.target.value)}
-            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#00F2FE]"
           />
         </div>
 
         <div>
-          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
+          <Label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             密码
-          </label>
-          <input
+          </Label>
+          <Input
             id="password"
             type="password"
             placeholder="请输入密码"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#00F2FE]"
           />
         </div>
 
         <div>
-          <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
+          <Label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
             确认密码
-          </label>
-          <input
+          </Label>
+          <Input
             id="confirm"
             type="password"
             placeholder="再次输入密码"
             required
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#00F2FE]"
           />
         </div>
 

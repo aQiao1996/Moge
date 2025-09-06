@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { SiGitlab } from '@icons-pack/react-simple-icons';
+import { Input } from '@/components/ui/input';
+import { Label } from '@radix-ui/react-label';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -69,32 +71,32 @@ export default function LoginPage() {
         {/* 账号密码登录 */}
         <form onSubmit={void handleCredential} className="mt-5 space-y-4">
           <div>
-            <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
+            <Label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
               账号
-            </label>
-            <input
+            </Label>
+            <Input
               id="account"
               type="text"
               placeholder="用户名 / 邮箱"
               required
               value={account}
               onChange={(e) => setAccount(e.target.value)}
-              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#00F2FE]"
             />
           </div>
 
           <div>
-            <label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
+            <Label style={{ color: 'var(--moge-text-sub)' }} className="block text-sm">
               密码
-            </label>
-            <input
+            </Label>
+            <Input
               id="password"
               type="password"
               placeholder="请输入密码"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#00F2FE]"
+              className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#00F2FE]"
             />
           </div>
 

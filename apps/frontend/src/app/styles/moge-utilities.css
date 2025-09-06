@@ -45,7 +45,7 @@
     --tw-ring-color: var(--moge-primary-400);
   }
   .input-moge {
-    border-color: var(--moge-input-border);
+    border-color: var(--moge-input-border) !important;
     background-color: var(--moge-input-bg);
     color: var(--moge-text-main);
   }
