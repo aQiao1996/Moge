@@ -101,7 +101,7 @@ export default function LoginPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="from-moge-primary-400 to-moge-primary-500 h-10 w-full cursor-pointer bg-gradient-to-r text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            className="from-moge-primary-400 to-moge-primary-500 h-10 w-full bg-gradient-to-r text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
             }}
@@ -123,7 +123,7 @@ export default function LoginPage() {
         </div>
 
         {/* GitLab 登录 */}
-        <button
+        <Button
           onClick={() => void signIn('gitlab', { callbackUrl: '/' })}
           style={{
             borderColor: 'var(--moge-card-border)',
@@ -131,11 +131,11 @@ export default function LoginPage() {
               'linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(255,255,255,0.1))',
             color: 'var(--moge-text-main)',
           }}
-          className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border px-4 py-2 text-base transition-all duration-300 hover:shadow-lg"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-md border px-4 py-2 text-base transition-all duration-300 hover:shadow-lg"
         >
           <SiGitlab className="h-5 w-5" fill="currentColor" />
           使用 GitLab 登录
-        </button>
+        </Button>
 
         <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
           还没有账户？
