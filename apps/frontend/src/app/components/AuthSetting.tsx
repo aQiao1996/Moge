@@ -2,7 +2,7 @@
 import { useSettings } from '@/stores/settings';
 import { useState } from 'react';
 
-export function AuthSettings() {
+export function AuthSetting() {
   const { theme, lang, setTheme, setLang } = useSettings();
 
   const [themeAnim, setThemeAnim] = useState('');
