@@ -1,6 +1,6 @@
 'use client';
 
-export function FloatingDots() {
+export default function FloatingDots() {
   return (
     <>
       {Array.from({ length: 20 }).map((_, i) => (

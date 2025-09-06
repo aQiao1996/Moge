@@ -20,7 +20,7 @@ catalogs:
     '@nestjs/testing': ^10.4.5
     '@prisma/client': 6.15.0
     '@radix-ui/react-label': ^2.1.7
-    '@radix-ui/react-slot': ^1.2.3
+    '@radix-ui/react-slot': 1.2.3
     '@tailwindcss/postcss': 4.1.12
     '@types/express': ^5.0.0
     '@types/jest': ^29.5.12

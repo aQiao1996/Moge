@@ -1,7 +1,14 @@
 import Providers from './providers';
 import SettingInjector from './components/SettingInjector';
 import { cookies } from 'next/headers';
+import type { Metadata } from 'next';
 import './styles/index.css';
+
+export const metadata: Metadata = {
+  title: '墨阁',
+  description: '墨阁描述',
+  icons: { icon: '/favicon.ico', apple: '/favicon.ico' },
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = cookies().get('theme')?.value || 'light';

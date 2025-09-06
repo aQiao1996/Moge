@@ -59,4 +59,13 @@
   .font-han {
     font-family: var(--font-han);
   }
+  /* 玻璃通用工具 */
+  .glass {
+    background: var(--moge-card-bg);
+    border: 1px solid var(--moge-card-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 0.75rem;
+    box-shadow: var(--moge-glow-card);
+  }
 }

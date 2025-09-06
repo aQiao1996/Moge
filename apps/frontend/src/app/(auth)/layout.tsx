@@ -5,14 +5,12 @@ import { hanFont } from '../font';
 import dynamic from 'next/dynamic';
 
 // 异步加载
-const FloatingDots = dynamic(
-  () => import('./components/FloatingDots').then((mod) => mod.FloatingDots),
-  { ssr: false }
-);
-const AuthSetting = dynamic(
-  () => import('../components/AuthSetting').then((mod) => mod.AuthSetting),
-  { ssr: false }
-);
+const FloatingDots = dynamic(() => import('./components/FloatingDots').then((mod) => mod.default), {
+  ssr: false,
+});
+const AuthSetting = dynamic(() => import('../components/AuthSetting').then((mod) => mod.default), {
+  ssr: false,
+});
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
