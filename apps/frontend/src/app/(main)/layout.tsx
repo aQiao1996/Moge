@@ -14,7 +14,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 cursor-pointer text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]" />
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-[var(--moge-primary-400)]" />
-              <span className="font-han text-base font-bold">墨阁</span>
+              <span className="font-han text-2xl font-bold">墨阁</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
