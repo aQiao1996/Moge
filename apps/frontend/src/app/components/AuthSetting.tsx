@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useSettings } from '@/stores/settings';
 import { useState } from 'react';
 
-export default function AuthSetting() {
+export default function AuthSetting({ isAbsolute = true }) {
   const { theme, lang, setTheme, setLang } = useSettings();
 
   const [themeAnim, setThemeAnim] = useState('');
@@ -22,7 +22,7 @@ export default function AuthSetting() {
   };
 
   return (
-    <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+    <div className={`right-4 top-4 z-10 flex items-center gap-2 ${isAbsolute ? 'absolute' : ''}`}>
       {/* 换肤 */}
       <Button
         onClick={handleTheme}
