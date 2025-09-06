@@ -23,10 +23,13 @@
     "packages/*"
   ],
   "dependencies": {
+    "@hookform/resolvers": "catalog:",
     "@icons-pack/react-simple-icons": "catalog:",
     "@prisma/client": "catalog:",
     "lucide-react": "catalog:",
     "next-auth": "catalog:",
+    "react-hook-form": "catalog:",
+    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
