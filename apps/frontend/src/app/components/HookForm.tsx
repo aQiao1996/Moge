@@ -14,6 +14,8 @@ type HookFormProps<T extends FieldValues> = {
   fields: FieldDef<T>[];
   loading?: boolean;
   submitText?: string;
+  cancelText?: string;
+  onCancel?: () => void;
   renderControl: (
     field: ControllerRenderProps<T, FieldPath<T>>,
     name: FieldPath<T>
@@ -26,6 +28,8 @@ export default function HookForm<T extends FieldValues>({
   fields,
   loading,
   submitText = '提交',
+  cancelText,
+  onCancel,
   renderControl,
   onSubmit,
 }: HookFormProps<T>) {
@@ -53,16 +57,24 @@ export default function HookForm<T extends FieldValues>({
           />
         ))}
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="from-moge-primary-400 to-moge-primary-500 h-10 w-full bg-gradient-to-r text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-          style={{
-            boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
-          }}
-        >
-          {loading ? `${submitText}中...` : submitText}
-        </Button>
+        {/* 底部按钮区 */}
+        <div className="flex justify-end gap-2">
+          {cancelText && (
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              {cancelText}
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="from-moge-primary-400 to-moge-primary-500 h-10 bg-gradient-to-r text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
+            }}
+          >
+            {loading ? `${submitText}中...` : submitText}
+          </Button>
+        </div>
       </form>
     </Form>
   );
