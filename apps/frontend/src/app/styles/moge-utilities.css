@@ -56,4 +56,7 @@
   .bg-moge-particle {
     background-color: var(--moge-particle);
   }
+  .font-han {
+    font-family: var(--font-han);
+  }
 }
