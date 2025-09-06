@@ -11,3 +11,5 @@ export const signupSchema = z
     message: '两次密码不一致',
     path: ['confirm'],
   });
+
+export type SignupValues = z.infer<typeof signupSchema>;

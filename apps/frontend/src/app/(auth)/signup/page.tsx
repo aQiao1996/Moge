@@ -2,23 +2,12 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type * as z from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
-import { signupSchema } from '@/schemas/signup';
-
-type SignupValues = z.infer<typeof signupSchema>;
+import HookForm from '@/app/components/HookForm';
+import { signupSchema, type SignupValues } from '@/schemas/signup';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,7 +19,6 @@ export default function SignupPage() {
     defaultValues: { account: '', password: '', confirm: '' },
   });
 
-  // 打印 + 跳转
   const onSubmit = (values: SignupValues) => {
     console.log('🚀 ~ 注册字段:', values);
     setLoading(true);
@@ -56,89 +44,33 @@ export default function SignupPage() {
       <p style={{ color: 'var(--moge-text-sub)' }} className="mt-1 text-center text-sm">
         注册后即可体验 AI 小说生成
       </p>
-      {/* 注册表单   */}
-      <Form {...form}>
-        <form onSubmit={void form.handleSubmit(onSubmit)} className="mt-5 space-y-4">
-          {/* 账号 */}
-          <FormField
-            control={form.control}
-            name="account"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
-                  账号
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    id="account"
-                    type="text"
-                    placeholder="请输入账号"
-                    {...field}
-                    className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-                  />
-                </FormControl>
-                <FormMessage className="mt-1 text-xs text-red-400" />
-              </FormItem>
-            )}
+      {/* 表单 */}
+      <HookForm
+        form={form}
+        fields={[
+          { name: 'account', label: '账号' },
+          { name: 'password', label: '密码' },
+          { name: 'confirm', label: '确认密码' },
+        ]}
+        loading={loading}
+        onSubmit={onSubmit}
+        submitText="注册"
+        renderControl={(field, name) => (
+          <Input
+            type={name === 'confirm' || name === 'password' ? 'password' : 'text'}
+            placeholder={
+              name === 'confirm'
+                ? '再次输入密码'
+                : name === 'password'
+                  ? '请输入密码'
+                  : '请输入账号'
+            }
+            {...field}
+            className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
           />
-          {/* 密码 */}
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
-                  密码
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="请输入密码"
-                    {...field}
-                    className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-                  />
-                </FormControl>
-                <FormMessage className="mt-1 text-xs text-red-400" />
-              </FormItem>
-            )}
-          />
-          {/* 确认密码 */}
-          <FormField
-            control={form.control}
-            name="confirm"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
-                  确认密码
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    id="confirm"
-                    type="password"
-                    placeholder="再次输入密码"
-                    {...field}
-                    className="input-moge mt-1 w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-                  />
-                </FormControl>
-                <FormMessage className="mt-1 text-xs text-red-400" />
-              </FormItem>
-            )}
-          />
-          {/* 提交按钮 */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="from-moge-primary-400 to-moge-primary-500 h-10 w-full bg-gradient-to-r text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
-            }}
-          >
-            {loading ? '注册中...' : '注册'}
-          </Button>
-        </form>
-      </Form>
-      {/* 登录提示 */}
+        )}
+      />
+      {/* 登录链接 */}
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
         已有账户？
         <Link
