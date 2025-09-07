@@ -10,7 +10,7 @@ export default function MainHeader() {
 
   return (
     <>
-      <header className="glass relative z-20 overflow-hidden border-b-0">
+      <header className="relative z-20 overflow-hidden border-b border-[var(--moge-card-border)]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <Menu

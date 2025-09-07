@@ -12,7 +12,6 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import AuthSetting from '@/app/components/AuthSetting';
 
 const nav = [
   { icon: Sparkles, label: '我的大纲', href: '/' },
@@ -26,7 +25,7 @@ export default function AppSidebar() {
     <UISidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <Sparkles className="h-5 w-5 text-[var(--moge-primary-400)]" />
+          <Sparkles className="h-6 w-6 text-[var(--moge-primary-400)]" />
           <span className="font-han text-2xl font-bold">墨阁</span>
         </div>
       </SidebarHeader>
@@ -51,7 +50,9 @@ export default function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <AuthSetting isAbsolute={false} />
+        <p className="font-han brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 text-base">
+          AI 生成 · 小说世界 · 无限灵感
+        </p>
       </SidebarFooter>
     </UISidebar>
   );
