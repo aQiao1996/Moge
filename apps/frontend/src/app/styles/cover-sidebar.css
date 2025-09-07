@@ -1,0 +1,23 @@
+/* ===== LIGHT 模式 ===== */
+:root {
+  --sidebar: var(--moge-card-bg) !important; /* 卡片玻璃底 */
+  --sidebar-foreground: var(--moge-text-main) !important; /* 主文字 */
+  --sidebar-primary: var(--moge-primary-400) !important; /* 高亮项 */
+  --sidebar-primary-foreground: var(--moge-btn-text) !important; /* 高亮项文字 */
+  --sidebar-accent: var(--moge-btn-hover) !important; /* hover 底色 */
+  --sidebar-accent-foreground: var(--moge-text-main) !important; /* hover 文字 */
+  --sidebar-border: var(--moge-card-border) !important; /* 边杠 */
+  --sidebar-ring: var(--moge-primary-400) !important; /* 聚焦光环 */
+}
+
+/* ===== DARK 模式===== */
+.dark {
+  --sidebar: rgba(0, 0, 0, 0.2) !important; /* 深玻璃底 */
+  --sidebar-foreground: var(--moge-text-main) !important; /* 纯白文字 */
+  --sidebar-primary: var(--moge-primary-400) !important; /* 赛博青蓝 */
+  --sidebar-primary-foreground: #ffffff !important;
+  --sidebar-accent: rgba(255, 255, 255, 0.1) !important; /* 浅灰 hover */
+  --sidebar-accent-foreground: var(--moge-text-main) !important;
+  --sidebar-border: var(--moge-border-light) !important; /* 10% 白边 */
+  --sidebar-ring: var(--moge-primary-400) !important; /* 冰蓝光环 */
+}

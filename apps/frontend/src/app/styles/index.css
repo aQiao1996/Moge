@@ -3,6 +3,7 @@
 @import './moge-light.css';
 @import './moge-dark.css';
 @import './moge-utilities.css';
+@import './cover-sidebar.css';
 
 @custom-variant dark (&:is(.dark *));
 
