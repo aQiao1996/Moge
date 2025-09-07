@@ -2,10 +2,11 @@
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from './components/AppSidebar';
 import MainHeader from './components/MainHeader';
+import { hanFont } from '@/app/font';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider className={`${hanFont.variable}`}>
       <AppSidebar />
       <SidebarInset className="relative min-h-screen">
         <MainHeader />
