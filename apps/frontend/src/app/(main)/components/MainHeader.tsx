@@ -1,20 +1,22 @@
 'use client';
 
-import { Menu, Sparkles, User } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthSetting from '@/app/components/AuthSetting';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export default function MainHeader() {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <>
       <header className="glass relative z-20 overflow-hidden border-b-0">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Menu className="h-5 w-5 cursor-pointer text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]" />
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[var(--moge-primary-400)]" />
-              <span className="font-han text-2xl font-bold">墨阁</span>
-            </div>
+            <Menu
+              className="h-5 w-5 cursor-pointer text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]"
+              onClick={toggleSidebar}
+            />
           </div>
           <div className="flex items-center gap-2">
             <AuthSetting isAbsolute={false} />
