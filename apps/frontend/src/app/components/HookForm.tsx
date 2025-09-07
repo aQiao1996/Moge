@@ -3,6 +3,7 @@
 import { Form, FormField } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import type { FieldValues, UseFormReturn, FieldPath, ControllerRenderProps } from 'react-hook-form';
+import type { FormEvent } from 'react';
 
 type FieldDef<T extends FieldValues> = {
   name: FieldPath<T>;
@@ -35,7 +36,7 @@ export default function HookForm<T extends FieldValues>({
 }: HookFormProps<T>) {
   return (
     <Form {...form}>
-      <form onSubmit={void form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit) as (e: FormEvent) => void} className="space-y-4">
         {fields.map((f) => (
           <FormField
             key={f.name}
