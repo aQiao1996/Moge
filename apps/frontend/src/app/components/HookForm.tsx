@@ -1,6 +1,12 @@
-// src/components/HookForm.tsx
 'use client';
-import { Form, FormField } from '@/components/ui/form';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import type { FieldValues, UseFormReturn, FieldPath, ControllerRenderProps } from 'react-hook-form';
 import type { FormEvent } from 'react';
@@ -8,6 +14,7 @@ import type { FormEvent } from 'react';
 type FieldDef<T extends FieldValues> = {
   name: FieldPath<T>;
   label: string;
+  required?: boolean;
 };
 
 type HookFormProps<T extends FieldValues> = {
@@ -43,17 +50,16 @@ export default function HookForm<T extends FieldValues>({
             control={form.control}
             name={f.name}
             render={({ field }) => (
-              <div>
-                <label className="mb-1 block text-sm" style={{ color: 'var(--moge-text-sub)' }}>
+              <FormItem>
+                <FormLabel
+                  className={`mb-1 block text-sm ${f.required ? 'label-required' : ''}`}
+                  style={{ color: 'var(--moge-text-sub)' }}
+                >
                   {f.label}
-                </label>
-                {renderControl(field, f.name)}
-                {form.formState.errors[f.name] && (
-                  <p className="mt-1 text-xs text-red-400">
-                    {(form.formState.errors[f.name]?.message as string | undefined) || ''}
-                  </p>
-                )}
-              </div>
+                </FormLabel>
+                <FormControl>{renderControl(field, f.name)}</FormControl>
+                <FormMessage className="mt-1 text-xs text-red-400" />
+              </FormItem>
             )}
           />
         ))}
@@ -64,7 +70,7 @@ export default function HookForm<T extends FieldValues>({
             <Button
               type="button"
               onClick={onCancel}
-              className="h-10 rounded-md bg-gray-400 px-4 py-2 text-base text-gray-100 shadow-[0_4px_14px_0_rgba(0,0,0,.2)] transition-all duration-300 hover:shadow-[0_6px_20px_0_rgba(0,0,0,.25)] hover:brightness-100"
+              className="h-10 rounded-md bg-gray-400 px-4 py-2 text-base text-gray-100 shadow-[0_4px_14px_0_rgba(0,0,0,.2)] transition-all duration-300 hover:shadow-[0_6px_20px_0_rgba(0,0,0,.25)] hover:brightness-110"
             >
               {cancelText}
             </Button>

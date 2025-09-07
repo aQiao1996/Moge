@@ -68,4 +68,16 @@
     border-radius: 0.75rem;
     box-shadow: var(--moge-glow-card);
   }
+  /* 必填项标记 */
+  .label-required {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .label-required::after {
+    content: '*';
+    color: var(--moge-danger, #ef4444);
+    font-size: 1.2rem;
+    line-height: 1;
+  }
 }

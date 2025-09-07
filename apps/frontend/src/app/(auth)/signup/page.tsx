@@ -48,9 +48,9 @@ export default function SignupPage() {
       <HookForm
         form={form}
         fields={[
-          { name: 'account', label: '账号' },
-          { name: 'password', label: '密码' },
-          { name: 'confirm', label: '确认密码' },
+          { name: 'account', label: '账号', required: true },
+          { name: 'password', label: '密码', required: true },
+          { name: 'confirm', label: '确认密码', required: true },
         ]}
         loading={loading}
         onSubmit={onSubmit}

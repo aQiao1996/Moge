@@ -97,8 +97,8 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
         <HookForm
           form={form}
           fields={[
-            { name: 'name', label: '小说名称' },
-            { name: 'type', label: '小说类型' },
+            { name: 'name', label: '小说名称', required: true },
+            { name: 'type', label: '小说类型', required: true },
             { name: 'era', label: '故事时代' },
             { name: 'conflict', label: '核心冲突' },
             { name: 'remark', label: '备注' },

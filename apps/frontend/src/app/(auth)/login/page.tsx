@@ -49,8 +49,8 @@ export default function LoginPage() {
       <HookForm
         form={form}
         fields={[
-          { name: 'account', label: '账号' },
-          { name: 'password', label: '密码' },
+          { name: 'account', label: '账号', required: true },
+          { name: 'password', label: '密码', required: true },
         ]}
         loading={loading}
         onSubmit={onSubmit}
