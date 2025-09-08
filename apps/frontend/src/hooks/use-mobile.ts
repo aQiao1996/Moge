@@ -2,6 +2,11 @@ import * as React from 'react';
 
 const MOBILE_BREAKPOINT = 768;
 
+/**
+ * 检测是否为移动端
+ * 移动端 breakpoint 为 768px
+ * @returns 是否为移动端
+ */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
 
