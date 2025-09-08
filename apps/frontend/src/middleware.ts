@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 // 白名单
 const WHITE_LIST = ['/login', '/register'];

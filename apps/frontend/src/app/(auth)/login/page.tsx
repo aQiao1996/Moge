@@ -19,7 +19,7 @@ export default function LoginPage() {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
-    defaultValues: { account: '', password: '' },
+    defaultValues: { username: '', password: '' },
   });
 
   const onSubmit = (values: LoginValues) => {
@@ -49,14 +49,14 @@ export default function LoginPage() {
       <HookForm
         form={form}
         fields={[
-          { name: 'account', label: '账号', required: true },
+          { name: 'username', label: '账号', required: true },
           { name: 'password', label: '密码', required: true },
         ]}
         loading={loading}
         onSubmit={onSubmit}
         submitText="登录"
         renderControl={(field, name) =>
-          name === 'account' ? (
+          name === 'username' ? (
             <Input
               type="text"
               placeholder="用户名 / 邮箱"
