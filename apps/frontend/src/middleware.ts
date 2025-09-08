@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// 白名单
+const WHITE_LIST = ['/login', '/register'];
+
 export function middleware(req: NextRequest) {
-  const theme = req.cookies.get('theme')?.value || 'light';
-  const res = NextResponse.next();
-  // 让服务端直出的 HTML 就是 dark
-  if (theme === 'dark') {
-    res.headers.set('x-dark-mode', '1'); // 可选，调试用
+  const { pathname } = req.nextUrl;
+
+  // 白名单直接放过
+  if (WHITE_LIST.includes(pathname)) {
+    return NextResponse.next();
   }
-  return res;
+
+  // 其它路径必须带 token
+  const token = req.cookies.get('token')?.value;
+  if (!token) {
+    // 307 重定向到登录，同时记下原本想去的地方，方便扩展
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
 }
 
+// 只拦截页面请求，放过静态资源与 API
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
