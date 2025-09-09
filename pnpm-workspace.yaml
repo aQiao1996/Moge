@@ -36,9 +36,9 @@ catalogs:
     '@types/react': ^19
     '@types/react-dom': ^19
     '@types/supertest': ^6.0.2
-    '@typescript-eslint/eslint-plugin': ^7.0.0
-    '@typescript-eslint/parser': ^7.0.0
-    '@typescript-eslint/typescript-estree': ^7.0.0
+    '@typescript-eslint/eslint-plugin': ^8.0.0
+    '@typescript-eslint/parser': ^8.0.0
+    '@typescript-eslint/typescript-estree': ^8.0.0
     chokidar: ^4.0.0
     class-transformer: ^0.5.1
     class-validator: ^0.14.2
@@ -78,7 +78,7 @@ catalogs:
     ts-node: ^10.9.2
     tsconfig-paths: ^4.2.0
     tw-animate-css: ^1.3.8
-    typescript: 5.3.3
+    typescript: 5.7.2
     typescript-eslint: ^8.4.2
     zod: 4.1.5
     zustand: 5.0.8
