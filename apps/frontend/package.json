@@ -17,6 +17,7 @@
     "@radix-ui/react-separator": "catalog:",
     "@radix-ui/react-slot": "catalog:",
     "@radix-ui/react-tooltip": "catalog:",
+    "@trpc/client": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "lucide-react": "catalog:",

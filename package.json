@@ -26,6 +26,8 @@
     "@hookform/resolvers": "catalog:",
     "@icons-pack/react-simple-icons": "catalog:",
     "@prisma/client": "catalog:",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
     "lucide-react": "catalog:",
     "next-auth": "catalog:",
     "react-hook-form": "catalog:",

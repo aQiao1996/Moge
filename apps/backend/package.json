@@ -22,6 +22,7 @@
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@prisma/client": "catalog:",
+    "@trpc/server": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:"
   },
