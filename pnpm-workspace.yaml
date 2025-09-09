@@ -17,7 +17,6 @@ catalogs:
     '@nestjs/core': ^10.4.5
     '@nestjs/platform-express': ^10.4.5
     '@nestjs/schematics': ^10.0.0
-    '@nestjs/swagger': ^11.2.0
     '@nestjs/testing': ^10.4.5
     '@prisma/client': 6.15.0
     '@radix-ui/react-dialog': ^1.1.15

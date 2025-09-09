@@ -31,7 +31,6 @@
     "@eslint/js": "catalog:",
     "@nestjs/cli": "catalog:",
     "@nestjs/schematics": "catalog:",
-    "@nestjs/swagger": "catalog:",
     "@nestjs/testing": "catalog:",
     "@types/express": "catalog:",
     "@types/jest": "catalog:",
