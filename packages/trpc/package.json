@@ -1,0 +1,22 @@
+{
+  "name": "@moge/trpc",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.json",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@trpc/server": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "catalog:"
+  }
+}
