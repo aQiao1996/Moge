@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc && mkdir -p dist && cp eslint.config.mjs dist/",
-    "lint": "eslint . --config eslint.config.mjs --fix"
+    "lint": "eslint . --config eslint.config.mjs --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
   },
   "exports": {
     "./eslint.config": "./dist/eslint.config.mjs",

@@ -12,10 +12,7 @@
     "rootDir": ".",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "lib": ["ES2022", "dom", "decorators"],
-    "paths": {
-      "@moge/*": ["../*"]
-    }
+    "lib": ["ES2022", "dom", "decorators"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "*.mjs", "*.ts"]
 }

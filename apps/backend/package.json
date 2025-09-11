@@ -9,6 +9,8 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

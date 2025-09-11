@@ -8,12 +8,12 @@
     "emitDecoratorMetadata": true, // 为装饰器提供元数据支持
     "experimentalDecorators": true, // 启用实验性的装饰器支持
     "allowSyntheticDefaultImports": true, // 允许默认导入从没有设置默认导出的模块
-    "target": "ES5", // 指定ECMAScript目标版本
+    "target": "ES2020", // 指定ECMAScript目标版本
     "sourceMap": true, // 生成相应的 '.map' 文件
     "outDir": "./dist", // 指定输出目录
     "baseUrl": "./", // 解析非相对模块名的基准目录
     "incremental": true, // 启用增量编译
-    "composite": false, // 禁用复合项目模式
+    "composite": true, // 启用复合项目模式
     "skipLibCheck": true, // 跳过库文件的类型检查
     "strictNullChecks": false, // 在严格的null检查模式下编译
     "noImplicitAny": false, // 在表达式和声明上有隐含的'any'类型时报错
