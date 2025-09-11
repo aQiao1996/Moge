@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
-    "composite": true,
+    "composite": false, // 前端应用不需要被其他项目引用
     "plugins": [{ "name": "next" }],
     // 路径映射，用于简化模块导入
     "paths": {

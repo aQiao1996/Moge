@@ -11,6 +11,10 @@
     "start": "node dist/main",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -53,8 +57,7 @@
     "supertest": "catalog:",
     "ts-jest": "catalog:",
     "ts-loader": "catalog:",
-    "ts-node": "catalog:",
-    "tsconfig-paths": "catalog:"
+    "ts-node": "catalog:"
   },
   "jest": {
     "moduleFileExtensions": [

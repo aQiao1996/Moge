@@ -8,7 +8,8 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "composite": true // 启用复合项目模式，支持被其他项目引用
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]

@@ -13,7 +13,7 @@
     "outDir": "./dist", // 指定输出目录
     "baseUrl": "./", // 解析非相对模块名的基准目录
     "incremental": true, // 启用增量编译
-    "composite": true, // 启用复合项目模式
+    "composite": false, // 禁用复合项目模式，解决路径解析问题
     "skipLibCheck": true, // 跳过库文件的类型检查
     "strictNullChecks": false, // 在严格的null检查模式下编译
     "noImplicitAny": false, // 在表达式和声明上有隐含的'any'类型时报错

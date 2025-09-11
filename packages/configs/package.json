@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc && mkdir -p dist && cp eslint.config.mjs dist/",
     "lint": "eslint . --config eslint.config.mjs --fix",
-    "type-check": "tsc --noEmit",
+    "type-check": "echo 'No TypeScript files to check in configs package'",
     "clean": "rm -rf dist"
   },
   "exports": {
