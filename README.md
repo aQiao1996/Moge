@@ -3,9 +3,9 @@
 ### 安装依赖
 
 ```bash
-node -v # 18.18.0
+node -v # >=18.18.0
 npm install pnpm -g
-pnpm -v # 10.5.0
+pnpm -v # >=10.5.0
 pnpm install
 ```
 
