@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@hookform/resolvers": "catalog:",
     "@icons-pack/react-simple-icons": "catalog:",
     "@moge/configs": "workspace:*",
     "@moge/trpc": "workspace:*",
@@ -29,14 +30,15 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
-    "zustand": "catalog:"
+    "zustand": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@eslint/eslintrc": "catalog:",
     "@eslint/js": "catalog:",
-    "@hookform/resolvers": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
@@ -44,9 +46,7 @@
     "eslint": "catalog:",
     "eslint-config-next": "catalog:",
     "postcss": "catalog:",
-    "react-hook-form": "catalog:",
     "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:",
-    "zod": "catalog:"
+    "tw-animate-css": "catalog:"
   }
 }

@@ -22,20 +22,6 @@
     "apps/*",
     "packages/*"
   ],
-  "dependencies": {
-    "@hookform/resolvers": "catalog:",
-    "@icons-pack/react-simple-icons": "catalog:",
-    "@prisma/client": "catalog:",
-    "@tanstack/react-query": "catalog:",
-    "@trpc/client": "catalog:",
-    "@trpc/react-query": "catalog:",
-    "@trpc/server": "catalog:",
-    "lucide-react": "catalog:",
-    "next-auth": "catalog:",
-    "react-hook-form": "catalog:",
-    "zod": "catalog:",
-    "zustand": "catalog:"
-  },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
     "@changesets/cli": "catalog:",
@@ -55,15 +41,7 @@
     "typescript-eslint": "catalog:"
   },
   "lint-staged": {
-    "apps/backend/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config packages/configs/eslint.config.mjs --fix",
-      "prettier --write"
-    ],
-    "apps/frontend/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config packages/configs/eslint.config.mjs --fix",
-      "prettier --write"
-    ],
-    "packages/**/*.{ts,tsx,js,jsx}": [
+    "{apps,packages}/**/*.{ts,tsx,js,jsx}": [
       "eslint --config packages/configs/eslint.config.mjs --fix",
       "prettier --write"
     ],
