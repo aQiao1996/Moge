@@ -4,6 +4,7 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// * ==================== 配置 ====================
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -12,4 +13,49 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// * ==================== 用户表 ====================
+model users {
+  id              Int        @id @default(autoincrement())
+  /// 用户登录账号，全局唯一
+  username        String     @unique
+  /// 用户邮箱，第三方登录时使用，全局唯一
+  email           String?    @unique
+  /// 邮箱验证通过的时间，未验证则为空
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  /// bcrypt 哈希后的密码；OAuth 用户此处为空
+  passwordHash    String?    @map("password_hash")
+  /// 昵称
+  name            String?
+  /// 头像 URL
+  avatarUrl       String?
+  /// 记录创建时间
+  createdAt       DateTime   @default(now()) @map("created_at")
+  /// 记录更新时间
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  /// 该用户绑定的所有第三方账号
+  accounts        accounts[]
+}
+
+// * ==================== 第三方账号关联表 ====================
+model accounts {
+  id                Int      @id @default(autoincrement())
+  /// 关联的用户 id
+  userId            Int      @map("user_id")
+  /// 第三方提供商名称，例如 github / gitlab 
+  provider          String
+  /// 第三方返回的 uid（字符串）
+  providerAccountId String   @map("provider_account_id")
+  /// 原始 provider 数据，存 tokens、avatar_url 等 JSON
+  providerData      Json?    @map("provider_data")
+  /// 创建时间
+  createdAt         DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
