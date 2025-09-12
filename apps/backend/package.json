@@ -31,6 +31,8 @@
     "@nestjs/platform-express": "catalog:",
     "@prisma/client": "catalog:",
     "@trpc/server": "catalog:",
+    "bcryptjs": "catalog:",
+    "jsonwebtoken": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "zod": "catalog:"
@@ -45,6 +47,8 @@
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "@types/supertest": "catalog:",
+    "@types/bcryptjs": "catalog:",
+    "@types/jsonwebtoken": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "eslint": "catalog:",
