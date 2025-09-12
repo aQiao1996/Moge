@@ -31,10 +31,12 @@ async function bootstrap() {
   // * 注册全局守卫 执行在 拦截器 之前 执行在 中间件 之后
   // app.useGlobalGuards(new AuthGuard());
   await app.listen(process.env.PORT || 8888, () => {
-    console.log(`🚀 ~ main.ts ~ 启动成功,端口号: ${process.env.PORT}`);
+    console.log(`🚀 ~ main.ts ~ 启动成功,端口号: ${process.env.DATABASE_PORT}`);
     console.log(`🚀 ~ main.ts ~ 当前运行环境: ${process.env.NODE_ENV || '环境错误'}`);
     console.log(`🚀 ~ main.ts ~ 当前数据库类型: ${process.env.DATABASE_TYPE || '数据库类型错误'}`);
-    console.log(`🚀 ~ main.ts ~ 当前数据库名称: ${process.env.DATABASE_NAME || '数据库名称错误'}`);
+    console.log(
+      `🚀 ~ main.ts ~ 当前数据库名称: ${process.env.DATABASE_USERNAME || '数据库名称错误'}`
+    );
   });
 }
 void bootstrap();

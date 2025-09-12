@@ -26,6 +26,7 @@
     "@moge/trpc": "workspace:*",
     "@moge/types": "workspace:*",
     "@nestjs/common": "catalog:",
+    "@nestjs/config": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@prisma/client": "catalog:",
