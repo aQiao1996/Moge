@@ -2,6 +2,7 @@ import Providers from './providers';
 import SettingInjector from './components/SettingInjector';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
+import { Toaster } from '@/components/ui/sonner'; // 导入 Toaster 组件
 import './styles/index.css';
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SettingInjector />
         <Providers>{children}</Providers>
+        <Toaster richColors position="top-center" duration={2000} />
       </body>
     </html>
   );

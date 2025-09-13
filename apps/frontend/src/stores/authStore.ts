@@ -11,10 +11,10 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   error: string | null;
-  login: (params: LoginParams) => Promise<void>;
-  register: (params: RegisterParams) => Promise<void>;
-  logout: () => void;
-  getCurrentUser: () => Promise<void>;
+  loginApi: (params: LoginParams) => Promise<void>;
+  registerApi: (params: RegisterParams) => Promise<void>;
+  logoutApi: () => void;
+  getCurrentUserApi: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
        * 用户登录
        * @param params - 登录所需的用户名和密码
        */
-      login: async (params: LoginParams) => {
+      loginApi: async (params: LoginParams) => {
         set({ isLoading: true, error: null });
         try {
           const result = await trpcClient.auth.login.mutate(params);
@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
        * 用户注册
        * @param params - 注册所需的信息
        */
-      register: async (params: RegisterParams) => {
+      registerApi: async (params: RegisterParams) => {
         set({ isLoading: true, error: null });
         try {
           const result = await trpcClient.auth.register.mutate(params);
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
        * 用户登出
        * @description 清除用户认证信息和状态
        */
-      logout: () => {
+      logoutApi: () => {
         set({ user: null, token: null, error: null });
       },
 
@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>()(
        * 获取当前登录用户信息
        * @description 如果存在 token,则尝试从后端获取用户信息
        */
-      getCurrentUser: async () => {
+      getCurrentUserApi: async () => {
         const { token } = get();
         if (!token) return;
 

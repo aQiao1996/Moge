@@ -16,7 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   // 使用 Zustand store 管理登录状态
-  const { login, isLoading, clearError } = useAuthStore();
+  const { loginApi, isLoading, clearError } = useAuthStore();
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -25,21 +25,17 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginValues) => {
-    console.log('🚀 ~ page.tsx:26 ~ onSubmit ~ values:', values);
-
-    // 清除之前的错误信息
+    // 清除之前的错误状态（包括 store 和 toast）
     clearError();
+    toast.dismiss();
 
     try {
       // 使用 Zustand store 中的 login 方法
-      await login(values);
-
+      await loginApi(values);
       toast.success('登录成功');
-
       // 跳转到首页
       setTimeout(() => router.push('/'), 1000);
     } catch (error) {
-      console.error('登录错误:', error);
       // 错误信息已经在 store 中处理，这里只需要显示 toast
       const errorMessage = error instanceof Error ? error.message : '登录失败，请重试';
       toast.error(errorMessage);
