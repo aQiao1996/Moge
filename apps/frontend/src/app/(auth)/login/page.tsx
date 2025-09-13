@@ -1,7 +1,6 @@
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import HookForm from '@/app/components/HookForm';
@@ -11,10 +10,13 @@ import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { SiGitlab } from '@icons-pack/react-simple-icons';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // 使用 Zustand store 管理登录状态
+  const { login, isLoading, clearError } = useAuthStore();
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -22,11 +24,29 @@ export default function LoginPage() {
     defaultValues: { username: '', password: '' },
   });
 
-  const onSubmit = (values: LoginValues) => {
+  const onSubmit = async (values: LoginValues) => {
     console.log('🚀 ~ page.tsx:26 ~ onSubmit ~ values:', values);
-    setLoading(true);
-    toast.success('提交成功');
-    setTimeout(() => router.push('/'), 1000);
+
+    // 清除之前的错误信息
+    clearError();
+
+    try {
+      // 使用 Zustand store 中的 login 方法
+      await login({
+        username: values.username,
+        password: values.password,
+      });
+
+      toast.success('登录成功');
+
+      // 跳转到首页
+      setTimeout(() => router.push('/'), 1000);
+    } catch (error) {
+      console.error('登录错误:', error);
+      // 错误信息已经在 store 中处理，这里只需要显示 toast
+      const errorMessage = error instanceof Error ? error.message : '登录失败，请重试';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -52,8 +72,8 @@ export default function LoginPage() {
           { name: 'username', label: '账号', required: true },
           { name: 'password', label: '密码', required: true },
         ]}
-        loading={loading}
-        onSubmit={onSubmit}
+        loading={isLoading}
+        onSubmit={void onSubmit}
         submitText="登录"
         renderControl={(field, name) =>
           name === 'username' ? (

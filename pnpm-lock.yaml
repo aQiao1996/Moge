@@ -574,6 +574,15 @@ importers:
 
   packages/trpc:
     dependencies:
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.87.1(react@18.3.1)
+      '@trpc/client':
+        specifier: 'catalog:'
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.7.2))(typescript@5.7.2)
+      '@trpc/react-query':
+        specifier: 'catalog:'
+        version: 11.5.1(@tanstack/react-query@5.87.1(react@18.3.1))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.2))(typescript@5.7.2))(@trpc/server@11.5.1(typescript@5.7.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.7.2)
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.5.1(typescript@5.7.2)

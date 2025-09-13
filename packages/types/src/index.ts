@@ -1,13 +1,9 @@
-export interface User {
-  id: number;
-  username: string;
-  email?: string | null;
-  name?: string | null;
-  avatarUrl?: string | null;
-}
+/**
+ * 共享类型定义统一导出
+ */
 
-export interface ApiResponse<T> {
-  data: T;
-  message: string;
-  code: number;
-}
+// 导出认证相关类型
+export * from './auth';
+
+// 导出 API 相关类型
+export * from './api';
