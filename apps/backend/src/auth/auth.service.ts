@@ -58,7 +58,7 @@ export class AuthService {
     );
 
     return {
-      user: userInfo,
+      user: { ...userInfo, id: userInfo.id.toString() },
       token,
     };
   }
@@ -110,7 +110,7 @@ export class AuthService {
     );
 
     return {
-      user,
+      user: { ...user, id: user.id.toString() },
       token,
     };
   }
@@ -145,7 +145,7 @@ export class AuthService {
         });
       }
 
-      return user;
+      return { ...user, id: user.id.toString() };
     } catch {
       throw new TRPCError({
         code: 'UNAUTHORIZED',
