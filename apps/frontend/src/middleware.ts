@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 // 白名单
-const WHITE_LIST = ['/login', '/register'];
+const WHITE_LIST = ['/login', '/signup'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
