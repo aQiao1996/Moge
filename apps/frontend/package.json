@@ -13,7 +13,6 @@
     "@hookform/resolvers": "catalog:",
     "@icons-pack/react-simple-icons": "catalog:",
     "@moge/configs": "workspace:*",
-    "@moge/trpc": "workspace:*",
     "@moge/types": "workspace:*",
     "@radix-ui/react-dialog": "catalog:",
     "@radix-ui/react-label": "catalog:",

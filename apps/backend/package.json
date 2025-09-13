@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@moge/configs": "workspace:*",
-    "@moge/trpc": "workspace:*",
     "@moge/types": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
