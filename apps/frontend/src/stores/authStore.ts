@@ -42,19 +42,10 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const result = await authApi.login(params);
-
-          set({
-            user: result.user,
-            token: result.token,
-            isLoading: false,
-            error: null,
-          });
+          set({ user: result.user, token: result.token, isLoading: false, error: null });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '登录失败';
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          set({ isLoading: false, error: errorMessage });
           throw error;
         }
       },
@@ -68,18 +59,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const result = await authApi.register(params);
 
-          set({
-            user: result.user,
-            token: result.token,
-            isLoading: false,
-            error: null,
-          });
+          set({ user: result.user, token: result.token, isLoading: false, error: null });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '注册失败';
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
+          set({ isLoading: false, error: errorMessage });
           throw error;
         }
       },
@@ -88,11 +71,7 @@ export const useAuthStore = create<AuthState>()(
        * 用户登出
        */
       logout: () => {
-        set({
-          user: null,
-          token: null,
-          error: null,
-        });
+        set({ user: null, token: null, error: null });
       },
 
       /**
@@ -106,11 +85,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const user = await authApi.getCurrentUser(token);
-          set({
-            user,
-            isLoading: false,
-            error: null,
-          });
+          set({ user, isLoading: false, error: null });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '获取用户信息失败';
           set({
@@ -142,10 +117,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage', // localStorage 中的键名
       storage: createJSONStorage(() => localStorage),
       // 只持久化 user 和 token，不持久化 loading 和 error 状态
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-      }),
+      partialize: (state) => ({ user: state.user, token: state.token }),
     }
   )
 );

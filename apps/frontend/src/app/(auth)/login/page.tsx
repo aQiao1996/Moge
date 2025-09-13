@@ -32,10 +32,7 @@ export default function LoginPage() {
 
     try {
       // 使用 Zustand store 中的 login 方法
-      await login({
-        username: values.username,
-        password: values.password,
-      });
+      await login(values);
 
       toast.success('登录成功');
 
