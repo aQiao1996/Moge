@@ -27,9 +27,12 @@ export const setAuthTokenGetter = (getter: () => string | null) => {
  * @returns API 基础 URL 字符串
  */
 function getBaseUrl(): string {
+  // 浏览器环境, 返回相对路径, 请求将通过 Next.js 代理
   if (typeof window !== 'undefined') return '';
+  // Vercel 部署环境
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return `http://localhost:${process.env.PORT ?? 3001}`;
+  // SSR 或其他服务器环境：使用环境变量中定义的 API 地址, 默认为 8888 端口
+  return process.env.API_URL ?? 'http://localhost:8888';
 }
 
 /**
@@ -45,7 +48,8 @@ export const api = createTRPCReact<AppRouter>();
 export const trpcClient = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${getBaseUrl()}/api/trpc`,
+      // 注意: 浏览器中 url 为 /api/trpc, 服务器中为 http://.../trpc
+      url: typeof window === 'undefined' ? `${getBaseUrl()}/trpc` : '/api/trpc',
       /**
        * 自动将认证 token 注入到每个请求的 header 中
        */
