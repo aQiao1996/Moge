@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -10,13 +11,10 @@ import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { SiGitlab } from '@icons-pack/react-simple-icons';
-import { useAuthStore } from '@/stores/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
-
-  // 使用 Zustand store 管理登录状态
-  const { loginApi, isLoading, clearError } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -25,18 +23,26 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginValues) => {
-    // 清除之前的错误状态（包括 store 和 toast）
-    clearError();
     toast.dismiss();
+    setIsLoading(true);
 
     try {
-      await loginApi(values);
-      toast.success('登录成功');
-      setTimeout(() => router.push('/'), 1000);
+      const result = await signIn('credentials', {
+        ...values,
+        redirect: false, // 设置为 false, signIn 不会自动跳转, 而是返回一个结果对象
+      });
+
+      if (result?.ok) {
+        toast.success('登录成功');
+        setTimeout(() => router.push('/'), 1000);
+      } else {
+        toast.error(result?.error || '用户名或密码错误');
+      }
     } catch (error) {
-      // 错误信息已经在 store 中处理，这里只需要显示 toast
       const errorMessage = error instanceof Error ? error.message : '登录失败，请重试';
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 

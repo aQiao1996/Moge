@@ -1,60 +1,75 @@
 /**
- * tRPC React Query 客户端 & Vanilla 客户端
+ * tRPC 客户端
+ * 该文件导出了两种客户端:
+ * 1. trpcClient: 用于客户端。它会自动从 authStore 获取 token 并附加到请求头。
+ * 2. publicTrpcClient: 用于服务端。它是一个不带任何认证逻辑的公共客户端。
  */
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
 import type { AppRouter } from '@moge/types';
 
+// --- 基础配置 ---
+
 /**
- * 存储获取 token 的方法
- * @internal
+ * 获取 API 基础 URL
  */
+function getBaseUrl(): string {
+  if (typeof window !== 'undefined') return '';
+  if (process.env.VERCEL_URL) return `httpshttps://${process.env.VERCEL_URL}`;
+  return process.env.API_URL ?? 'http://localhost:8888';
+}
+
+/**
+ * 获取 tRPC 接口的完整 URL
+ */
+const getTrpcUrl = () => {
+  // 在浏览器中, 所有请求都走 Next.js 代理
+  if (typeof window !== 'undefined') {
+    return '/api/trpc';
+  }
+  // 在服务器中, 直接访问后端地址
+  // 注意: 公共客户端(用于登录)和认证客户端(登录后)访问的后端路径是一样的
+  return `${getBaseUrl()}/trpc`;
+};
+
+// --- 公共客户端 (用于服务端, 如 NextAuth authorize) ---
+
+/**
+ * 公共 tRPC 客户端, 不包含任何认证逻辑
+ */
+export const publicTrpcClient = createTRPCProxyClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: getTrpcUrl(true),
+    }),
+  ],
+});
+
+// --- 认证客户端 (用于客户端) ---
+
 let getToken: () => string | null = () => null;
 
 /**
- * 设置获取认证 token 的方法
- * @param getter - 一个返回 token 或 null 的函数
- * @description
- * 此函数用于从外部模块 (如 authStore) 向 tRPC 客户端注入获取 token 的能力,
- * 以此来打破模块间的循环依赖。
+ * 注入一个从 authStore 获取 token 的方法, 以打破循环依赖
  */
 export const setAuthTokenGetter = (getter: () => string | null) => {
   getToken = getter;
 };
 
 /**
- * 获取 API 基础 URL
- * @returns API 基础 URL 字符串
- */
-function getBaseUrl(): string {
-  // 浏览器环境, 返回相对路径, 请求将通过 Next.js 代理
-  if (typeof window !== 'undefined') return '';
-  // Vercel 部署环境
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  // SSR 或其他服务器环境：使用环境变量中定义的 API 地址, 默认为 8888 端口
-  return process.env.API_URL ?? 'http://localhost:8888';
-}
-
-/**
- * tRPC React Hooks 客户端
- * @description 用于在 React 组件中调用 API,提供 useQuery, useMutation 等 hooks。
+ * React Hooks 客户端 (用于组件)
  */
 export const api = createTRPCReact<AppRouter>();
 
 /**
- * tRPC Vanilla 客户端
- * @description 用于在非 React 组件环境 (如 store, server-side) 中调用 API。
+ * Vanilla 认证客户端 (用于 store 或组件外部)
  */
 export const trpcClient = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
-      // 注意: 浏览器中 url 为 /api/trpc, 服务器中为 http://.../trpc
-      url: typeof window === 'undefined' ? `${getBaseUrl()}/trpc` : '/api/trpc',
-      /**
-       * 自动将认证 token 注入到每个请求的 header 中
-       */
+      url: getTrpcUrl(),
       headers() {
-        const token = getToken(); // 调用注入的 getter 方法获取 token
+        const token = getToken();
         return {
           ...(token && { Authorization: `Bearer ${token}` }),
         };

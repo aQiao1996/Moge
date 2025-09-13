@@ -51,11 +51,9 @@ export class AuthService {
     const { passwordHash, ...userInfo } = user;
     void passwordHash;
 
-    const token = jwt.sign(
-      { userId: user.id, username: user.username },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '7d' }
-    );
+    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
 
     return {
       user: { ...userInfo, id: userInfo.id.toString() },
@@ -103,11 +101,9 @@ export class AuthService {
       },
     });
 
-    const token = jwt.sign(
-      { userId: user.id, username: user.username },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '7d' }
-    );
+    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
 
     return {
       user: { ...user, id: user.id.toString() },

@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -7,12 +8,12 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import HookForm from '@/app/components/HookForm';
 import { signupSchema, type SignupValues } from '@/schemas/signup';
-import { useAuthStore } from '@/stores/authStore';
+import { trpcClient } from '@/lib/trpc';
+import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const router = useRouter();
-  // 从全局 store 获取注册方法和状态
-  const { registerApi, isLoading, clearError } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -20,21 +21,36 @@ export default function SignupPage() {
     defaultValues: { username: '', password: '', confirm: '' },
   });
 
-  /**
-   * 表单提交处理函数
-   */
   const onSubmit = async (values: SignupValues) => {
-    // 清除之前的错误状态
-    clearError();
     toast.dismiss();
+    setIsLoading(true);
 
     try {
-      await registerApi({ username: values.username, password: values.password });
-      toast.success('注册成功');
-      setTimeout(() => router.push('/login'), 1000);
+      await trpcClient.auth.register.mutate({
+        username: values.username,
+        password: values.password,
+      });
+
+      toast.success('注册成功！正在为您登录...');
+
+      // 注册成功后, 自动调用 signIn 为用户登录
+      const signInResult = await signIn('credentials', {
+        username: values.username,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (signInResult?.ok) {
+        setTimeout(() => router.push('/'), 1000);
+      } else {
+        toast.error(signInResult?.error || '自动登录失败, 请手动登录');
+        setTimeout(() => router.push('/login'), 1000);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '注册失败，请重试';
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,7 +78,7 @@ export default function SignupPage() {
           { name: 'password', label: '密码', required: true },
           { name: 'confirm', label: '确认密码', required: true },
         ]}
-        loading={isLoading} // 使用 store 中的全局 loading 状态
+        loading={isLoading}
         onSubmit={onSubmit}
         submitText="注册"
         renderControl={(field, name) => (

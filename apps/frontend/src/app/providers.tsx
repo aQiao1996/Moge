@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { useState } from 'react';
 import { api, trpcClient } from '@/lib/trpc';
+import { AuthStoreSyncer } from '@/app/components/AuthStoreSyncer';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -12,7 +13,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 1000, // 5 seconds
+            staleTime: 5 * 1000, // 5s
           },
         },
       })
@@ -21,7 +22,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <api.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <AuthStoreSyncer />
+          {children}
+        </SessionProvider>
       </QueryClientProvider>
     </api.Provider>
   );

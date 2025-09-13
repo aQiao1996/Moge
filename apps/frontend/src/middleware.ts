@@ -1,29 +1,30 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { withAuth } from 'next-auth/middleware';
 
-// 白名单
-const WHITE_LIST = ['/login', '/signup'];
+// 定义不需要登录即可访问的公开页面路径
+const publicPaths = ['/login', '/signup'];
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export default withAuth({
+  callbacks: {
+    /**
+     * `authorized` 回调用于决定用户是否有权访问一个页面
+     * 它会在中间件匹配到的每个页面上运行
+     */
+    authorized: ({ req, token }) => {
+      const pathname = req.nextUrl.pathname;
 
-  // 白名单直接放过
-  if (WHITE_LIST.includes(pathname)) {
-    return NextResponse.next();
-  }
+      // 1. 如果用户访问的是公开页面, 直接放行
+      if (publicPaths.some((path) => pathname.startsWith(path))) {
+        return true;
+      }
 
-  // 其它路径必须带 token
-  const token = req.cookies.get('token')?.value;
-  if (!token) {
-    // 307 重定向到登录，同时记下原本想去的地方，方便扩展
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+      // 2. 对于其他所有页面, 用户必须拥有 token (即已登录) 才能访问
+      return !!token;
+    },
+  },
+});
 
-  return NextResponse.next();
-}
-
-// 只拦截页面请求，放过静态资源与 API
+// 配置中间件需要拦截的路径
+// 我们希望它拦截所有页面请求, 但放过静态资源和 next-auth 自己的 API 路由
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/|_next/static|_next/image|favicon.ico).*)'],
 };
