@@ -28,7 +28,7 @@ type HookFormProps<T extends FieldValues> = {
     field: ControllerRenderProps<T, FieldPath<T>>,
     name: FieldPath<T>
   ) => React.ReactNode;
-  onSubmit: (values: T) => void;
+  onSubmit: (values: T) => Promise<void> | void;
 };
 
 export default function HookForm<T extends FieldValues>({

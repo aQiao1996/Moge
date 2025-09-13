@@ -73,7 +73,7 @@ export default function LoginPage() {
           { name: 'password', label: '密码', required: true },
         ]}
         loading={isLoading}
-        onSubmit={void onSubmit}
+        onSubmit={onSubmit}
         submitText="登录"
         renderControl={(field, name) =>
           name === 'username' ? (
