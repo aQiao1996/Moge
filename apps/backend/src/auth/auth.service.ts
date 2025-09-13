@@ -5,10 +5,20 @@ import * as jwt from 'jsonwebtoken';
 import { TRPCError } from '@trpc/server';
 import type { User } from '@moge/types';
 
+/**
+ * 用户认证服务
+ * 提供用户登录、注册、Token 验证等核心功能
+ */
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * 用户登录
+   * @param username 用户名
+   * @param password 密码
+   * @returns 用户信息和访问令牌
+   */
   async login(username: string, password: string) {
     const user = await this.prisma.users.findUnique({
       where: { username },
@@ -41,9 +51,11 @@ export class AuthService {
     const { passwordHash, ...userInfo } = user;
     void passwordHash;
 
-    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET || 'fallback-secret',
+      { expiresIn: '7d' }
+    );
 
     return {
       user: userInfo,
@@ -51,6 +63,14 @@ export class AuthService {
     };
   }
 
+  /**
+   * 用户注册
+   * @param username 用户名
+   * @param password 密码
+   * @param email 邮箱（可选）
+   * @param name 昵称（可选）
+   * @returns 用户信息和访问令牌
+   */
   async register(username: string, password: string, email?: string, name?: string) {
     const existingUser = await this.prisma.users.findFirst({
       where: {
@@ -95,6 +115,11 @@ export class AuthService {
     };
   }
 
+  /**
+   * 验证访问令牌
+   * @param token JWT 访问令牌
+   * @returns 用户信息
+   */
   async verifyToken(token: string): Promise<User> {
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET) as {

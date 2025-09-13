@@ -5,6 +5,10 @@ import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { User } from '@moge/types';
 
+/**
+ * tRPC 服务
+ * 负责创建 tRPC 上下文和路由
+ */
 @Injectable()
 export class TrpcService {
   constructor(
@@ -12,7 +16,14 @@ export class TrpcService {
     private prismaService: PrismaService
   ) {}
 
+  /**
+   * 创建 tRPC 上下文
+   * 从请求头中解析用户认证信息
+   */
   createContext = async ({ req }: trpcExpress.CreateExpressContextOptions): Promise<Context> => {
+    /**
+     * 从请求头中获取用户信息
+     */
     const getUserFromHeader = async (): Promise<User | undefined> => {
       if (req.headers.authorization) {
         const token = req.headers.authorization.replace('Bearer ', '');
@@ -34,5 +45,8 @@ export class TrpcService {
     };
   };
 
+  /**
+   * tRPC 应用路由实例
+   */
   appRouter = appRouter;
 }
