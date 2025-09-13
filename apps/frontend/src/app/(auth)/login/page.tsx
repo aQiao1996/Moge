@@ -30,10 +30,8 @@ export default function LoginPage() {
     toast.dismiss();
 
     try {
-      // 使用 Zustand store 中的 login 方法
       await loginApi(values);
       toast.success('登录成功');
-      // 跳转到首页
       setTimeout(() => router.push('/'), 1000);
     } catch (error) {
       // 错误信息已经在 store 中处理，这里只需要显示 toast

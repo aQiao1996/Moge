@@ -1,32 +1,41 @@
 'use client';
-import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import HookForm from '@/app/components/HookForm';
 import { signupSchema, type SignupValues } from '@/schemas/signup';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function SignupPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  // 从全局 store 获取注册方法和状态
+  const { registerApi, isLoading, clearError } = useAuthStore();
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
     mode: 'onChange',
-    defaultValues: { account: '', password: '', confirm: '' },
+    defaultValues: { username: '', password: '', confirm: '' },
   });
 
-  const onSubmit = (values: SignupValues) => {
-    console.log('🚀 ~ 注册字段:', values);
-    setLoading(true);
-    toast.success('字段已打印，2 秒后跳转首页');
-    setTimeout(() => {
-      setLoading(false);
-      router.push('/');
-    }, 2000);
+  /**
+   * 表单提交处理函数
+   */
+  const onSubmit = async (values: SignupValues) => {
+    // 清除之前的错误状态
+    clearError();
+    toast.dismiss();
+
+    try {
+      await registerApi({ username: values.username, password: values.password });
+      toast.success('注册成功');
+      setTimeout(() => router.push('/login'), 1000);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '注册失败，请重试';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -44,15 +53,16 @@ export default function SignupPage() {
       <p style={{ color: 'var(--moge-text-sub)' }} className="mt-1 text-center text-sm">
         注册后即可体验 AI 小说生成
       </p>
+
       {/* 表单 */}
       <HookForm
         form={form}
         fields={[
-          { name: 'account', label: '账号', required: true },
+          { name: 'username', label: '账号', required: true },
           { name: 'password', label: '密码', required: true },
           { name: 'confirm', label: '确认密码', required: true },
         ]}
-        loading={loading}
+        loading={isLoading} // 使用 store 中的全局 loading 状态
         onSubmit={onSubmit}
         submitText="注册"
         renderControl={(field, name) => (
@@ -70,6 +80,7 @@ export default function SignupPage() {
           />
         )}
       />
+
       {/* 登录链接 */}
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
         已有账户？

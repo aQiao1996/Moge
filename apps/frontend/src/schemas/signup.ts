@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const signupSchema = z
   .object({
-    account: z.string().min(1, '账号不能为空'),
+    username: z.string().min(1, '账号不能为空'),
     password: z.string().min(6, '密码至少 6 位'),
     confirm: z.string().min(1, '请再次输入密码'),
   })
