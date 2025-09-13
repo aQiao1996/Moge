@@ -40,7 +40,7 @@ const getTrpcUrl = () => {
 export const publicTrpcClient = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: getTrpcUrl(true),
+      url: getTrpcUrl(),
     }),
   ],
 });

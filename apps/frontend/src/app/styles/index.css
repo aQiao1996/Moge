@@ -124,3 +124,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* --- 覆盖浏览器自动填充样式 --- */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    /* 强制修改文字颜色为主题的主文字颜色 */
+    -webkit-text-fill-color: var(--moge-text-main) !important;
+    /* 使用一个巨大的内阴影来覆盖背景色, 精确使用卡片背景色 */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    /* 使用超长 transition 技巧来防止浏览器样式覆盖 */
+    transition: background-color 9999s ease-in-out 0s;
+}
