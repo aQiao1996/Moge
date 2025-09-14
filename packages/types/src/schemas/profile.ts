@@ -1,4 +1,4 @@
-import { updateProfileSchema } from '@/schemas/user';
+import { updateProfileSchema } from './user';
 import { z } from 'zod';
 
 export const profileSchema = updateProfileSchema.pick({

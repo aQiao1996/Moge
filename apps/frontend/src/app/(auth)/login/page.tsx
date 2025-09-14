@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import HookForm from '@/app/components/HookForm';
-import { loginSchema, type LoginValues } from '@/schemas/login';
+import { loginSchema, type LoginValues } from '@moge/types';
 import { Input } from '@/components/ui/input';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';

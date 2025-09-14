@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import HookForm from '@/app/components/HookForm';
-import { signupSchema, type SignupValues } from '@/schemas/signup';
+import { signupSchema, type SignupValues } from '@moge/types';
 import { trpcClient } from '@/lib/trpc';
 import { signIn } from 'next-auth/react';
 

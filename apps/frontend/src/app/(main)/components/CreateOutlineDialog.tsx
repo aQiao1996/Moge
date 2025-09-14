@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FilePlus } from 'lucide-react';
 import HookForm from '@/app/components/HookForm';
-import { createOutlineSchema, CreateOutlineValues } from '@/schemas/outline';
+import { createOutlineSchema, CreateOutlineValues } from '@moge/types';
 
 type Props = {
   open: boolean;

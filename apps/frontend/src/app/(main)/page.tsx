@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import CreateOutlineDialog from './components/CreateOutlineDialog';
 import OutlineList, { type Outline } from './components/OutlineList';
-import type { CreateOutlineValues } from '@/schemas/outline';
+import type { CreateOutlineValues } from '@moge/types';
 
 export default function Home() {
   const [list, setList] = useState<Outline[]>([]);

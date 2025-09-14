@@ -1,24 +1,6 @@
 import type { User } from './user';
 
 /**
- * 登录请求参数
- */
-export interface LoginParams {
-  username: string;
-  password: string;
-}
-
-/**
- * 注册请求参数
- */
-export interface RegisterParams {
-  username: string;
-  password: string;
-  email?: string;
-  name?: string;
-}
-
-/**
  * 认证响应结果
  */
 export interface AuthResponse {

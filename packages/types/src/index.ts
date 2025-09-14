@@ -10,3 +10,10 @@ export * from './user';
 
 // 导出 API 相关类型
 export * from './api';
+
+// export zod schemas
+export * from './schemas/login';
+export * from './schemas/signup';
+export * from './schemas/user';
+export * from './schemas/profile';
+export * from './schemas/outline';

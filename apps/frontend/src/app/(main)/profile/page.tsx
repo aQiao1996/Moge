@@ -16,7 +16,7 @@ import {
   profileSchema,
   type PasswordValues,
   type ProfileValues,
-} from '@/schemas/profile';
+} from '@moge/types';
 
 export default function ProfilePage() {
   const { update } = useSession();
