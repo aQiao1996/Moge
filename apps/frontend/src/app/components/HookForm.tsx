@@ -29,6 +29,7 @@ type HookFormProps<T extends FieldValues> = {
     name: FieldPath<T>
   ) => React.ReactNode;
   onSubmit: (values: T) => Promise<void> | void;
+  submitButtonClassName?: string; // Add this line
 };
 
 export default function HookForm<T extends FieldValues>({
@@ -40,6 +41,7 @@ export default function HookForm<T extends FieldValues>({
   onCancel,
   renderControl,
   onSubmit,
+  submitButtonClassName, // Add this line
 }: HookFormProps<T>) {
   return (
     <Form {...form}>
@@ -78,7 +80,7 @@ export default function HookForm<T extends FieldValues>({
           <Button
             type="submit"
             disabled={loading}
-            className={`from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 ${cancelText ? '' : 'w-full'}`}
+            className={`from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 ${cancelText ? '' : 'w-full'} ${submitButtonClassName}`}
             style={{
               boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
             }}

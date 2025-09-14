@@ -124,6 +124,7 @@ export default function ProfilePage() {
             loading={isProfileLoading}
             onSubmit={handleProfileSubmit}
             submitText="保存信息"
+            submitButtonClassName="w-30"
             renderControl={(field, name) => (
               <Input
                 type={name === 'email' ? 'email' : 'text'}
@@ -155,6 +156,7 @@ export default function ProfilePage() {
             loading={isPasswordLoading}
             onSubmit={handlePasswordSubmit}
             submitText="修改密码"
+            submitButtonClassName="w-30"
             renderControl={(field, name) => (
               <Input
                 type="password"
