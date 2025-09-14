@@ -90,31 +90,31 @@ export default function ProfilePage() {
       <div className="space-y-8 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0">
         {/* 个人信息卡片 */}
         <Card
-          className="border p-6 backdrop-blur-xl"
+          className="flex flex-col border p-6 backdrop-blur-xl"
           style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
         >
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-2xl text-[var(--moge-text-main)]">基本信息</CardTitle>
           </CardHeader>
-          <CardContent className="px-0">
-            <div className="mb-6 flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage
-                  src={session?.user?.image || 'https://github.com/shadcn.png'}
-                  alt={session?.user?.name || 'User Avatar'}
-                />
-                <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-xl font-semibold text-[var(--moge-text-main)]">
-                  {session?.user?.name}
-                </p>
-                <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+          <CardContent className="flex flex-grow flex-col justify-between px-0">
+            <div>
+              <div className="mb-6 flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage
+                    src={session?.user?.image || 'https://github.com/shadcn.png'}
+                    alt={session?.user?.name || 'User Avatar'}
+                  />
+                  <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xl font-semibold text-[var(--moge-text-main)]">
+                    {session?.user?.name}
+                  </p>
+                  <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+                </div>
               </div>
+              <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />
             </div>
-
-            <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />
-
             <HookForm
               form={profileForm}
               fields={[
@@ -139,13 +139,13 @@ export default function ProfilePage() {
 
         {/* 修改密码卡片 */}
         <Card
-          className="border p-6 backdrop-blur-xl"
+          className="flex flex-col border p-6 backdrop-blur-xl"
           style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
         >
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-2xl text-[var(--moge-text-main)]">修改密码</CardTitle>
           </CardHeader>
-          <CardContent className="px-0">
+          <CardContent className="flex flex-grow flex-col justify-end px-0">
             <HookForm
               form={passwordForm}
               fields={[
@@ -174,8 +174,7 @@ export default function ProfilePage() {
             />
           </CardContent>
         </Card>
-      </div>{' '}
-      {/* End of new div wrapping cards */}
+      </div>
     </div>
   );
 }
