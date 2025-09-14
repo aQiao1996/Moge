@@ -29,7 +29,7 @@ model users {
   /// 昵称
   name            String?
   /// 头像 URL
-  avatarUrl       String?
+  avatarUrl       String?    @map("avatar_url")
   /// 记录创建时间
   createdAt       DateTime   @default(now()) @map("created_at")
   /// 记录更新时间

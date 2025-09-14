@@ -11,6 +11,7 @@ import { z } from 'zod';
 import HookForm from '@/app/components/HookForm';
 import { toast } from 'sonner';
 import { trpcClient } from '@/lib/trpc';
+import { useAuthStore } from '@/stores/authStore';
 
 const profileSchema = z.object({
   name: z.string().min(1, '用户名不能为空'),
@@ -33,15 +34,16 @@ const passwordSchema = z
 type PasswordValues = z.infer<typeof passwordSchema>;
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession();
+  const { update } = useSession();
+  const user = useAuthStore((state) => state.user);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   const profileForm = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
+    values: {
+      name: user?.name || '',
+      email: user?.email || '',
     },
   });
 
@@ -101,16 +103,14 @@ export default function ProfilePage() {
               <div className="mb-6 flex items-center gap-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage
-                    src={session?.user?.image || 'https://github.com/shadcn.png'}
-                    alt={session?.user?.name || 'User Avatar'}
+                    src={user?.avatarUrl || 'https://github.com/shadcn.png'}
+                    alt={user?.name || 'User Avatar'}
                   />
-                  <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                  <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-xl font-semibold text-[var(--moge-text-main)]">
-                    {session?.user?.name}
-                  </p>
-                  <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+                  <p className="text-xl font-semibold text-[var(--moge-text-main)]">{user?.name}</p>
+                  <p className="text-sm text-[var(--moge-text-sub)]">{user?.email}</p>
                 </div>
               </div>
               <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />

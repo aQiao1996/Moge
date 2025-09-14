@@ -85,6 +85,7 @@ const authOptions: NextAuthOptions = {
         token.backendToken = user.backendToken;
         token.name = user.name;
         token.email = user.email;
+        token.image = user.image;
       }
       return token;
     },
@@ -96,6 +97,7 @@ const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.name = token.name;
         session.user.email = token.email;
+        session.user.image = token.image;
         session.backendToken = token.backendToken; // 将 backendToken 添加到 session 中
       }
       return session;
