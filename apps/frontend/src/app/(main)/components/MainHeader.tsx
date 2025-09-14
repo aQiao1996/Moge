@@ -32,7 +32,6 @@ export default function MainHeader() {
               <DropdownMenuTrigger asChild>
                 <div
                   title="个人中心"
-                  onClick={() => console.log('User icon clicked on div')}
                   style={{
                     borderColor: 'var(--moge-btn-border)',
                     backgroundColor: 'var(--moge-btn-bg)',
@@ -52,13 +51,16 @@ export default function MainHeader() {
                 }}
               >
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center">
+                  <Link href="/profile" className="flex cursor-pointer items-center">
                     <User className="mr-2 h-4 w-4" />
                     <span>个人中心</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator style={{ backgroundColor: 'var(--moge-divider)' }} />
-                <DropdownMenuItem onClick={() => void signOut()} className="flex items-center">
+                <DropdownMenuItem
+                  onClick={() => void signOut()}
+                  className="flex cursor-pointer items-center"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>退出登录</span>
                 </DropdownMenuItem>
