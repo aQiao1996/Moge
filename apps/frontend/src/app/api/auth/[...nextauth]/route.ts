@@ -63,6 +63,7 @@ const authOptions: NextAuthOptions = {
         // 后端返回的 user 和 token 将被 NextAuth 处理
         return {
           id: result.user.id,
+          username: result.user.username || result.user.email,
           name: result.user.name,
           email: result.user.email,
           image: result.user.avatarUrl,
@@ -82,6 +83,7 @@ const authOptions: NextAuthOptions = {
       // 初始登录时, `user` 对象是 authorize 函数返回的对象
       if (user) {
         token.id = user.id;
+        token.username = user.username;
         token.backendToken = user.backendToken;
         token.name = user.name;
         token.email = user.email;
@@ -93,8 +95,9 @@ const authOptions: NextAuthOptions = {
     // `session` callback 在客户端访问 session 时被调用
     session({ session, token }) {
       // 把 JWT 中的数据扩展到 session 对象上, 这样客户端就能通过 useSession() 获取
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id;
+        session.user.username = token.username;
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.image;

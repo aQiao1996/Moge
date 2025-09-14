@@ -92,6 +92,7 @@ export default function SignupPage() {
                   : '请输入账号'
             }
             {...field}
+            autoComplete={name === 'username' ? 'username' : 'new-password'}
             className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
           />
         )}

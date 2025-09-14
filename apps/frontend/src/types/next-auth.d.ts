@@ -8,6 +8,7 @@ declare module 'next-auth' {
     backendToken?: string; // 添加后端 token
     user: {
       id: string;
+      username: string;
       image?: string;
     } & DefaultSession['user'];
   }
@@ -16,6 +17,7 @@ declare module 'next-auth' {
    * 扩展 User 类型, 以便在 authorize 的返回值和 jwt 回调的 user 参数中携带 backendToken
    */
   interface User extends DefaultUser {
+    username?: string;
     backendToken?: string;
   }
 }
@@ -26,6 +28,7 @@ declare module 'next-auth/jwt' {
    */
   interface JWT {
     id?: string;
+    username?: string;
     backendToken?: string;
     image?: string;
   }

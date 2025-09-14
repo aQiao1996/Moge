@@ -17,6 +17,12 @@ type FieldDef<T extends FieldValues> = {
   required?: boolean;
 };
 
+type HiddenField = {
+  name: string;
+  value: string;
+  autoComplete: string;
+};
+
 type HookFormProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
   fields: FieldDef<T>[];
@@ -30,6 +36,7 @@ type HookFormProps<T extends FieldValues> = {
   ) => React.ReactNode;
   onSubmit: (values: T) => Promise<void> | void;
   submitButtonClassName?: string;
+  hiddenFields?: HiddenField[];
 };
 
 export default function HookForm<T extends FieldValues>({
@@ -42,10 +49,22 @@ export default function HookForm<T extends FieldValues>({
   renderControl,
   onSubmit,
   submitButtonClassName,
+  hiddenFields,
 }: HookFormProps<T>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit) as (e: FormEvent) => void} className="space-y-4">
+        {hiddenFields?.map((hf) => (
+          <input
+            key={hf.name}
+            type="text"
+            style={{ display: 'none' }}
+            name={hf.name}
+            autoComplete={hf.autoComplete}
+            defaultValue={hf.value}
+            readOnly
+          />
+        ))}
         {fields.map((f) => (
           <FormField
             key={f.name}

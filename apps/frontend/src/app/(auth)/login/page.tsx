@@ -78,6 +78,7 @@ export default function LoginPage() {
               type="text"
               placeholder="用户名 / 邮箱"
               {...field}
+              autoComplete="username"
               className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
             />
           ) : (
@@ -85,6 +86,7 @@ export default function LoginPage() {
               type="password"
               placeholder="请输入密码"
               {...field}
+              autoComplete="current-password"
               className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
             />
           )
