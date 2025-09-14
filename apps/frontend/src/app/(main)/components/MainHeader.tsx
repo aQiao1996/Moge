@@ -47,7 +47,7 @@ export default function MainHeader({ className }: { className?: string }) {
               <DropdownMenuContent
                 className="w-48"
                 style={{
-                  backgroundColor: 'var(--moge-card-bg)',
+                  backgroundColor: 'var(--moge-header-bg)',
                   borderColor: 'var(--moge-card-border)',
                   color: 'var(--moge-text-main)',
                 }}
