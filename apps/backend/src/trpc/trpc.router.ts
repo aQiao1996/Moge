@@ -70,6 +70,29 @@ export const appRouter = t.router({
       }),
 
     /**
+     * 第三方登录接口 (GitLab)
+     */
+    gitlabLogin: t.procedure
+      .input(
+        z.object({
+          provider: z.string(),
+          providerAccountId: z.string(),
+          email: z.email('邮箱格式不正确'),
+          name: z.string().optional(),
+          avatarUrl: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.authService.gitlabLogin(
+          input.provider,
+          input.providerAccountId,
+          input.email,
+          input.name,
+          input.avatarUrl
+        );
+      }),
+
+    /**
      * 获取当前登录用户信息
      */
     me: protectedProcedure.query(({ ctx }) => {

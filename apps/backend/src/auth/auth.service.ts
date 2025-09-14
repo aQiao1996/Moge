@@ -33,19 +33,13 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: '用户名或密码错误',
-      });
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户名或密码错误' });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: '用户名或密码错误',
-      });
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户名或密码错误' });
     }
 
     const { passwordHash, ...userInfo } = user;
@@ -86,21 +80,105 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await this.prisma.users.create({
-      data: {
-        username,
-        email,
-        name,
-        passwordHash: hashedPassword,
+      data: { username, email, name, passwordHash: hashedPassword },
+      select: { id: true, username: true, email: true, name: true, avatarUrl: true },
+    });
+
+    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    return {
+      user: { ...user, id: user.id.toString() },
+      token,
+    };
+  }
+
+  /**
+   * 第三方登录 (GitLab)
+   * @param provider 第三方提供商名称 (e.g., 'gitlab')
+   * @param providerAccountId 第三方用户 ID
+   * @param email 用户邮箱
+   * @param name 用户名
+   * @param avatarUrl 用户头像 URL
+   * @returns 用户信息和访问令牌
+   */
+  async gitlabLogin(
+    provider: string,
+    providerAccountId: string,
+    email: string,
+    name?: string,
+    avatarUrl?: string
+  ) {
+    // 查找是否已存在该第三方账号
+    const existingAccount = await this.prisma.accounts.findUnique({
+      where: {
+        provider_providerAccountId: { provider, providerAccountId },
       },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        name: true,
-        avatarUrl: true,
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, name: true, avatarUrl: true },
+        },
       },
     });
 
+    if (existingAccount) {
+      // 如果存在, 直接返回用户信息和 token
+      const token = jwt.sign(
+        { userId: existingAccount.user.id, username: existingAccount.user.username },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      return {
+        user: { ...existingAccount.user, id: existingAccount.user.id.toString() },
+        token,
+      };
+    }
+
+    // 如果第三方账号不存在, 检查是否已有同邮箱用户
+    let user = await this.prisma.users.findUnique({
+      where: { email },
+      select: { id: true, username: true, email: true, name: true, avatarUrl: true },
+    });
+
+    if (user) {
+      // 如果有同邮箱用户, 则将第三方账号绑定到该用户
+      await this.prisma.accounts.create({
+        data: {
+          userId: user.id,
+          provider,
+          providerAccountId,
+          providerData: { email, name, avatarUrl },
+        },
+      });
+    } else {
+      // 如果没有同邮箱用户, 则创建新用户和新第三方账号
+      // 生成一个唯一的用户名, 避免与现有用户名冲突
+      const baseUsername = name || email.split('@')[0];
+      let newUsername = baseUsername;
+      let usernameExists = await this.prisma.users.findUnique({ where: { username: newUsername } });
+      let counter = 1;
+      while (usernameExists) {
+        newUsername = `${baseUsername}${counter}`;
+        usernameExists = await this.prisma.users.findUnique({ where: { username: newUsername } });
+        counter++;
+      }
+
+      user = await this.prisma.users.create({
+        data: {
+          username: newUsername,
+          email,
+          name,
+          avatarUrl,
+          accounts: {
+            create: { provider, providerAccountId, providerData: { email, name, avatarUrl } },
+          },
+        },
+        select: { id: true, username: true, email: true, name: true, avatarUrl: true },
+      });
+    }
+
+    // 返回用户信息和 token
     const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
@@ -125,28 +203,16 @@ export class AuthService {
 
       const user = await this.prisma.users.findUnique({
         where: { id: payload.userId },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          name: true,
-          avatarUrl: true,
-        },
+        select: { id: true, username: true, email: true, name: true, avatarUrl: true },
       });
 
       if (!user) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: '用户不存在',
-        });
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户不存在' });
       }
 
       return { ...user, id: user.id.toString() };
     } catch {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Token 无效或已过期',
-      });
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Token 无效或已过期' });
     }
   }
 }

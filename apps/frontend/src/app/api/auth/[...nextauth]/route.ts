@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import NextAuth, { type NextAuthOptions } from 'next-auth';
-import GitlabProvider from 'next-auth/providers/gitlab';
+import GitlabProvider, { type GitLabProfile } from 'next-auth/providers/gitlab';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { publicTrpcClient } from '@/lib/trpc';
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   // 配置认证提供者
   providers: [
     // 自定义账号密码登录
@@ -50,6 +50,25 @@ export const authOptions: NextAuthOptions = {
     GitlabProvider({
       clientId: process.env.GITLAB_CLIENT_ID,
       clientSecret: process.env.GITLAB_CLIENT_SECRET,
+      profile: async (profile: GitLabProfile) => {
+        // 调用后端 tRPC 接口处理 GitLab 登录/注册逻辑
+        const result = await publicTrpcClient.auth.gitlabLogin.mutate({
+          provider: 'gitlab',
+          providerAccountId: profile.id.toString(),
+          email: profile.email,
+          name: profile.name || profile.username,
+          avatarUrl: profile.avatar_url,
+        });
+
+        // 后端返回的 user 和 token 将被 NextAuth 处理
+        return {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          image: result.user.avatarUrl,
+          backendToken: result.token,
+        };
+      },
     }),
   ],
 
