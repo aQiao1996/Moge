@@ -16,14 +16,8 @@ export function AuthStoreSyncer() {
 
   useEffect(() => {
     if (session?.user) {
-      // 当 session 存在时, 同步用户信息到 zustand store
-      // next-auth 使用 image, 我们内部使用 avatarUrl, 在这里做转换
-      const { image, ...restOfUser } = session.user;
-      const appUser: User = {
-        ...restOfUser,
-        avatarUrl: image,
-      };
-      setUser(appUser);
+      // session.user 的类型已经和我们内部的 User 类型匹配
+      setUser(session.user as User);
       // 同时, 将后端 token 设置给 tRPC client, 以便后续的 API 调用能携带认证信息
       setAuthTokenGetter(() => session.backendToken ?? null);
     } else {

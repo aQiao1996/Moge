@@ -22,6 +22,7 @@ import {
 export default function ProfilePage() {
   const { update } = useSession();
   const user = useAuthStore((state) => state.user);
+  console.log('🚀 ~ page.tsx:25 ~ ProfilePage ~ user:', user);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
@@ -47,7 +48,7 @@ export default function ProfilePage() {
     toast.dismiss();
     try {
       await trpcClient.user.updateProfile.mutate(values);
-      await update({ name: values.name, email: values.email });
+      await update({ ...values });
       toast.success('个人信息更新成功');
     } catch (error) {
       toast.error('更新个人信息失败');
@@ -110,8 +111,8 @@ export default function ProfilePage() {
               <HookForm
                 form={profileForm}
                 fields={[
-                  { name: 'name', label: '用户名', required: true },
-                  { name: 'email', label: '邮箱' },
+                  { name: 'name', label: '用户昵称', required: true },
+                  { name: 'email', label: '邮箱', required: true },
                 ]}
                 loading={isProfileLoading}
                 onSubmit={handleProfileSubmit}

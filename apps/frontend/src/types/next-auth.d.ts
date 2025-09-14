@@ -9,7 +9,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       username: string;
-      image?: string;
+      avatarUrl?: string;
     } & DefaultSession['user'];
   }
 
@@ -18,6 +18,7 @@ declare module 'next-auth' {
    */
   interface User extends DefaultUser {
     username?: string;
+    avatarUrl?: string;
     backendToken?: string;
   }
 }
@@ -30,6 +31,6 @@ declare module 'next-auth/jwt' {
     id?: string;
     username?: string;
     backendToken?: string;
-    image?: string;
+    avatarUrl?: string;
   }
 }

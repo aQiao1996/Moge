@@ -66,7 +66,7 @@ const authOptions: NextAuthOptions = {
           username: result.user.username || result.user.email,
           name: result.user.name,
           email: result.user.email,
-          image: result.user.avatarUrl,
+          avatarUrl: result.user.avatarUrl, // Use avatarUrl
           backendToken: result.token,
         };
       },
@@ -78,17 +78,23 @@ const authOptions: NextAuthOptions = {
 
   // 配置 Callbacks, 用于控制 session 和 token 的内容
   callbacks: {
-    // `jwt` callback 在创建或更新 JWT 时被调用
-    jwt({ token, user }) {
-      // 初始登录时, `user` 对象是 authorize 函数返回的对象
+    jwt({ token, user, trigger, session }) {
+      // 1. 初始登录: user 对象存在
       if (user) {
         token.id = user.id;
         token.username = user.username;
         token.backendToken = user.backendToken;
         token.name = user.name;
         token.email = user.email;
-        token.image = user.image;
+        token.avatarUrl = user.avatarUrl;
       }
+
+      // 2. 客户端更新 session: trigger 为 'update'
+      if (trigger === 'update' && session) {
+        // 将客户端传来的新 session 数据合并到 token 中
+        token = { ...token, ...session };
+      }
+
       return token;
     },
 
@@ -100,8 +106,8 @@ const authOptions: NextAuthOptions = {
         session.user.username = token.username;
         session.user.name = token.name;
         session.user.email = token.email;
-        session.user.image = token.image;
-        session.backendToken = token.backendToken; // 将 backendToken 添加到 session 中
+        session.user.avatarUrl = token.avatarUrl;
+        session.backendToken = token.backendToken;
       }
       return session;
     },
