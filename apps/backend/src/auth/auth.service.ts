@@ -153,8 +153,7 @@ export class AuthService {
       });
     } else {
       // 如果没有同邮箱用户, 则创建新用户和新第三方账号
-      // 生成一个唯一的用户名, 避免与现有用户名冲突
-      const baseUsername = name || email.split('@')[0];
+      const baseUsername = email;
       let newUsername = baseUsername;
       let usernameExists = await this.prisma.users.findUnique({ where: { username: newUsername } });
       let counter = 1;
