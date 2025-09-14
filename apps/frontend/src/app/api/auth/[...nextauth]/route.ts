@@ -79,7 +79,7 @@ const authOptions: NextAuthOptions = {
   // 配置 Callbacks, 用于控制 session 和 token 的内容
   callbacks: {
     jwt({ token, user, trigger, session }) {
-      // 1. 初始登录: user 对象存在
+      // 初始登录: user 对象存在
       if (user) {
         token.id = user.id;
         token.username = user.username;
@@ -89,7 +89,7 @@ const authOptions: NextAuthOptions = {
         token.avatarUrl = user.avatarUrl;
       }
 
-      // 2. 客户端更新 session: trigger 为 'update'
+      // 客户端更新 session: trigger 为 'update'
       if (trigger === 'update' && session) {
         // 将客户端传来的新 session 数据合并到 token 中
         token = { ...token, ...session };

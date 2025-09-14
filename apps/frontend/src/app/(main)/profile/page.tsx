@@ -22,7 +22,6 @@ import {
 export default function ProfilePage() {
   const { update } = useSession();
   const user = useAuthStore((state) => state.user);
-  console.log('🚀 ~ page.tsx:25 ~ ProfilePage ~ user:', user);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
