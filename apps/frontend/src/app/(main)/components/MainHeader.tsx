@@ -1,9 +1,17 @@
 'use client';
 
-import { Menu, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Menu, User, LogOut } from 'lucide-react';
 import AuthSetting from '@/app/components/AuthSetting';
 import { useSidebar } from '@/components/ui/sidebar';
+import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { signOut } from 'next-auth/react';
 
 export default function MainHeader() {
   const { toggleSidebar } = useSidebar();
@@ -20,17 +28,42 @@ export default function MainHeader() {
           </div>
           <div className="flex items-center gap-2">
             <AuthSetting isAbsolute={false} />
-            <Button
-              title="个人中心"
-              style={{
-                borderColor: 'var(--moge-btn-border)',
-                backgroundColor: 'var(--moge-btn-bg)',
-                color: 'var(--moge-btn-text)',
-              }}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border p-0 backdrop-blur-sm transition-transform hover:bg-[var(--moge-btn-hover)]"
-            >
-              <User className="h-4 w-4 text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div
+                  title="个人中心"
+                  onClick={() => console.log('User icon clicked on div')}
+                  style={{
+                    borderColor: 'var(--moge-btn-border)',
+                    backgroundColor: 'var(--moge-btn-bg)',
+                    color: 'var(--moge-btn-text)',
+                  }}
+                  className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border p-0 backdrop-blur-sm transition-transform hover:bg-[var(--moge-btn-hover)]"
+                >
+                  <User className="h-4 w-4 text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-48"
+                style={{
+                  backgroundColor: 'var(--moge-card-bg)',
+                  borderColor: 'var(--moge-card-border)',
+                  color: 'var(--moge-text-main)',
+                }}
+              >
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>个人中心</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator style={{ backgroundColor: 'var(--moge-divider)' }} />
+                <DropdownMenuItem onClick={() => void signOut()} className="flex items-center">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>退出登录</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

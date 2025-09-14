@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import type { AuthService } from '../auth/auth.service';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { UserService } from '../user/user.service'; // 导入 UserService
 import type { User } from '@moge/types';
 
 /**
@@ -10,6 +11,7 @@ import type { User } from '@moge/types';
 export interface Context {
   authService: AuthService;
   prismaService: PrismaService;
+  userService: UserService; // 添加 UserService
   user?: User;
 }
 
@@ -98,6 +100,58 @@ export const appRouter = t.router({
     me: protectedProcedure.query(({ ctx }) => {
       return ctx.user;
     }),
+
+    /**
+     * 修改密码接口
+     */
+    changePassword: protectedProcedure
+      .input(
+        z
+          .object({
+            currentPassword: z.string().min(1, '当前密码不能为空'),
+            newPassword: z.string().min(6, '密码至少6位'),
+            confirmNewPassword: z.string().min(1, '请再次输入新密码'),
+          })
+          .refine((data) => data.newPassword === data.confirmNewPassword, {
+            message: '两次输入的新密码不一致',
+            path: ['confirmNewPassword'],
+          })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户未登录' });
+        }
+        return ctx.authService.changePassword(
+          Number(ctx.user.id),
+          input.currentPassword,
+          input.newPassword
+        );
+      }),
+  }),
+
+  user: t.router({
+    /**
+     * 更新用户个人信息接口
+     */
+    updateProfile: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, '用户名不能为空').optional(),
+          email: z.email('请输入有效的邮箱地址').optional().or(z.literal('')),
+          avatarUrl: z.url('头像URL格式不正确').optional().or(z.literal('')),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户未登录' });
+        }
+        return ctx.userService.updateProfile(
+          Number(ctx.user.id),
+          input.name,
+          input.email,
+          input.avatarUrl
+        );
+      }),
   }),
 
   /**

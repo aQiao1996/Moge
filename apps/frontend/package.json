@@ -14,7 +14,9 @@
     "@icons-pack/react-simple-icons": "catalog:",
     "@moge/configs": "workspace:*",
     "@moge/types": "workspace:*",
+    "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "catalog:",
     "@radix-ui/react-select": "catalog:",
     "@radix-ui/react-separator": "catalog:",
@@ -34,8 +36,8 @@
     "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
-    "zustand": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@eslint/eslintrc": "catalog:",

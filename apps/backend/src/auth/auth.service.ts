@@ -214,4 +214,35 @@ export class AuthService {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Token 无效或已过期' });
     }
   }
+
+  /**
+   * 修改用户密码
+   * @param userId 用户ID
+   * @param currentPassword 当前密码
+   * @param newPassword 新密码
+   */
+  async changePassword(userId: number, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+
+    if (!user || !user.passwordHash) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: '用户不存在或未设置密码' });
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValidPassword) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: '当前密码不正确' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.users.update({
+      where: { id: userId },
+      data: { passwordHash: hashedPassword },
+    });
+
+    return { message: '密码修改成功' };
+  }
 }

@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TrpcModule } from './trpc/trpc.module';
+import { UserModule } from './user/user.module'; // 导入 UserModule
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TrpcModule } from './trpc/trpc.module';
     PrismaModule,
     AuthModule,
     TrpcModule,
+    UserModule, // 注册 UserModule
   ],
   controllers: [AppController],
   providers: [],

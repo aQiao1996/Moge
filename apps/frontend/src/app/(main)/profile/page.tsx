@@ -1,0 +1,177 @@
+'use client';
+import { useSession } from 'next-auth/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import HookForm from '@/app/components/HookForm';
+import { toast } from 'sonner';
+import { trpcClient } from '@/lib/trpc';
+
+const profileSchema = z.object({
+  name: z.string().min(1, '用户名不能为空'),
+  email: z.email('请输入有效的邮箱地址').optional().or(z.literal('')),
+});
+
+type ProfileValues = z.infer<typeof profileSchema>;
+
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, '当前密码不能为空'),
+    newPassword: z.string().min(6, '新密码至少6位'),
+    confirmNewPassword: z.string().min(1, '请再次输入新密码'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: '两次输入的新密码不一致',
+    path: ['confirmNewPassword'],
+  });
+
+type PasswordValues = z.infer<typeof passwordSchema>;
+
+export default function ProfilePage() {
+  const { data: session, update } = useSession();
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  const profileForm = useForm<ProfileValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+    },
+  });
+
+  const passwordForm = useForm<PasswordValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
+    },
+  });
+
+  const handleProfileSubmit = async (values: ProfileValues) => {
+    setIsProfileLoading(true);
+    toast.dismiss();
+    try {
+      await trpcClient.user.updateProfile.mutate(values);
+      await update({ name: values.name, email: values.email });
+      toast.success('个人信息更新成功');
+    } catch (error) {
+      toast.error('更新个人信息失败');
+      console.error('Failed to update profile:', error);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (values: PasswordValues) => {
+    setIsPasswordLoading(true);
+    toast.dismiss();
+    try {
+      await trpcClient.auth.changePassword.mutate(values);
+      toast.success('密码修改成功');
+      passwordForm.reset();
+    } catch (error) {
+      console.log('🚀 ~ page.tsx:87 ~ handlePasswordSubmit ~ error:', error);
+      toast.error('修改密码失败');
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-8">
+      <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">个人中心</h1>
+
+      {/* 个人信息卡片 */}
+      <Card
+        className="border p-6 backdrop-blur-xl"
+        style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+      >
+        <CardHeader className="px-0 pt-0">
+          <CardTitle className="text-2xl text-[var(--moge-text-main)]">基本信息</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          <div className="mb-6 flex items-center gap-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage
+                src={session?.user?.image || 'https://github.com/shadcn.png'}
+                alt={session?.user?.name || 'User Avatar'}
+              />
+              <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-xl font-semibold text-[var(--moge-text-main)]">
+                {session?.user?.name}
+              </p>
+              <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+            </div>
+          </div>
+
+          <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />
+
+          <HookForm
+            form={profileForm}
+            fields={[
+              { name: 'name', label: '用户名', required: true },
+              { name: 'email', label: '邮箱' },
+            ]}
+            loading={isProfileLoading}
+            onSubmit={handleProfileSubmit}
+            submitText="保存信息"
+            renderControl={(field, name) => (
+              <Input
+                type={name === 'email' ? 'email' : 'text'}
+                placeholder={name === 'name' ? '请输入用户名' : '请输入邮箱'}
+                {...field}
+                className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
+              />
+            )}
+          />
+        </CardContent>
+      </Card>
+
+      {/* 修改密码卡片 */}
+      <Card
+        className="border p-6 backdrop-blur-xl"
+        style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+      >
+        <CardHeader className="px-0 pt-0">
+          <CardTitle className="text-2xl text-[var(--moge-text-main)]">修改密码</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          <HookForm
+            form={passwordForm}
+            fields={[
+              { name: 'currentPassword', label: '当前密码', required: true },
+              { name: 'newPassword', label: '新密码', required: true },
+              { name: 'confirmNewPassword', label: '确认新密码', required: true },
+            ]}
+            loading={isPasswordLoading}
+            onSubmit={handlePasswordSubmit}
+            submitText="修改密码"
+            renderControl={(field, name) => (
+              <Input
+                type="password"
+                placeholder={
+                  name === 'currentPassword'
+                    ? '请输入当前密码'
+                    : name === 'newPassword'
+                      ? '请输入新密码'
+                      : '请再次输入新密码'
+                }
+                {...field}
+                className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
+              />
+            )}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

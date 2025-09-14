@@ -3,6 +3,7 @@ import * as trpcExpress from '@trpc/server/adapters/express';
 import { appRouter, type Context } from './trpc.router';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserService } from '../user/user.service'; // 导入 UserService
 import type { User } from '@moge/types';
 
 /**
@@ -13,7 +14,8 @@ import type { User } from '@moge/types';
 export class TrpcService {
   constructor(
     private authService: AuthService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private userService: UserService // 注入 UserService
   ) {}
 
   /**
@@ -41,6 +43,7 @@ export class TrpcService {
     return {
       authService: this.authService,
       prismaService: this.prismaService,
+      userService: this.userService,
       user,
     };
   };
