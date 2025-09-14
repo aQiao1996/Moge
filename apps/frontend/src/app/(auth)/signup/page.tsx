@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
+import { MogeInput } from '@/app/components/MogeInput';
 import HookForm from '@/app/components/HookForm';
 import { signupSchema, type SignupValues } from '@moge/types';
 import { trpcClient } from '@/lib/trpc';
@@ -82,7 +82,7 @@ export default function SignupPage() {
         onSubmit={onSubmit}
         submitText="注册"
         renderControl={(field, name) => (
-          <Input
+          <MogeInput
             type={name === 'confirm' || name === 'password' ? 'password' : 'text'}
             placeholder={
               name === 'confirm'
@@ -93,7 +93,6 @@ export default function SignupPage() {
             }
             {...field}
             autoComplete={name === 'username' ? 'username' : 'new-password'}
-            className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
           />
         )}
       />

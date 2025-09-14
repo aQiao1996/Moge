@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import HookForm from '@/app/components/HookForm';
 import { loginSchema, type LoginValues } from '@moge/types';
-import { Input } from '@/components/ui/input';
+import { MogeInput } from '@/app/components/MogeInput';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -74,20 +74,13 @@ export default function LoginPage() {
         submitText="登录"
         renderControl={(field, name) =>
           name === 'username' ? (
-            <Input
-              type="text"
-              placeholder="用户名 / 邮箱"
-              {...field}
-              autoComplete="username"
-              className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-            />
+            <MogeInput type="text" placeholder="用户名 / 邮箱" {...field} autoComplete="username" />
           ) : (
-            <Input
+            <MogeInput
               type="password"
               placeholder="请输入密码"
               {...field}
               autoComplete="current-password"
-              className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
             />
           )
         }

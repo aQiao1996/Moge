@@ -2,7 +2,7 @@
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
+import { MogeInput } from '@/app/components/MogeInput';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
@@ -118,11 +118,10 @@ export default function ProfilePage() {
                 submitText="保存信息"
                 submitButtonClassName="w-30"
                 renderControl={(field, name) => (
-                  <Input
+                  <MogeInput
                     type={name === 'email' ? 'email' : 'text'}
                     placeholder={name === 'name' ? '请输入用户名' : '请输入邮箱'}
                     {...field}
-                    className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
                   />
                 )}
               />
@@ -195,7 +194,7 @@ export default function ProfilePage() {
                 submitText="修改密码"
                 submitButtonClassName="w-30"
                 renderControl={(field, name) => (
-                  <Input
+                  <MogeInput
                     type="password"
                     placeholder={
                       name === 'currentPassword'
@@ -206,7 +205,6 @@ export default function ProfilePage() {
                     }
                     {...field}
                     autoComplete={name === 'currentPassword' ? 'current-password' : 'new-password'}
-                    className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
                   />
                 )}
               />
