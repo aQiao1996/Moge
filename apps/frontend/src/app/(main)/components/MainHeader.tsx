@@ -13,12 +13,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { signOut } from 'next-auth/react';
 
-export default function MainHeader() {
+export default function MainHeader({ className }: { className?: string }) {
   const { toggleSidebar } = useSidebar();
 
   return (
     <>
-      <header className="relative z-20 overflow-hidden border-b border-[var(--moge-card-border)]">
+      <header
+        className={`relative z-20 overflow-hidden border-b border-[var(--moge-card-border)] bg-[var(--moge-header-bg)] ${className}`}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <Menu

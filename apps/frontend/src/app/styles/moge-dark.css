@@ -20,6 +20,7 @@
   --moge-text-gradient-to: #0369a1;
   /* 卡片 - 深玻璃 */
   --moge-card-bg: rgba(0, 0, 0, 0.2); /* 卡片底 */
+  --moge-header-bg: #0a0a0b; /* 头部背景 */
   --moge-card-border: rgba(255, 255, 255, 0.1); /* 卡片边框 */
   /* 输入框 - 深玻璃 */
   --moge-input-border: rgba(255, 255, 255, 0.1);

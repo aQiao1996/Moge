@@ -24,6 +24,7 @@
   --moge-text-gradient-to: #38bdf8;
   /* 卡片 - 玻璃 */
   --moge-card-bg: rgba(255, 255, 255, 0.65);
+  --moge-header-bg: rgba(255, 255, 255); /* 头部背景 */
   --moge-card-border: rgba(56, 189, 248, 0.18);
   --moge-glow-card: 0 0 20px rgba(56, 189, 248, 0.15); /* 卡片光晕 */
   /* 输入框 - 玻璃 */
