@@ -87,93 +87,95 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">个人中心</h1>
-
-      {/* 个人信息卡片 */}
-      <Card
-        className="border p-6 backdrop-blur-xl"
-        style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-      >
-        <CardHeader className="px-0 pt-0">
-          <CardTitle className="text-2xl text-[var(--moge-text-main)]">基本信息</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0">
-          <div className="mb-6 flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage
-                src={session?.user?.image || 'https://github.com/shadcn.png'}
-                alt={session?.user?.name || 'User Avatar'}
-              />
-              <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-xl font-semibold text-[var(--moge-text-main)]">
-                {session?.user?.name}
-              </p>
-              <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+      <div className="space-y-8 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0">
+        {/* 个人信息卡片 */}
+        <Card
+          className="border p-6 backdrop-blur-xl"
+          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+        >
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-2xl text-[var(--moge-text-main)]">基本信息</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0">
+            <div className="mb-6 flex items-center gap-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage
+                  src={session?.user?.image || 'https://github.com/shadcn.png'}
+                  alt={session?.user?.name || 'User Avatar'}
+                />
+                <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-xl font-semibold text-[var(--moge-text-main)]">
+                  {session?.user?.name}
+                </p>
+                <p className="text-sm text-[var(--moge-text-sub)]">{session?.user?.email}</p>
+              </div>
             </div>
-          </div>
 
-          <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />
+            <Separator className="my-6" style={{ backgroundColor: 'var(--moge-divider)' }} />
 
-          <HookForm
-            form={profileForm}
-            fields={[
-              { name: 'name', label: '用户名', required: true },
-              { name: 'email', label: '邮箱' },
-            ]}
-            loading={isProfileLoading}
-            onSubmit={handleProfileSubmit}
-            submitText="保存信息"
-            submitButtonClassName="w-30"
-            renderControl={(field, name) => (
-              <Input
-                type={name === 'email' ? 'email' : 'text'}
-                placeholder={name === 'name' ? '请输入用户名' : '请输入邮箱'}
-                {...field}
-                className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-              />
-            )}
-          />
-        </CardContent>
-      </Card>
+            <HookForm
+              form={profileForm}
+              fields={[
+                { name: 'name', label: '用户名', required: true },
+                { name: 'email', label: '邮箱' },
+              ]}
+              loading={isProfileLoading}
+              onSubmit={handleProfileSubmit}
+              submitText="保存信息"
+              submitButtonClassName="w-30"
+              renderControl={(field, name) => (
+                <Input
+                  type={name === 'email' ? 'email' : 'text'}
+                  placeholder={name === 'name' ? '请输入用户名' : '请输入邮箱'}
+                  {...field}
+                  className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
+                />
+              )}
+            />
+          </CardContent>
+        </Card>
 
-      {/* 修改密码卡片 */}
-      <Card
-        className="border p-6 backdrop-blur-xl"
-        style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-      >
-        <CardHeader className="px-0 pt-0">
-          <CardTitle className="text-2xl text-[var(--moge-text-main)]">修改密码</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0">
-          <HookForm
-            form={passwordForm}
-            fields={[
-              { name: 'currentPassword', label: '当前密码', required: true },
-              { name: 'newPassword', label: '新密码', required: true },
-              { name: 'confirmNewPassword', label: '确认新密码', required: true },
-            ]}
-            loading={isPasswordLoading}
-            onSubmit={handlePasswordSubmit}
-            submitText="修改密码"
-            submitButtonClassName="w-30"
-            renderControl={(field, name) => (
-              <Input
-                type="password"
-                placeholder={
-                  name === 'currentPassword'
-                    ? '请输入当前密码'
-                    : name === 'newPassword'
-                      ? '请输入新密码'
-                      : '请再次输入新密码'
-                }
-                {...field}
-                className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
-              />
-            )}
-          />
-        </CardContent>
-      </Card>
+        {/* 修改密码卡片 */}
+        <Card
+          className="border p-6 backdrop-blur-xl"
+          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+        >
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-2xl text-[var(--moge-text-main)]">修改密码</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0">
+            <HookForm
+              form={passwordForm}
+              fields={[
+                { name: 'currentPassword', label: '当前密码', required: true },
+                { name: 'newPassword', label: '新密码', required: true },
+                { name: 'confirmNewPassword', label: '确认新密码', required: true },
+              ]}
+              loading={isPasswordLoading}
+              onSubmit={handlePasswordSubmit}
+              submitText="修改密码"
+              submitButtonClassName="w-30"
+              renderControl={(field, name) => (
+                <Input
+                  type="password"
+                  placeholder={
+                    name === 'currentPassword'
+                      ? '请输入当前密码'
+                      : name === 'newPassword'
+                        ? '请输入新密码'
+                        : '请再次输入新密码'
+                  }
+                  {...field}
+                  className="input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)]"
+                />
+              )}
+            />
+          </CardContent>
+        </Card>
+      </div>{' '}
+      {/* End of new div wrapping cards */}
     </div>
   );
 }

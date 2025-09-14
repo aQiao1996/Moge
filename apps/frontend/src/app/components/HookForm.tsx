@@ -29,7 +29,7 @@ type HookFormProps<T extends FieldValues> = {
     name: FieldPath<T>
   ) => React.ReactNode;
   onSubmit: (values: T) => Promise<void> | void;
-  submitButtonClassName?: string; // Add this line
+  submitButtonClassName?: string;
 };
 
 export default function HookForm<T extends FieldValues>({
@@ -41,7 +41,7 @@ export default function HookForm<T extends FieldValues>({
   onCancel,
   renderControl,
   onSubmit,
-  submitButtonClassName, // Add this line
+  submitButtonClassName,
 }: HookFormProps<T>) {
   return (
     <Form {...form}>
