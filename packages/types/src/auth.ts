@@ -1,15 +1,4 @@
-/**
- * 用户信息接口
- */
-export interface User {
-  id: string;
-  username: string;
-  email?: string;
-  name?: string;
-  avatarUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import type { User } from './user';
 
 /**
  * 登录请求参数
