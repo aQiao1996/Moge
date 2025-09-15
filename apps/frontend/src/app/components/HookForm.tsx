@@ -7,6 +7,7 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { FieldValues, UseFormReturn, FieldPath, ControllerRenderProps } from 'react-hook-form';
 import type { FormEvent } from 'react';
@@ -55,7 +56,7 @@ export default function HookForm<T extends FieldValues>({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit) as (e: FormEvent) => void} className="space-y-4">
         {hiddenFields?.map((hf) => (
-          <input
+          <Input
             key={hf.name}
             type="text"
             style={{ display: 'none' }}
