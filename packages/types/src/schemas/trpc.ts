@@ -1,14 +1,25 @@
 import { z } from 'zod';
 
-// 鉴权 schemas
+// =================================================================================
+// 统一密码校验规则
+// =================================================================================
+const passwordValidation = z
+  .string()
+  .min(8, '密码至少为8位')
+  .regex(/^(?=.*[A-Za-z])(?=.*\d)/, '密码必须同时包含英文和数字');
+
+// =================================================================================
+// Auth Schemas
+// =================================================================================
+
 export const loginInputSchema = z.object({
   username: z.string().min(1, '用户名不能为空'),
-  password: z.string().min(6, '密码至少6位'),
+  password: z.string().min(1, '密码不能为空'), // 登录时不限制密码格式,只在注册和修改时限制
 });
 
 export const registerInputSchema = z.object({
   username: z.string().min(3, '用户名至少3位').max(20, '用户名不超过20位'),
-  password: z.string().min(6, '密码至少6位'),
+  password: passwordValidation,
   email: z.email('邮箱格式不正确').optional(),
   name: z.string().max(50, '昵称不超过50位').optional(),
 });
@@ -24,7 +35,7 @@ export const gitlabLoginInputSchema = z.object({
 export const changePasswordInputSchema = z
   .object({
     currentPassword: z.string().min(1, '当前密码不能为空'),
-    newPassword: z.string().min(6, '密码至少6位'),
+    newPassword: passwordValidation,
     confirmNewPassword: z.string().min(1, '请再次输入新密码'),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
@@ -32,14 +43,20 @@ export const changePasswordInputSchema = z
     path: ['confirmNewPassword'],
   });
 
-// 用户 schemas
+// =================================================================================
+// User Schemas
+// =================================================================================
+
 export const updateProfileInputSchema = z.object({
   name: z.string().min(1, '用户名不能为空').optional(),
   email: z.email('请输入有效的邮箱地址').optional().or(z.literal('')),
   avatarUrl: z.url('头像URL格式不正确').optional().or(z.literal('')),
 });
 
-// 从模式推断的 Schema
+// =================================================================================
+// Inferred Types
+// =================================================================================
+
 export type LoginInput = z.infer<typeof loginInputSchema>;
 export type RegisterInput = z.infer<typeof registerInputSchema>;
 export type GitlabLoginInput = z.infer<typeof gitlabLoginInputSchema>;
