@@ -1,7 +1,6 @@
-import { helloInputSchema } from './schemas/trpc';
 import { authRouter } from './routers/auth';
 import { userRouter } from './routers/user';
-import { publicProcedure, t } from './trpc-core';
+import { t } from './trpc-core';
 
 /**
  * 创建应用路由 - 使用 @moge/types 中定义的路由工厂
@@ -9,11 +8,8 @@ import { publicProcedure, t } from './trpc-core';
  */
 export function createAppRouter() {
   return t.router({
-    auth: authRouter,
-    user: userRouter,
-    hello: publicProcedure
-      .input(helloInputSchema)
-      .query(({ input }) => ({ msg: `Hello ${input.name}` })),
+    auth: authRouter, // 认证相关路由
+    user: userRouter, // 用户相关路由
   });
 }
 

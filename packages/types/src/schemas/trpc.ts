@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Auth related schemas
+// 鉴权 schemas
 export const loginInputSchema = z.object({
   username: z.string().min(1, '用户名不能为空'),
   password: z.string().min(6, '密码至少6位'),
@@ -32,22 +32,16 @@ export const changePasswordInputSchema = z
     path: ['confirmNewPassword'],
   });
 
-// User related schemas
+// 用户 schemas
 export const updateProfileInputSchema = z.object({
   name: z.string().min(1, '用户名不能为空').optional(),
   email: z.email('请输入有效的邮箱地址').optional().or(z.literal('')),
   avatarUrl: z.url('头像URL格式不正确').optional().or(z.literal('')),
 });
 
-// Test schema
-export const helloInputSchema = z.object({
-  name: z.string(),
-});
-
-// Input types inferred from schemas
+// 从模式推断的 Schema
 export type LoginInput = z.infer<typeof loginInputSchema>;
 export type RegisterInput = z.infer<typeof registerInputSchema>;
 export type GitlabLoginInput = z.infer<typeof gitlabLoginInputSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>;
-export type HelloInput = z.infer<typeof helloInputSchema>;
