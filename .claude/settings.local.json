@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run:*)",
+      "Bash(tree:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm --filter @moge/types run type-check)",
+      "Bash(pnpm --filter @moge/types run build)",
+      "Bash(pnpm -w run typecheck)",
+      "Bash(pnpm --filter @moge/backend run dev)",
+      "Bash(echo $NODE_ENV)",
+      "Bash(NODE_ENV=development pnpm --filter @moge/backend run dev)",
+      "Bash(pnpm --filter apps/frontend run type-check)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

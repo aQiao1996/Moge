@@ -64,7 +64,3 @@ export enum HttpMethod {
   DELETE = 'DELETE',
   PATCH = 'PATCH',
 }
-
-// 从后端应用重新导出 tRPC 的 AppRouter 类型
-// 这是实现前后端类型安全共享的关键
-export type { AppRouter } from '../../../apps/backend/src/trpc/trpc.router';

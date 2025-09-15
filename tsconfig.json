@@ -46,7 +46,6 @@
   "references": [
     { "path": "./packages/configs" }, // 引用配置包
     { "path": "./packages/types" }, // 引用类型定义包
-    { "path": "./packages/trpc" }, // 引用tRPC包
     { "path": "./apps/frontend" }, // 引用前端应用
     { "path": "./apps/backend" } // 引用后端应用
   ],

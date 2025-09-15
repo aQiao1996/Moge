@@ -30,7 +30,12 @@ const authOptions: NextAuthOptions = {
             // 返回给 NextAuth 的对象将同时包含 user 和 token
             // 这个对象会在下面的 jwt callback 中被处理
             return {
-              ...result.user,
+              id: result.user.id,
+              email: result.user.email || null,
+              name: result.user.name || null,
+              image: result.user.avatarUrl || null,
+              username: result.user.username,
+              avatarUrl: result.user.avatarUrl,
               backendToken: result.token,
             };
           }
