@@ -9,45 +9,71 @@ pnpm -v # >=10.5.0
 pnpm install
 ```
 
-### 添加版本到 catalog 中
+### 添加/管理依赖
+
+推荐使用以下一步到位的命令来为子包添加依赖，它会自动更新 `pnpm-workspace.yaml` 中的 `catalog`。
 
 ```bash
-# xxx 包名
-# 等价 pnpm add --save-dev --workspace-root xxx --save-catalog
-pnpm add -Dw xxx --save-catalog
+# 语法: pnpm --filter <package-name> add <dependency-name> --save-catalog
+
+# 示例: 为 backend 添加一个新的生产依赖
+pnpm --filter @moge/backend add lodash --save-catalog
+
+# 示例: 为 frontend 添加一个新的开发依赖
+pnpm --filter @moge/frontend add -D @types/lodash --save-catalog
 ```
 
-### 在子包引用
+---
+
+#### 其他常用命令
+
+<details>
+<summary>点击展开查看更多</summary>
+
+**使用 Catalog 中已有的依赖**
+
+如果某个依赖版本已经存在于 `pnpm-workspace.yaml` 的 `catalog` 中，你可以使用 `@catalog:` 关键字将其添加到子包。
 
 ```bash
-# @moge/backend 是子包的名称
-pnpm --filter @moge/backend add -D xxx@catalog:
+# 示例: 为 frontend 添加 catalog 中已有的 sonner
+pnpm --filter @moge/frontend add sonner@catalog:
 ```
 
-### 子包使用 `packages/*` 共享包
+**添加项目级开发工具 (到根目录)**
+
+对于 `eslint`, `prettier`, `husky` 等在整个项目范围内使用的开发工具，应将其安装到根目录。
+
+```bash
+# -w 表示 --workspace-root
+pnpm add -Dw <tool-name> --save-catalog
+```
+
+**子包使用 `packages/*` 共享包**
 
 ```bash
 # -F 等价于 --filter
 # @moge/backend 是子包的名称
-# @moge/xxx 是共享包的名称
-# 使用的是 workspace:*协议，表示这个包来自当前 monorepo 的 workspace
-# 会自动生成 "dependencies": { "@moge/xxx": "workspace:*" }
-pnpm -F @moge/backend add '@moge/xxx@workspace:*'
+# @moge/types 是共享包的名称
+# "workspace:*" 协议表示这个包来自当前 monorepo 的 workspace
+pnpm -F @moge/backend add '@moge/types@workspace:*'
 ```
 
-### 升级 / 删除 catalog 包
+**升级 / 删除 catalog 包**
 
 ```bash
-# 升级 catalog 里某个包，并自动更新所有引用
-pnpm up xxx -r --catalog
+# 升级 catalog 里某个包，并自动更新所有引用它的子包
+pnpm up <dependency-name> -r --catalog
 
-# 从 catalog 里删除（手动删 yaml 后）
-pnpm install --recursive
+# 从 catalog 里删除包，需要两步:
+# 1. 手动从 pnpm-workspace.yaml 中删除对应的行
+# 2. 执行 pnpm install
 ```
 
-### 查看实际解析版本
+**查看实际解析版本**
 
 ```bash
-# 看每个子包实际用的版本
-pnpm why xxx -r
+# 查看 xxx 包在每个子包中实际使用的版本
+pnpm why <dependency-name> -r
 ```
+
+</details>
