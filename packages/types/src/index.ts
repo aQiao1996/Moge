@@ -11,8 +11,8 @@ export * from './user';
 // 导出 API 相关类型
 export * from './api';
 
-// 导出 tRPC 路由类型和上下文
-export * from './trpc';
+// 导出 tRPC 路由类型
+export type { AppRouter } from './trpc';
 
 // export zod schemas
 export * from './schemas/login';

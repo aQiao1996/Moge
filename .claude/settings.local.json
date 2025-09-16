@@ -10,7 +10,9 @@
       "Bash(pnpm --filter @moge/backend run dev)",
       "Bash(echo $NODE_ENV)",
       "Bash(NODE_ENV=development pnpm --filter @moge/backend run dev)",
-      "Bash(pnpm --filter apps/frontend run type-check)"
+      "Bash(pnpm --filter apps/frontend run type-check)",
+      "Bash(pnpm --filter @moge/frontend run type-check)",
+      "Bash(pnpm --filter @moge/backend run build)"
     ],
     "deny": [],
     "ask": []

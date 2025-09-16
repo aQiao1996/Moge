@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { updateProfileInputSchema } from '../schemas/trpc';
+import { updateProfileInputSchema } from '@moge/types';
 import { protectedProcedure, t } from '../trpc-core';
 
 export const userRouter = t.router({

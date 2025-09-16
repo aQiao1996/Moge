@@ -24,7 +24,6 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "zod": "catalog:",
-    "@trpc/server": "catalog:"
+    "zod": "catalog:"
   }
 }

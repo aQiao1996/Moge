@@ -4,7 +4,7 @@ import {
   gitlabLoginInputSchema,
   loginInputSchema,
   registerInputSchema,
-} from '../schemas/trpc';
+} from '@moge/types';
 import { protectedProcedure, publicProcedure, t } from '../trpc-core';
 
 export const authRouter = t.router({

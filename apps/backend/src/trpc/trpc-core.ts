@@ -1,47 +1,20 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import type { User } from './user';
+import type { User } from '@moge/types';
+import type { AuthService } from '../auth/auth.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { UserService } from '../user/user.service';
 
 // =================================================================================
 // 上下文
 // =================================================================================
 
 /**
- * @description 定义 tRPC 上下文的类型契约
- * @interface TRPCContext
+ * @description 后端 tRPC 上下文接口
  */
 export interface TRPCContext {
-  authService: {
-    login: (username: string, password: string) => Promise<{ user: User; token: string }>;
-    register: (
-      username: string,
-      password: string,
-      email?: string,
-      name?: string
-    ) => Promise<{ user: User; token: string }>;
-    gitlabLogin: (
-      provider: string,
-      providerAccountId: string,
-      email: string,
-      name?: string,
-      avatarUrl?: string
-    ) => Promise<{ user: User; token: string }>;
-    changePassword: (
-      userId: number,
-      currentPassword: string,
-      newPassword: string
-    ) => Promise<{ message: string }>;
-  };
-  prismaService: {
-    [key: string]: any;
-  };
-  userService: {
-    updateProfile: (
-      userId: number,
-      name?: string,
-      email?: string,
-      avatarUrl?: string
-    ) => Promise<User>;
-  };
+  authService: AuthService;
+  prismaService: PrismaService;
+  userService: UserService;
   user?: User;
 }
 
