@@ -4,7 +4,7 @@
   "description": "Shared configurations for monorepo",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && mkdir -p dist && cp eslint.config.mjs dist/",
+    "build": "echo '该文件不需要打包'",
     "lint": "eslint . --config eslint.config.mjs --fix",
     "type-check": "echo 'No TypeScript files to check in configs package'",
     "clean": "rm -rf dist"
