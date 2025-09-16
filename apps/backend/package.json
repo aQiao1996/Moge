@@ -22,6 +22,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@langchain/core": "catalog:",
+    "@langchain/openai": "catalog:",
     "@moge/configs": "workspace:*",
     "@moge/types": "workspace:*",
     "@nestjs/common": "catalog:",
@@ -32,7 +34,6 @@
     "@trpc/server": "catalog:",
     "bcryptjs": "catalog:",
     "jsonwebtoken": "catalog:",
-    "langchain": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "zod": "catalog:"
