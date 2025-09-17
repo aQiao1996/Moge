@@ -59,3 +59,46 @@ model accounts {
   @@unique([provider, providerAccountId])
   @@map("accounts")
 }
+
+// * ==================== 字典管理 ====================
+/// 字典分类表
+model dict_categories {
+  id          Int           @id @default(autoincrement())
+  /// 分类编码，如 'novel_types'
+  code        String        @unique
+  /// 分类名称，如 '小说类型'
+  name        String
+  /// 描述
+  description String?
+  /// 创建时间
+  createdAt   DateTime      @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  /// 字典项
+  items       dict_items[]
+}
+
+/// 字典项表
+model dict_items {
+  id           Int             @id @default(autoincrement())
+  /// 所属分类编码
+  categoryCode String          @map("category_code")
+  /// 项目编码，如 'sci_fi'
+  code         String
+  /// 显示标签，如 '科幻'
+  label        String
+  /// 存储值
+  value        String?
+  /// 排序
+  sortOrder    Int             @default(0) @map("sort_order")
+  /// 是否启用
+  isEnabled    Boolean         @default(true) @map("is_enabled")
+  /// 创建时间
+  createdAt    DateTime        @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  /// 所属分类
+  category     dict_categories @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
+
+  @@unique([categoryCode, code])
+}
