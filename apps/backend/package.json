@@ -24,7 +24,6 @@
   "dependencies": {
     "@langchain/core": "catalog:",
     "@langchain/openai": "catalog:",
-    "@moge/configs": "workspace:*",
     "@moge/types": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",

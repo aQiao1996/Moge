@@ -1,5 +1,5 @@
-import OutlineList from '@/features/outline/outline-list';
-import CreateOutlineDialog from '@/features/outline/create-outline-dialog';
+import CreateOutlineDialog from './components/CreateOutlineDialog';
+import OutlineList from './components/OutlineList';
 
 export default function Home() {
   return (
