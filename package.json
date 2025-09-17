@@ -2,8 +2,8 @@
   "name": "@moge/root",
   "version": "1.0.0",
   "scripts": {
-    "lint": "eslint --config packages/configs/eslint.config.mjs \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
-    "lint:fix": "eslint --config packages/configs/eslint.config.mjs \"{apps,packages}/**/*.{ts,tsx,js,jsx}\" --fix",
+    "lint": "git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(ts|tsx|js|jsx)$' | xargs -r eslint --config packages/configs/eslint.config.mjs",
+    "lint:fix": "eslint --config packages/configs/eslint.config.mjs --fix --cache \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "pnpm -r run type-check",
     "test": "pnpm -r run test",
     "dev": "node scripts/dev-selector.js",
