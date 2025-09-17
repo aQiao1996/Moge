@@ -10,6 +10,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { FilePlus } from 'lucide-react';
 import HookForm from '@/app/components/HookForm';
@@ -35,18 +42,18 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
   const renderControl: RenderControl = (field, name) => {
     if (name === 'type')
       return (
-        <select
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring col-span-3 flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          value={field.value}
-          onChange={(e) => field.onChange(e.target.value)}
-        >
-          <option value="">请选择</option>
-          {['科幻', '奇幻', '悬疑', '言情', '历史'].map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <Select onValueChange={field.onChange} value={field.value as string}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="请选择" />
+          </SelectTrigger>
+          <SelectContent>
+            {['科幻', '奇幻', '悬疑', '言情', '历史'].map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       );
 
     if (name === 'conflict' || name === 'remark')
