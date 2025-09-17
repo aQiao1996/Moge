@@ -1,7 +1,4 @@
 import { toast } from 'sonner';
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import Loading from '@/app/components/Loading';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -43,7 +40,9 @@ const defaultOptions: FetchOptions = {
 };
 
 const checkStatus = async (response: Response) => {
-  if (response.ok) return;
+  if (response.ok) {
+    return;
+  }
   let errorPayload: unknown;
   const contentType = response.headers.get('content-type');
   const clone = response.clone();
@@ -80,18 +79,27 @@ const formatParams = (params: Record<string, unknown>): string =>
     .join('&');
 
 const createUrl = (url: string, params?: Record<string, unknown>): string => {
-  if (!params) return url;
+  if (!params) {
+    return url;
+  }
   const qs = formatParams(params);
   return qs ? `${url}?${qs}` : url;
 };
 
 function isApiResponse<T>(data: unknown): data is ApiResponse<T> {
-  return data && typeof data === 'object' && 'code' in data && 'message' in data && 'data' in data;
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    'code' in data &&
+    'message' in data &&
+    'data' in data
+  );
 }
 
 const requestInterceptor = (url: string, options: FetchOptions) => {
   const { requiresToken = true } = options;
-  const token: string | undefined = '';
+  const token: string | undefined =
+    typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined;
   const newOpts = { ...options };
   if (requiresToken && token) {
     newOpts.headers = { ...newOpts.headers, Authorization: `Bearer ${token}` };
@@ -104,7 +112,9 @@ const requestInterceptor = (url: string, options: FetchOptions) => {
 };
 
 const responseInterceptor = <T>(res: ApiResponse<T>) => {
-  if (res.code !== 200) throw new Error(res.message || 'Error');
+  if (res.code !== 200) {
+    throw new Error(res.message || 'Error');
+  }
   return res;
 };
 
@@ -132,8 +142,11 @@ const errorHandler = (error: unknown): never => {
           toast(`连接错误 ${res.code}`);
       }
     } else {
-      if (String(error.message).includes('timeout')) toast('请求超时');
-      else toast('网络异常，请联系管理员');
+      if (String(error.message).includes('timeout')) {
+        toast('请求超时');
+      } else {
+        toast('网络异常，请联系管理员');
+      }
     }
   } else if (error instanceof TypeError) {
     toast(`网络异常:${error.message}`);
@@ -160,7 +173,9 @@ const fetchRequest = async <T>(
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeout);
 
   try {
     const res = await fetch(finalUrl, {
@@ -172,7 +187,9 @@ const fetchRequest = async <T>(
     clearTimeout(timeoutId);
     await checkStatus(res);
     const data = (await res.json()) as unknown;
-    if (isApiResponse<T>(data)) return responseInterceptor<T>(data);
+    if (isApiResponse<T>(data)) {
+      return responseInterceptor<T>(data);
+    }
     return data as ApiResponse<T>;
   } catch (err) {
     clearTimeout(timeoutId);
@@ -211,54 +228,4 @@ export const patch = <T>(
   opts?: Omit<FetchOptions, 'method' | 'body'>
 ): Promise<ApiResponse<T>> => fetchRequest<T>(url, { ...opts, method: 'PATCH', body });
 
-let requestCount = 0;
-
-function showLoading() {
-  if (requestCount !== 0) return;
-  const dom = document.createElement('div');
-  dom.id = 'loading';
-  Object.assign(dom.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: '9999',
-  });
-  document.body.appendChild(dom);
-  createRoot(dom).render(React.createElement(Loading));
-  requestCount++;
-}
-
-function hideLoading() {
-  requestCount--;
-  if (requestCount === 0) {
-    const dom = document.getElementById('loading');
-    if (dom) document.body.removeChild(dom);
-  }
-}
-
-export const requestWithLoading = async <T>(
-  method: HttpMethod,
-  url: string,
-  data?: unknown,
-  params?: Record<string, unknown>,
-  opts?: Omit<FetchOptions, 'method' | 'body' | 'params'>
-): Promise<ApiResponse<T>> => {
-  showLoading();
-  try {
-    if (method === 'GET') return await get<T>(url, params, opts);
-    if (method === 'POST') return await post<T>(url, data, opts);
-    if (method === 'PUT') return await put<T>(url, data, opts);
-    if (method === 'DELETE') return await del<T>(url, params, opts);
-    if (method === 'PATCH') return await patch<T>(url, data, opts);
-    throw new Error('Unsupported HTTP method');
-  } finally {
-    hideLoading();
-  }
-};
-
-export default { get, post, put, delete: del, patch, requestWithLoading };
+export default { get, post, put, delete: del, patch };

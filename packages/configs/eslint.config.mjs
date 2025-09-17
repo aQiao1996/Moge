@@ -3,6 +3,34 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
+  // 全局忽略文件 - 与 .gitignore 保持一致
+  {
+    ignores: [
+      '.DS_Store',
+      'node_modules/',
+      'dist/',
+      '**/dist/**',
+      '.next/',
+      'test/',
+      '**/*.log',
+      'tests/**/coverage/',
+      'tests/e2e/reports',
+      'selenium-debug.log',
+      '.idea',
+      '.vscode',
+      '*.suo',
+      '*.ntvs*',
+      '*.njsproj',
+      '*.sln',
+      '*.local',
+      'tsconfig.tsbuildinfo',
+      'stats.html',
+      'docs/.vitepress/cache',
+      '.history/',
+      '.claude/',
+    ],
+  },
+
   /* 纯语法：所有配置文件 & 非 TS */
   {
     files: ['*.config.mjs', '*.config.js'], // 匹配配置文件（如 webpack.config.js、vite.config.ts 等）

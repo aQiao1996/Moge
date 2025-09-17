@@ -19,9 +19,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
   /**
    * 设置用户信息
    */
-  setUser: (user: User | null) => set({ user }),
+  setUser: (user: User | null) => {
+    set({ user });
+  },
   /**
    * 清除用户信息
    */
-  clearUser: () => set({ user: null }),
+  clearUser: () => {
+    set({ user: null });
+  },
 }));

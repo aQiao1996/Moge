@@ -12,19 +12,19 @@ import { Button } from '@/components/ui/button';
 import type { FieldValues, UseFormReturn, FieldPath, ControllerRenderProps } from 'react-hook-form';
 import type { FormEvent } from 'react';
 
-type FieldDef<T extends FieldValues> = {
+interface FieldDef<T extends FieldValues> {
   name: FieldPath<T>;
   label: string;
   required?: boolean;
-};
+}
 
-type HiddenField = {
+interface HiddenField {
   name: string;
   value: string;
   autoComplete: string;
-};
+}
 
-type HookFormProps<T extends FieldValues> = {
+interface HookFormProps<T extends FieldValues> {
   form: UseFormReturn<T>;
   fields: FieldDef<T>[];
   loading?: boolean;
@@ -38,7 +38,7 @@ type HookFormProps<T extends FieldValues> = {
   onSubmit: (values: T) => Promise<void> | void;
   submitButtonClassName?: string;
   hiddenFields?: HiddenField[];
-};
+}
 
 export default function HookForm<T extends FieldValues>({
   form,

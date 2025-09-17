@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { TRPCError } from '@trpc/server';
 import type { User } from '@moge/types';
 
 /**
@@ -33,13 +32,13 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户名或密码错误' });
+      throw new UnauthorizedException('用户名或密码错误');
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
-      throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户名或密码错误' });
+      throw new UnauthorizedException('用户名或密码错误');
     }
 
     const { passwordHash, ...userInfo } = user;
@@ -71,10 +70,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: existingUser.username === username ? '用户名已存在' : '邮箱已存在',
-      });
+      throw new BadRequestException(
+        existingUser.username === username ? '用户名已存在' : '邮箱已存在'
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -206,12 +204,12 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: '用户不存在' });
+        throw new UnauthorizedException('用户不存在');
       }
 
       return { ...user, id: user.id.toString() };
     } catch {
-      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Token 无效或已过期' });
+      throw new UnauthorizedException('Token 无效或已过期');
     }
   }
 
@@ -228,12 +226,12 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: '用户不存在或未设置密码' });
+      throw new BadRequestException('用户不存在或未设置密码');
     }
 
     const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValidPassword) {
-      throw new TRPCError({ code: 'UNAUTHORIZED', message: '当前密码不正确' });
+      throw new UnauthorizedException('当前密码不正确');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

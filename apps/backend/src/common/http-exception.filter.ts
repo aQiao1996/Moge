@@ -1,5 +1,5 @@
-import { Catch, HttpException, ExceptionFilter, ArgumentsHost } from "@nestjs/common";
-import type { Request, Response } from "express";
+import { Catch, HttpException, ExceptionFilter, ArgumentsHost } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 // * 使用Catch装饰器捕获HttpException异常 全局异常捕获
 @Catch(HttpException)
@@ -17,7 +17,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // 获取详细的报错信息 main.ts 中使用了 app.useGlobalPipes(new ValidationPipe())
     // https://nest.nodejs.cn/techniques/validation 详细介绍
     // exception.getResponse() 如果类型是 string 时 , 和 exception.message 是一样的
-    const message = (exception.getResponse() as { message: string[] })?.message?.join?.(" & ");
+    const message = (exception.getResponse() as { message: string[] })?.message?.join?.(' & ');
     // 设置响应的状态码和JSON内容
     response.status(status).json({
       code: status,

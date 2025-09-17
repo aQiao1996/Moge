@@ -6,7 +6,7 @@ import { hanFont } from '@/app/font';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider className={`${hanFont.variable}`}>
+    <SidebarProvider className={hanFont.variable}>
       <AppSidebar />
       <SidebarInset className="relative flex min-h-screen flex-col">
         <MainHeader className="sticky top-0 z-20" />

@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TRPCError } from '@trpc/server';
 
 @Injectable()
 export class UserService {
@@ -16,7 +15,7 @@ export class UserService {
         },
       });
       if (existingUserWithEmail) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: '邮箱已被其他用户占用' });
+        throw new BadRequestException('邮箱已被其他用户占用');
       }
     }
 

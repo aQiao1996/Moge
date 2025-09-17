@@ -30,12 +30,13 @@
     "@nestjs/config": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
+    "@nestjs/swagger": "catalog:",
     "@prisma/client": "catalog:",
-    "@trpc/server": "catalog:",
     "bcryptjs": "catalog:",
     "jsonwebtoken": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
+    "swagger-ui-express": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -50,6 +51,7 @@
     "@types/jsonwebtoken": "catalog:",
     "@types/node": "catalog:",
     "@types/supertest": "catalog:",
+    "@types/swagger-ui-express": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "eslint": "catalog:",

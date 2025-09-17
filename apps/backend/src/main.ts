@@ -3,11 +3,10 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'node:path';
 import * as express from 'express';
 import { ValidationPipe } from '@nestjs/common';
-import * as trpcExpress from '@trpc/server/adapters/express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { ResponseInterceptor } from './common/response.interceptor';
-import { TrpcService } from './trpc/trpc.service';
 
 async function bootstrap() {
   // * 环境日志
@@ -31,24 +30,71 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   // * 注册全局守卫 执行在 拦截器 之前 执行在 中间件 之后
   // app.useGlobalGuards(new AuthGuard());
-  // * 注册 tRPC 路由
-  const trpcService = app.get(TrpcService);
-  app.use(
-    '/trpc',
-    trpcExpress.createExpressMiddleware({
-      router: trpcService.appRouter,
-      createContext: trpcService.createContext,
-    })
-  );
 
-  await app.listen(process.env.PORT || 0, () => {
+  // * 配置 Swagger 文档
+  const config = new DocumentBuilder()
+    .setTitle('MOGE API')
+    .setDescription('MOGE 项目的 REST API 文档')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: '输入 JWT token',
+        in: 'header',
+      },
+      'JWT-auth'
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true, // 持久化授权信息
+      docExpansion: 'none', // 默认折叠所有端点
+      filter: true, // 启用过滤器
+      showRequestDuration: true, // 显示请求持续时间
+      tryItOutEnabled: true, // 默认启用 "Try it out"
+      requestSnippetsEnabled: true, // 启用请求代码片段
+      requestSnippets: {
+        generators: {
+          curl_bash: {
+            title: 'cURL (bash)',
+            syntax: 'bash',
+          },
+          curl_powershell: {
+            title: 'cURL (PowerShell)',
+            syntax: 'powershell',
+          },
+          curl_cmd: {
+            title: 'cURL (CMD)',
+            syntax: 'bash',
+          },
+        },
+        defaultExpanded: false,
+        languages: null,
+      },
+    },
+    customSiteTitle: 'MOGE API 文档',
+    customCss: `
+      .swagger-ui .topbar { background-color: #1976d2; }
+      .swagger-ui .topbar .link { color: white; }
+      .swagger-ui .scheme-container { background-color: #1976d2; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+      .swagger-ui .scheme-container .schemes { color: white; }
+    `,
+  });
+
+  await app.listen(process.env.PORT || 8888, () => {
     console.log(`🚀 ~ main.ts ~ 启动成功,端口号: ${process.env.PORT || 8888}`);
     console.log(`🚀 ~ main.ts ~ 当前运行环境: ${process.env.NODE_ENV || '环境错误'}`);
     console.log(`🚀 ~ main.ts ~ 当前数据库类型: ${process.env.DATABASE_TYPE || '数据库类型错误'}`);
     console.log(
       `🚀 ~ main.ts ~ 当前数据库名称: ${process.env.DATABASE_USERNAME || '数据库名称错误'}`
     );
-    console.log(`🚀 ~ tRPC API ~ http://localhost:${process.env.PORT || 8888}/trpc`);
+    console.log(`🚀 ~ HTTP API ~ http://localhost:${process.env.PORT || 8888}/api`);
+    console.log(`🚀 ~ Swagger API Docs ~ http://localhost:${process.env.PORT || 8888}/api/docs`);
   });
 }
 void bootstrap();

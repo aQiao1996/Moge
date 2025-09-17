@@ -1,5 +1,5 @@
 'use client';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { hanFont } from '../font';
 
 import dynamic from 'next/dynamic';

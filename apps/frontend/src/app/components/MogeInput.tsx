@@ -21,7 +21,9 @@ const MogeInput = React.forwardRef<HTMLInputElement, InputProps>(
       );
     }
 
-    const togglePasswordVisibility = () => setShowPassword(!showPassword);
+    const togglePasswordVisibility = () => {
+      setShowPassword(!showPassword);
+    };
     const Icon = showPassword ? Eye : EyeOff;
 
     return (

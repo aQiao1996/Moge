@@ -1,5 +1,4 @@
 'use client';
-
 import { type ControllerRenderProps, type FieldPath, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -22,24 +21,24 @@ import { FilePlus } from 'lucide-react';
 import HookForm from '@/app/components/HookForm';
 import type { CreateOutlineValues } from '@moge/types';
 import { createOutlineSchema } from '@moge/types';
+import { useOutlineStore } from '@/stores/outline.store';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
-interface Props {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  onSuccess: (values: CreateOutlineValues) => void;
-}
 type RenderControl = (
   field: ControllerRenderProps<CreateOutlineValues, FieldPath<CreateOutlineValues>>,
   name: FieldPath<CreateOutlineValues>
 ) => React.ReactNode;
 
-export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: Props) {
+export default function CreateOutlineDialog() {
+  const [open, setOpen] = useState(false);
+  const { createOutline, loading, resetError } = useOutlineStore();
+
   const form = useForm<CreateOutlineValues>({
     resolver: zodResolver(createOutlineSchema),
     defaultValues: { name: '', type: '', era: '', conflict: '', tags: [], remark: '' },
   });
 
-  /* 渲染不同控件 */
   const renderControl: RenderControl = (field, name) => {
     if (name === 'type') {
       return (
@@ -80,8 +79,21 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
     );
   };
 
+  const onSubmit = async (values: CreateOutlineValues) => {
+    toast.dismiss();
+    resetError();
+    try {
+      await createOutline(values);
+      toast.success('大纲创建成功');
+      setOpen(false);
+      form.reset();
+    } catch {
+      toast.error('创建大纲失败');
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2 shadow-[var(--moge-glow-btn)]">
           <FilePlus className="h-4 w-4" />
@@ -103,7 +115,7 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
             填写信息后点击创建即可生成大纲
           </DialogDescription>
         </DialogHeader>
-        {/* 表单 */}
+
         <HookForm
           form={form}
           fields={[
@@ -113,17 +125,14 @@ export default function CreateOutlineDialog({ open, onOpenChange, onSuccess }: P
             { name: 'conflict', label: '核心冲突' },
             { name: 'remark', label: '备注' },
           ]}
+          loading={loading}
           submitText="确认"
           cancelText="取消"
           onCancel={() => {
-            onOpenChange(false);
+            setOpen(false);
           }}
           renderControl={renderControl}
-          onSubmit={(vals) => {
-            onSuccess(vals);
-            onOpenChange(false);
-            form.reset();
-          }}
+          onSubmit={onSubmit}
         />
       </DialogContent>
     </Dialog>

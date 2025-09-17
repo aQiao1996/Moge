@@ -12,13 +12,17 @@ export default function AuthSetting({ isAbsolute = true }) {
   const handleTheme = () => {
     setThemeAnim('rotate-90');
     setTheme(theme === 'light' ? 'dark' : 'light');
-    setTimeout(() => setThemeAnim(''), 250);
+    setTimeout(() => {
+      setThemeAnim('');
+    }, 250);
   };
 
   const handleLang = () => {
     setLangAnim('scale-95');
     setLang(lang === 'zh' ? 'en' : 'zh');
-    setTimeout(() => setLangAnim(''), 200);
+    setTimeout(() => {
+      setLangAnim('');
+    }, 200);
   };
 
   return (

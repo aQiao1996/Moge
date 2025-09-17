@@ -2,7 +2,7 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import GitlabProvider, { type GitLabProfile } from 'next-auth/providers/gitlab';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { publicTrpcClient } from '@/lib/trpc';
+import httpRequest from '@/lib/httpRequest';
 
 const authOptions: NextAuthOptions = {
   // 配置认证提供者
@@ -16,19 +16,34 @@ const authOptions: NextAuthOptions = {
       },
       // `authorize` 函数是实际的验证逻辑
       async authorize(credentials) {
-        if (!credentials) return null;
+        if (!credentials) {
+          return null;
+        }
 
         try {
-          // 调用后端的公共 tRPC 接口进行验证
-          const result = await publicTrpcClient.auth.login.mutate({
-            username: credentials.username,
-            password: credentials.password,
-          });
+          // 调用后端 HTTP API 进行身份验证
+          const response = await httpRequest.post<{
+            user: {
+              id: string;
+              username: string;
+              email: string;
+              name: string;
+              avatarUrl: string;
+            };
+            token: string;
+          }>(
+            '/api/auth/login',
+            {
+              username: credentials.username,
+              password: credentials.password,
+            },
+            { requiresToken: false }
+          );
 
-          // 如果后端返回了 user 和 token, 则验证成功
+          const result = response.data;
+
+          // 如果后端返回了 user 和 token，则认证成功
           if (result.user && result.token) {
-            // 返回给 NextAuth 的对象将同时包含 user 和 token
-            // 这个对象会在下面的 jwt callback 中被处理
             return {
               id: result.user.id,
               email: result.user.email || null,
@@ -41,37 +56,48 @@ const authOptions: NextAuthOptions = {
           }
           return null;
         } catch (error) {
-          // 如果 tRPC 调用本身抛出错误, 我们将错误的 message 传递出去
-          // NextAuth 会捕获这个错误, 并将其 message 作为 signIn 返回结果的 error 字段
           if (error instanceof Error) {
             throw new Error(error.message);
           }
-          // 对于未知错误, 抛出一个通用错误
           throw new Error('认证时发生未知错误');
         }
       },
     }),
     // GitLab 登录
     GitlabProvider({
-      clientId: process.env.GITLAB_CLIENT_ID,
-      clientSecret: process.env.GITLAB_CLIENT_SECRET,
+      clientId: process.env.GITLAB_CLIENT_ID!,
+      clientSecret: process.env.GITLAB_CLIENT_SECRET!,
       profile: async (profile: GitLabProfile) => {
-        // 调用后端 tRPC 接口处理 GitLab 登录/注册逻辑
-        const result = await publicTrpcClient.auth.gitlabLogin.mutate({
-          provider: 'gitlab',
-          providerAccountId: profile.id.toString(),
-          email: profile.email,
-          name: profile.name || profile.username,
-          avatarUrl: profile.avatar_url,
-        });
+        // 调用后端 HTTP API 处理 GitLab 登录/注册逻辑
+        const response = await httpRequest.post<{
+          user: {
+            id: string;
+            username: string;
+            email: string;
+            name: string;
+            avatarUrl: string;
+          };
+          token: string;
+        }>(
+          '/api/auth/gitlab-login',
+          {
+            provider: 'gitlab',
+            providerAccountId: profile.id.toString(),
+            email: profile.email,
+            name: profile.name || profile.username,
+            avatarUrl: profile.avatar_url,
+          },
+          { requiresToken: false }
+        );
 
-        // 后端返回的 user 和 token 将被 NextAuth 处理
+        const result = response.data;
+
         return {
           id: result.user.id,
           username: result.user.username || result.user.email,
           name: result.user.name,
           email: result.user.email,
-          avatarUrl: result.user.avatarUrl, // Use avatarUrl
+          avatarUrl: result.user.avatarUrl,
           backendToken: result.token,
         };
       },
@@ -107,12 +133,12 @@ const authOptions: NextAuthOptions = {
     session({ session, token }) {
       // 把 JWT 中的数据扩展到 session 对象上, 这样客户端就能通过 useSession() 获取
       if (token && session.user) {
-        session.user.id = token.id;
-        session.user.username = token.username;
-        session.user.name = token.name;
-        session.user.email = token.email;
-        session.user.avatarUrl = token.avatarUrl;
-        session.backendToken = token.backendToken;
+        session.user.id = token.id as string;
+        session.user.username = token.username as string;
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
+        session.user.avatarUrl = token.avatarUrl as string;
+        session.backendToken = token.backendToken as string;
       }
       return session;
     },

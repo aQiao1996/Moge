@@ -1,4 +1,4 @@
-import '@/assets/css/loading.css';
+import '@/app/styles/loading.css';
 
 const Loading = () => {
   return <div className="loading"></div>;
