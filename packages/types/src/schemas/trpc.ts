@@ -20,14 +20,14 @@ export const loginInputSchema = z.object({
 export const registerInputSchema = z.object({
   username: z.string().min(3, '用户名至少3位').max(20, '用户名不超过20位'),
   password: passwordValidation,
-  email: z.email('邮箱格式不正确').optional(),
+  email: z.string().email('邮箱格式不正确').optional(),
   name: z.string().max(50, '昵称不超过50位').optional(),
 });
 
 export const gitlabLoginInputSchema = z.object({
   provider: z.string(),
   providerAccountId: z.string(),
-  email: z.email('邮箱格式不正确'),
+  email: z.string().email('邮箱格式不正确').optional(),
   name: z.string().optional(),
   avatarUrl: z.string().optional(),
 });
@@ -49,8 +49,8 @@ export const changePasswordInputSchema = z
 
 export const updateProfileInputSchema = z.object({
   name: z.string().min(1, '用户名不能为空').optional(),
-  email: z.email('请输入有效的邮箱地址').optional().or(z.literal('')),
-  avatarUrl: z.url('头像URL格式不正确').optional().or(z.literal('')),
+  email: z.string().email('请输入有效的邮箱地址').optional().or(z.literal('')),
+  avatarUrl: z.string().url('头像URL格式不正确').optional().or(z.literal('')),
 });
 
 // =================================================================================
