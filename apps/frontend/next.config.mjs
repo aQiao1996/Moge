@@ -8,10 +8,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        // 源路径：所有以 /api/trpc 开头的请求
-        source: '/api/trpc/:path*',
+        // 源路径：所有以 /api/ 开头的请求
+        source: '/api/:path*',
         // 目标路径：代理到环境变量中定义的后端服务地址
-        destination: `${process.env.NEXT_APP_API_URL}/trpc/:path*`,
+        destination: `${process.env.NEXT_APP_API_URL}/:path*`,
       },
     ];
   },
