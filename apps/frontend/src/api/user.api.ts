@@ -10,6 +10,6 @@ interface ProfileResponse {
 }
 
 export const updateProfileApi = async (data: ProfileValues): Promise<ProfileResponse> => {
-  const response = await httpRequest.post<ProfileResponse>('/api/user/profile', data);
+  const response = await httpRequest.post<ProfileResponse>('/user/profile', data);
   return response.data;
 };

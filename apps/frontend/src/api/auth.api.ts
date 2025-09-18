@@ -13,15 +13,15 @@ interface AuthResponse {
 }
 
 export const loginApi = async (data: LoginValues): Promise<AuthResponse> => {
-  const response = await httpRequest.post<AuthResponse>('/api/auth/login', data);
+  const response = await httpRequest.post<AuthResponse>('/auth/login', data);
   return response.data;
 };
 
 export const registerApi = async (data: SignupValues): Promise<AuthResponse> => {
-  const response = await httpRequest.post<AuthResponse>('/api/auth/register', data);
+  const response = await httpRequest.post<AuthResponse>('/auth/register', data);
   return response.data;
 };
 
 export const logoutApi = async (): Promise<undefined> => {
-  await httpRequest.post<void>('/api/auth/logout');
+  await httpRequest.post<void>('/auth/logout');
 };

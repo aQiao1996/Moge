@@ -32,7 +32,7 @@ const authOptions: NextAuthOptions = {
             };
             token: string;
           }>(
-            '/api/auth/login',
+            '/auth/login',
             {
               username: credentials.username,
               password: credentials.password,
@@ -79,7 +79,7 @@ const authOptions: NextAuthOptions = {
           };
           token: string;
         }>(
-          '/api/auth/gitlab-login',
+          '/auth/gitlab-login',
           {
             provider: 'gitlab',
             providerAccountId: profile.id.toString(),

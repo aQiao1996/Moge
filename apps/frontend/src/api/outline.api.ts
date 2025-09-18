@@ -12,11 +12,11 @@ interface OutlineItem {
 }
 
 export const createOutlineApi = async (data: CreateOutlineValues): Promise<OutlineItem> => {
-  const response = await httpRequest.post<OutlineItem>('/api/outline', data);
+  const response = await httpRequest.post<OutlineItem>('/outline', data);
   return response.data;
 };
 
 export const getOutlinesApi = async (): Promise<OutlineItem[]> => {
-  const response = await httpRequest.get<OutlineItem[]>('/api/outlines');
+  const response = await httpRequest.get<OutlineItem[]>('/outlines');
   return response.data;
 };

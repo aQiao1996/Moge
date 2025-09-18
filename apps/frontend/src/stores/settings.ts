@@ -21,7 +21,7 @@ export const useSettings = create<SettingsState>()(
       setTheme: (theme) => {
         set({ theme });
         document.documentElement.classList.toggle('dark', theme === 'dark');
-        fetch('/api/set-theme', {
+        fetch('/set-theme', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ theme }),

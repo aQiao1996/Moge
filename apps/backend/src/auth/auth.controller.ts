@@ -27,7 +27,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @ApiTags('认证')
-@Controller('api/auth')
+@Controller('/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

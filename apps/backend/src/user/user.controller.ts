@@ -18,7 +18,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @ApiTags('用户')
-@Controller('api/user')
+@Controller('/user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

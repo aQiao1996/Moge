@@ -99,7 +99,7 @@ function isApiResponse<T>(data: unknown): data is ApiResponse<T> {
 const requestInterceptor = (url: string, options: FetchOptions) => {
   const { requiresToken = true } = options;
   const token: string | undefined =
-    typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined;
+    typeof window !== 'undefined' ? localStorage.getItem('auth-token') || undefined : undefined;
   const newOpts = { ...options };
   if (requiresToken && token) {
     newOpts.headers = { ...newOpts.headers, Authorization: `Bearer ${token}` };
@@ -124,36 +124,36 @@ const errorHandler = (error: unknown): never => {
     if (res) {
       switch (res.code) {
         case 400:
-          toast(res.message || '请求错误');
+          toast.error(res.message || '请求错误');
           break;
         case 401:
-          toast('未授权，请登录');
+          toast.error('未授权，请登录');
           break;
         case 403:
-          toast(`拒绝访问 ${res.message || ''}`);
+          toast.error(`拒绝访问 ${res.message || ''}`);
           break;
         case 404:
-          toast(`请求地址出错: ${res.path || ''}`);
+          toast.error(`请求地址出错: ${res.path || ''}`);
           break;
         case 500:
-          toast(res.message || '服务器内部错误');
+          toast.error(res.message || '服务器内部错误');
           break;
         default:
-          toast(`连接错误 ${res.code}`);
+          toast.error(`连接错误 ${res.code}`);
       }
     } else {
       if (String(error.message).includes('timeout')) {
-        toast('请求超时');
+        toast.error('请求超时');
       } else {
-        toast('网络异常，请联系管理员');
+        toast.error('网络异常，请联系管理员');
       }
     }
   } else if (error instanceof TypeError) {
-    toast(`网络异常:${error.message}`);
+    toast.error(`网络异常:${error.message}`);
   } else if (error instanceof Error) {
-    toast(error.message);
+    toast.error(error.message);
   } else {
-    toast('未知错误');
+    toast.error('未知错误');
   }
   throw error;
 };
