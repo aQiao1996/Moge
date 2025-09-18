@@ -22,8 +22,9 @@ import HookForm from '@/app/components/HookForm';
 import type { CreateOutlineValues } from '@moge/types';
 import { createOutlineSchema } from '@moge/types';
 import { useOutlineStore } from '@/stores/outlineStore';
+import { useDictStore } from '@/stores/dictStore';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type RenderControl = (
   field: ControllerRenderProps<CreateOutlineValues, FieldPath<CreateOutlineValues>>,
@@ -33,6 +34,13 @@ type RenderControl = (
 export default function CreateOutlineDialog() {
   const [open, setOpen] = useState(false);
   const { createOutline, loading, resetError } = useOutlineStore();
+  const { novelTypes, fetchNovelTypes } = useDictStore();
+
+  useEffect(() => {
+    if (open) {
+      void fetchNovelTypes();
+    }
+  }, [open, fetchNovelTypes]);
 
   const form = useForm<CreateOutlineValues>({
     resolver: zodResolver(createOutlineSchema),
@@ -47,9 +55,9 @@ export default function CreateOutlineDialog() {
             <SelectValue placeholder="请选择" />
           </SelectTrigger>
           <SelectContent>
-            {['科幻', '奇幻', '悬疑', '言情', '历史'].map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
+            {novelTypes.map((t) => (
+              <SelectItem key={t.id} value={t.label}>
+                {t.label}
               </SelectItem>
             ))}
           </SelectContent>
