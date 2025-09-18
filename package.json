@@ -2,7 +2,7 @@
   "name": "@moge/root",
   "version": "1.0.0",
   "scripts": {
-    "lint": "git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(ts|tsx|js|jsx)$' | xargs -r eslint --config eslint.config.mjs",
+    "lint": "git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(ts|tsx|js|jsx)$' | tr '\\n' '\\0' | xargs -0 -r eslint --config eslint.config.mjs",
     "lint:fix": "eslint --config eslint.config.mjs --fix --cache \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "pnpm -r run type-check",
     "test": "pnpm -r run test",

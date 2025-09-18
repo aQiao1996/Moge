@@ -2,7 +2,7 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import GitlabProvider, { type GitLabProfile } from 'next-auth/providers/gitlab';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import httpRequest from '@/lib/httpRequest';
+import httpRequest from '@/lib/request';
 
 const authOptions: NextAuthOptions = {
   // 配置认证提供者
@@ -21,22 +21,14 @@ const authOptions: NextAuthOptions = {
         }
 
         try {
+          console.log('🚀 NextAuth authorize 开始调用后端登录API');
           // 调用后端 HTTP API 进行身份验证
           const response = await httpRequest.post<{
-            user: {
-              id: string;
-              username: string;
-              email: string;
-              name: string;
-              avatarUrl: string;
-            };
+            user: { id: string; username: string; email: string; name: string; avatarUrl: string };
             token: string;
           }>(
             '/auth/login',
-            {
-              username: credentials.username,
-              password: credentials.password,
-            },
+            { username: credentials.username, password: credentials.password },
             { requiresToken: false }
           );
 
@@ -57,6 +49,7 @@ const authOptions: NextAuthOptions = {
           return null;
         } catch (error) {
           if (error instanceof Error) {
+            // 直接抛出后端的错误信息，让NextAuth显示给用户
             throw new Error(error.message);
           }
           throw new Error('认证时发生未知错误');

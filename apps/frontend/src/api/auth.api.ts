@@ -1,4 +1,4 @@
-import httpRequest from '@/lib/httpRequest';
+import httpRequest from '@/lib/request';
 import type { LoginValues, SignupValues } from '@moge/types';
 
 interface AuthResponse {

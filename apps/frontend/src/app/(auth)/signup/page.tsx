@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { MogeInput } from '@/app/components/MogeInput';
 import HookForm from '@/app/components/HookForm';
 import { signIn } from 'next-auth/react';
+import { registerApi } from '@/api/auth.api';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -25,9 +26,8 @@ export default function SignupPage() {
     resetError();
 
     try {
-      // ❯ Using direct Next-Auth instead of store register
+      await registerApi(values);
       toast.success('注册成功！正在为您登录...');
-
       const signInResult = await signIn('credentials', {
         username: values.username,
         password: values.password,

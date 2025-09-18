@@ -1,4 +1,4 @@
-import httpRequest from '@/lib/httpRequest';
+import httpRequest from '@/lib/request';
 import type { ProfileValues } from '@moge/types';
 
 interface ProfileResponse {

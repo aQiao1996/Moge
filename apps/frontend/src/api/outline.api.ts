@@ -1,4 +1,4 @@
-import httpRequest from '@/lib/httpRequest';
+import httpRequest from '@/lib/request';
 import type { CreateOutlineValues } from '@moge/types';
 
 interface OutlineItem {
