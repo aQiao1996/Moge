@@ -21,7 +21,7 @@ import { FilePlus } from 'lucide-react';
 import HookForm from '@/app/components/HookForm';
 import type { CreateOutlineValues } from '@moge/types';
 import { createOutlineSchema } from '@moge/types';
-import { useOutlineStore } from '@/stores/outline.store';
+import { useOutlineStore } from '@/stores/outlineStore';
 import { toast } from 'sonner';
 import { useState } from 'react';
 

@@ -9,8 +9,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import HookForm from '@/app/components/HookForm';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/stores/auth.store';
-import { useUserStore } from '@/stores/user.store';
+import { useAuthStore } from '@/stores/authStore';
+import { useUserStore } from '@/stores/userStore';
 import { passwordSchema, profileSchema, type PasswordData, type ProfileValues } from '@moge/types';
 
 export default function ProfilePage() {

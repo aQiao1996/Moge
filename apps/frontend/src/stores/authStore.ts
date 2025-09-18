@@ -1,31 +1,68 @@
 import { create } from 'zustand';
-import type { User } from '@moge/types';
+import { loginApi, registerApi, logoutApi } from '@/api/auth.api';
+import type { LoginData, SignupData, User } from '@moge/types';
 
-/**
- * 定义 store 的状态和方法接口
- */
 interface AuthState {
   user: User | null;
+  token: string | null;
+  loading: boolean;
+  error: string | null;
+  login: (data: LoginData) => Promise<void>;
+  register: (data: SignupData) => Promise<void>;
+  logout: () => Promise<void>;
   setUser: (user: User | null) => void;
-  clearUser: () => void;
+  setToken: (token: string | null) => void;
+  resetError: () => void;
 }
 
-/**
- * 一个轻量级的 store, 仅用于在客户端存储和访问当前用户信息。
- * 它的数据源将由 NextAuth 的 session 来驱动。
- */
-export const useAuthStore = create<AuthState>()((set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  /**
-   * 设置用户信息
-   */
-  setUser: (user: User | null) => {
+  token: null,
+  loading: false,
+  error: null,
+
+  login: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await loginApi(data);
+      set({ user: result.user, token: result.token, loading: false });
+      localStorage.setItem('token', result.token);
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Login failed', loading: false });
+      throw error;
+    }
+  },
+
+  register: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await registerApi(data);
+      set({ user: result.user, token: result.token, loading: false });
+      localStorage.setItem('token', result.token);
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Register failed', loading: false });
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    set({ loading: true, error: null });
+    try {
+      await logoutApi();
+      set({ user: null, token: null, loading: false });
+      localStorage.removeItem('token');
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Logout failed', loading: false });
+    }
+  },
+
+  setUser: (user) => {
     set({ user });
   },
-  /**
-   * 清除用户信息
-   */
-  clearUser: () => {
-    set({ user: null });
+  setToken: (token) => {
+    set({ token });
+  },
+  resetError: () => {
+    set({ error: null });
   },
 }));

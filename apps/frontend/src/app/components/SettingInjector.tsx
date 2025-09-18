@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useSettings } from '@/stores/settings';
+import { useSettings } from '@/stores/settingStore';
 
 export default function SettingInjector() {
   const theme = useSettings((state) => state.theme);

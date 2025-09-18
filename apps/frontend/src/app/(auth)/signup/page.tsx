@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { signupSchema, type SignupData } from '@moge/types';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/authStore';
 import { MogeInput } from '@/app/components/MogeInput';
 import HookForm from '@/app/components/HookForm';
 import { signIn } from 'next-auth/react';

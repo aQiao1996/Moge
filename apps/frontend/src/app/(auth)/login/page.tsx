@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { loginSchema, type LoginData } from '@moge/types';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/authStore';
 import HookForm from '@/app/components/HookForm';
 import { MogeInput } from '@/app/components/MogeInput';
 import { Button } from '@/components/ui/button';

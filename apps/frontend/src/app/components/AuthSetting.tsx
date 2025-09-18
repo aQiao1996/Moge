@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/stores/settings';
+import { useSettings } from '@/stores/settingStore';
 import { useState } from 'react';
 
 export default function AuthSetting({ isAbsolute = true }) {

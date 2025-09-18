@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
-import { useOutlineStore } from '@/stores/outline.store';
+import { useOutlineStore } from '@/stores/outlineStore';
 // import { useEffect } from 'react';
 
 export interface Outline {
