@@ -9,14 +9,14 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
-  loginInputSchema,
-  registerInputSchema,
-  gitlabLoginInputSchema,
-  changePasswordInputSchema,
-  type LoginInput,
-  type RegisterInput,
-  type GitlabLoginInput,
-  type ChangePasswordInput,
+  loginSchema,
+  registerSchema,
+  gitlabLoginSchema,
+  changePasswordSchema,
+  type LoginData,
+  type RegisterData,
+  type GitlabLoginData,
+  type ChangePasswordData,
 } from '@moge/types';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -59,7 +59,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 400, description: '登录失败' })
-  async login(@Body(new ZodValidationPipe(loginInputSchema)) loginData: LoginInput) {
+  async login(@Body(new ZodValidationPipe(loginSchema)) loginData: LoginData) {
     return this.authService.login(loginData.username, loginData.password);
   }
 
@@ -93,7 +93,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 400, description: '注册失败' })
-  async register(@Body(new ZodValidationPipe(registerInputSchema)) registerData: RegisterInput) {
+  async register(@Body(new ZodValidationPipe(registerSchema)) registerData: RegisterData) {
     return this.authService.register(
       registerData.username,
       registerData.password,
@@ -120,9 +120,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'GitLab 登录成功' })
   @ApiResponse({ status: 400, description: 'GitLab 登录失败' })
-  async gitlabLogin(
-    @Body(new ZodValidationPipe(gitlabLoginInputSchema)) gitlabData: GitlabLoginInput
-  ) {
+  async gitlabLogin(@Body(new ZodValidationPipe(gitlabLoginSchema)) gitlabData: GitlabLoginData) {
     return this.authService.gitlabLogin(
       gitlabData.provider,
       gitlabData.providerAccountId,
@@ -169,7 +167,7 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: '未授权' })
   @ApiResponse({ status: 400, description: '密码修改失败' })
   async changePassword(
-    @Body(new ZodValidationPipe(changePasswordInputSchema)) changePasswordData: ChangePasswordInput,
+    @Body(new ZodValidationPipe(changePasswordSchema)) changePasswordData: ChangePasswordData,
     @Request() req: AuthenticatedRequest
   ) {
     if (!req.user?.id) {

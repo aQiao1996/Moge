@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { loginApi, registerApi, logoutApi } from '@/api/auth.api';
-import type { LoginValues, SignupValues } from '@moge/types';
+import type { LoginData, SignupData } from '@moge/types';
 
 interface User {
   id: string;
@@ -15,8 +15,8 @@ interface AuthState {
   token: string | null;
   loading: boolean;
   error: string | null;
-  login: (data: LoginValues) => Promise<void>;
-  register: (data: SignupValues) => Promise<void>;
+  login: (data: LoginData) => Promise<void>;
+  register: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;

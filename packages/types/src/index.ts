@@ -15,5 +15,4 @@ export * from './api';
 export * from './schemas/login';
 export * from './schemas/signup';
 export * from './schemas/user';
-export * from './schemas/profile';
 export * from './schemas/outline';

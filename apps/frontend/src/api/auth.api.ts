@@ -1,5 +1,5 @@
 import httpRequest from '@/lib/request';
-import type { LoginValues, SignupValues } from '@moge/types';
+import type { LoginData, SignupData } from '@moge/types';
 
 interface AuthResponse {
   token: string;
@@ -12,14 +12,14 @@ interface AuthResponse {
   };
 }
 
-export const loginApi = async (data: LoginValues): Promise<AuthResponse> => {
+export const loginApi = async (data: LoginData): Promise<AuthResponse> => {
   const response = await httpRequest.post<AuthResponse>('/auth/login', data, {
     requiresToken: false,
   });
   return response.data;
 };
 
-export const registerApi = async (data: SignupValues): Promise<AuthResponse> => {
+export const registerApi = async (data: SignupData): Promise<AuthResponse> => {
   const response = await httpRequest.post<AuthResponse>('/auth/register', data, {
     requiresToken: false,
   });

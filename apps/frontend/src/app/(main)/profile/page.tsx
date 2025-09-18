@@ -11,12 +11,7 @@ import HookForm from '@/app/components/HookForm';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUserStore } from '@/stores/user.store';
-import {
-  passwordSchema,
-  profileSchema,
-  type PasswordValues,
-  type ProfileValues,
-} from '@moge/types';
+import { passwordSchema, profileSchema, type PasswordData, type ProfileValues } from '@moge/types';
 
 export default function ProfilePage() {
   const { update } = useSession();
@@ -31,7 +26,7 @@ export default function ProfilePage() {
     },
   });
 
-  const passwordForm = useForm<PasswordValues>({
+  const passwordForm = useForm<PasswordData>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
       currentPassword: '',

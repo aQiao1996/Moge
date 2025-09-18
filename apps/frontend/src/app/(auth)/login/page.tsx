@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { loginSchema, type LoginValues } from '@moge/types';
+import { loginSchema, type LoginData } from '@moge/types';
 import { useAuthStore } from '@/stores/auth.store';
 import HookForm from '@/app/components/HookForm';
 import { MogeInput } from '@/app/components/MogeInput';
@@ -16,13 +16,13 @@ export default function LoginPage() {
   const router = useRouter();
   const { loading, resetError } = useAuthStore();
 
-  const form = useForm<LoginValues>({
+  const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
     defaultValues: { username: '', password: '' },
   });
 
-  const onSubmit = async (values: LoginValues) => {
+  const onSubmit = async (values: LoginData) => {
     toast.dismiss();
     resetError();
 

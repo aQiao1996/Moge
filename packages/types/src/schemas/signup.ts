@@ -1,10 +1,11 @@
 // src/schemas/signup.ts
 import { z } from 'zod';
+import { passwordValidation } from './login';
 
 export const signupSchema = z
   .object({
     username: z.string().min(1, '账号不能为空'),
-    password: z.string().min(6, '密码至少 6 位'),
+    password: passwordValidation, // 使用统一的密码验证规则
     confirm: z.string().min(1, '请再次输入密码'),
   })
   .refine((d) => d.password === d.confirm, {
@@ -12,4 +13,8 @@ export const signupSchema = z
     path: ['confirm'],
   });
 
-export type SignupValues = z.infer<typeof signupSchema>;
+// =================================================================================
+// Inferred Types
+// =================================================================================
+
+export type SignupData = z.infer<typeof signupSchema>;

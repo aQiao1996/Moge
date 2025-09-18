@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { signupSchema, type SignupValues } from '@moge/types';
+import { signupSchema, type SignupData } from '@moge/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { MogeInput } from '@/app/components/MogeInput';
 import HookForm from '@/app/components/HookForm';
@@ -15,13 +15,13 @@ export default function SignupPage() {
   const router = useRouter();
   const { loading, resetError } = useAuthStore();
 
-  const form = useForm<SignupValues>({
+  const form = useForm<SignupData>({
     resolver: zodResolver(signupSchema),
     mode: 'onChange',
     defaultValues: { username: '', password: '', confirm: '' },
   });
 
-  const onSubmit = async (values: SignupValues) => {
+  const onSubmit = async (values: SignupData) => {
     toast.dismiss();
     resetError();
 
