@@ -32,7 +32,7 @@ export default withAuth(
 );
 
 // 配置中间件需要拦截的路径
-// 拦截所有页面请求, 但放过静态资源和 next-auth 自己的 API 路由
+// 拦截所有页面请求, 但放过静态资源、next-auth 自己的 API 路由和代理API路由
 export const config = {
-  matcher: ['/((?!api/|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/|moge-api/|_next/static|_next/image|favicon.ico).*)'],
 };

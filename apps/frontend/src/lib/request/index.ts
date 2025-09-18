@@ -21,7 +21,8 @@ export interface FetchOptions {
   body?: unknown;
   timeout?: number;
   credentials?: RequestCredentials;
-  requiresToken?: boolean;
+  requiresToken?: boolean; // 是否需要token, 默认为true
+  silent?: boolean; // 是否静默模式，不显示Toast
 }
 
 export interface ApiResponse<T = unknown> {
@@ -158,13 +159,15 @@ const responseInterceptor = <T>(res: ApiResponse<T>) => {
   return res;
 };
 
-const errorHandler = (error: unknown): never => {
+const errorHandler = (error: unknown, silent?: boolean): never => {
+  // 静默模式下不显示Toast,交给调用方处理
+  if (silent) throw error;
+  // 非静默模式下显示Toast
   if (isApiError(error)) {
     const res = error.response;
     if (res) {
       // 对于所有HTTP错误，都使用后端返回的具体错误信息
       const errorMessage = res.message || `HTTP ${res.code} 错误`;
-
       switch (res.code) {
         case 400:
           globalHandlers.notify?.(errorMessage, 'error');
@@ -210,7 +213,7 @@ const fetchRequest = async <T>(
   url: string,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> => {
-  const { method = 'GET', headers, body, timeout = 10000 } = options;
+  const { method = 'GET', headers, body, timeout = 10000, silent = false } = options;
 
   let reqUrl: string;
   if (typeof window === 'undefined') {
@@ -249,7 +252,7 @@ const fetchRequest = async <T>(
     return data as ApiResponse<T>;
   } catch (err) {
     clearTimeout(timeoutId);
-    errorHandler(err);
+    errorHandler(err, silent);
     throw err;
   }
 };

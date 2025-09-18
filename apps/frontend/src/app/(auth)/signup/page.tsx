@@ -25,28 +25,24 @@ export default function SignupPage() {
     toast.dismiss();
     resetError();
 
-    try {
-      await registerApi(values);
-      toast.success('注册成功！正在为您登录...');
-      const signInResult = await signIn('credentials', {
-        username: values.username,
-        password: values.password,
-        redirect: false,
-      });
+    await registerApi(values);
+    toast.success('注册成功！正在为您登录...');
 
-      if (signInResult?.ok) {
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
-      } else {
-        toast.error(signInResult?.error || '自动登录失败, 请手动登录');
-        setTimeout(() => {
-          router.push('/login');
-        }, 1000);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '注册失败，请重试';
-      toast.error(errorMessage);
+    const signInResult = await signIn('credentials', {
+      username: values.username,
+      password: values.password,
+      redirect: false,
+    });
+
+    if (signInResult?.ok) {
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    } else {
+      toast.error(signInResult?.error || '自动登录失败, 请手动登录');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
     }
   };
 

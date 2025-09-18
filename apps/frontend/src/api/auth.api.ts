@@ -13,12 +13,16 @@ interface AuthResponse {
 }
 
 export const loginApi = async (data: LoginValues): Promise<AuthResponse> => {
-  const response = await httpRequest.post<AuthResponse>('/auth/login', data);
+  const response = await httpRequest.post<AuthResponse>('/auth/login', data, {
+    requiresToken: false,
+  });
   return response.data;
 };
 
 export const registerApi = async (data: SignupValues): Promise<AuthResponse> => {
-  const response = await httpRequest.post<AuthResponse>('/auth/register', data);
+  const response = await httpRequest.post<AuthResponse>('/auth/register', data, {
+    requiresToken: false,
+  });
   return response.data;
 };
 

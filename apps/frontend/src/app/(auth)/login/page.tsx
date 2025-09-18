@@ -26,23 +26,18 @@ export default function LoginPage() {
     toast.dismiss();
     resetError();
 
-    try {
-      const result = await signIn('credentials', {
-        ...values,
-        redirect: false,
-      });
+    const result = await signIn('credentials', {
+      ...values,
+      redirect: false,
+    });
 
-      if (result?.ok) {
-        toast.success('登录成功');
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
-      } else {
-        toast.error(result?.error || '用户名或密码错误');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '登录失败，请重试';
-      toast.error(errorMessage);
+    if (result?.ok) {
+      toast.success('登录成功');
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    } else {
+      toast.error(result?.error || '用户名或密码错误');
     }
   };
 
