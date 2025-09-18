@@ -7,7 +7,7 @@ import './styles/index.css';
 
 export const metadata: Metadata = {
   title: '墨阁',
-  description: '墨阁描述',
+  description: 'AI 生成 · 小说世界 · 无限灵感',
   icons: { icon: '/favicon.ico', apple: '/favicon.ico' },
 };
 

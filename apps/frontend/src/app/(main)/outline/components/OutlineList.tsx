@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outline.store';
-import { useEffect } from 'react';
+// import { useEffect } from 'react';
 
 export interface Outline {
   id: string;
@@ -17,11 +17,11 @@ export interface Outline {
 }
 
 export default function OutlineList() {
-  const { outlines, loading, getOutlines } = useOutlineStore();
+  const { outlines, loading } = useOutlineStore();
 
-  useEffect(() => {
-    void getOutlines();
-  }, [getOutlines]);
+  // useEffect(() => {
+  //   void getOutlines();
+  // }, [getOutlines]);
 
   if (loading) {
     return (
