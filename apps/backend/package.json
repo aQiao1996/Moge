@@ -53,6 +53,7 @@
     "@types/jest": "catalog:",
     "@types/jsonwebtoken": "catalog:",
     "@types/node": "catalog:",
+    "@types/passport-jwt": "catalog:",
     "@types/supertest": "catalog:",
     "@types/swagger-ui-express": "catalog:",
     "class-transformer": "catalog:",
