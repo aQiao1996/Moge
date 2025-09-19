@@ -93,8 +93,9 @@ export default function HookForm<T extends FieldValues>({
           {cancelText && (
             <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
-              className="rounded-md bg-gray-400 px-4 py-2 text-base text-gray-100 shadow-[0_4px_14px_0_rgba(0,0,0,.2)] transition-all duration-300 hover:shadow-[0_6px_20px_0_rgba(0,0,0,.25)] hover:brightness-105"
+              className="hover:brightness-95"
             >
               {cancelText}
             </Button>
