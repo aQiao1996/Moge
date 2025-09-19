@@ -37,14 +37,33 @@ export default function OutlineList() {
 
   if (loading) {
     return (
-      <Card
-        className="border p-10 text-center backdrop-blur-xl"
-        style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-      >
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-        <p className="mt-4 text-[var(--moge-text-sub)]">加载中...</p>
-      </Card>
+      <div className="grid gap-4">
+        {[...Array<number>(3)].map((_, i) => (
+          <Card
+            key={i}
+            className="border p-4 backdrop-blur-xl"
+            style={{
+              backgroundColor: 'var(--moge-card-bg)',
+              borderColor: 'var(--moge-card-border)',
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-40 rounded-md" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-3/4 rounded-md" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-md" />
+                <Skeleton className="h-8 w-8 rounded-md" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     );
   }
 

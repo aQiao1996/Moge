@@ -15,7 +15,7 @@ interface OutlineState {
 export const useOutlineStore = create<OutlineState>((set) => ({
   outlines: [],
   total: 0,
-  loading: false,
+  loading: true,
   error: null,
 
   createOutline: async (data) => {
