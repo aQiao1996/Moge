@@ -1,20 +1,17 @@
 // src/schemas/signup.ts
 import { z } from 'zod';
-import { passwordValidation } from './login';
 
 export const signupSchema = z
   .object({
-    username: z.string().min(1, '账号不能为空'),
-    password: passwordValidation, // 使用统一的密码验证规则
-    confirm: z.string().min(1, '请再次输入密码'),
+    username: z.string().min(2, '用户名至少需要 2 个字符'),
+    password: z.string().min(6, '密码至少需要 6 个字符'),
+    confirm: z.string(),
+    email: z.string().email('请输入有效的邮箱地址').optional(),
+    name: z.string().optional(),
   })
-  .refine((d) => d.password === d.confirm, {
-    message: '两次密码不一致',
+  .refine((data) => data.password === data.confirm, {
+    message: '两次输入的密码不一致',
     path: ['confirm'],
   });
-
-// =================================================================================
-// Inferred Types
-// =================================================================================
 
 export type SignupData = z.infer<typeof signupSchema>;

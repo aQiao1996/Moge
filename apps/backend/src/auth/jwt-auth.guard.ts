@@ -1,36 +1,24 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { User } from '@moge/types';
+import { ExecutionContext, Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../common/decorators/public.decorator';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  constructor(private authService: AuthService) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: { user?: User; headers: { authorization?: string } } = context
-      .switchToHttp()
-      .getRequest();
-    const token = this.extractTokenFromHeader(request);
-
-    if (!token) {
-      throw new UnauthorizedException('未提供认证令牌');
-    }
-
-    try {
-      const user: User = await this.authService.verifyToken(token);
-      request.user = user;
-      return true;
-    } catch {
-      throw new UnauthorizedException('无效的认证令牌');
-    }
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) {
+    super();
   }
 
-  private extractTokenFromHeader(request: {
-    headers: { authorization?: string };
-  }): string | undefined {
-    const authHeader = request.headers.authorization;
-    if (!authHeader) return undefined;
-    const [type, token] = authHeader.split(' ');
-    return type === 'Bearer' ? token : undefined;
+  canActivate(context: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
+    return super.canActivate(context);
   }
 }
