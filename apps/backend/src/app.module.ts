@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { DictModule } from './dict/dict.module';
+import { OutlineModule } from './outline/outline.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DictModule } from './dict/dict.module';
     AuthModule,
     UserModule,
     DictModule,
+    OutlineModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -76,7 +76,7 @@ export default function OutlineList() {
               )}
               {it.tags && it.tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {it.tags.map((tag, index) => (
+                  {it.tags.map((tag: string, index: number) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {tag}
                     </Badge>

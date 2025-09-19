@@ -1,4 +1,18 @@
-'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { toast } from 'sonner';
+import { FilePlus } from 'lucide-react';
+import { useForm, type ControllerRenderProps, type FieldPath } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import { createOutlineSchema, type CreateOutlineValues } from '@moge/types';
+import { useOutlineStore } from '@/stores/outlineStore';
+import { useDictStore } from '@/stores/dictStore';
+
+import HookForm from '@/app/components/HookForm';
+import { MogeInput } from '@/app/components/MogeInput';
+import { MogeTextarea } from '@/app/components/MogeTextarea';
 import {
   Dialog,
   DialogContent,
@@ -14,19 +28,7 @@ import {
   MogeSelectTrigger,
   MogeSelectValue,
 } from '@/app/components/MogeSelect';
-import { MogeTextarea } from '@/app/components/MogeTextarea';
-import { MogeInput } from '@/app/components/MogeInput';
 import { Button } from '@/components/ui/button';
-import HookForm from '@/app/components/HookForm';
-import { type ControllerRenderProps, type FieldPath, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { FilePlus } from 'lucide-react';
-import type { CreateOutlineValues } from '@moge/types';
-import { createOutlineSchema } from '@moge/types';
-import { useOutlineStore } from '@/stores/outlineStore';
-import { useDictStore } from '@/stores/dictStore';
-import { toast } from 'sonner';
-import { useEffect, useState } from 'react';
 
 type RenderControl = (
   field: ControllerRenderProps<CreateOutlineValues, FieldPath<CreateOutlineValues>>,
@@ -35,6 +37,7 @@ type RenderControl = (
 
 export default function CreateOutlineDialog() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const { createOutline, loading, resetError } = useOutlineStore();
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
@@ -88,10 +91,9 @@ export default function CreateOutlineDialog() {
     toast.dismiss();
     resetError();
     try {
-      await createOutline(values);
-      toast.success('大纲创建成功');
-      setOpen(false);
-      form.reset();
+      const newOutline = await createOutline(values);
+      toast.success('大纲创建成功, 正在跳转...');
+      router.push(`/outline/${newOutline.id}`);
     } catch {
       toast.error('创建大纲失败');
     }

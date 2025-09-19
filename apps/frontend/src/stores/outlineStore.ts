@@ -1,22 +1,12 @@
 import { create } from 'zustand';
 import { createOutlineApi, getOutlinesApi } from '@/api/outline.api';
-import type { CreateOutlineValues } from '@moge/types';
-
-interface OutlineItem {
-  id: string;
-  name: string;
-  type: string;
-  era?: string;
-  conflict?: string;
-  tags?: string[];
-  remark?: string;
-}
+import type { CreateOutlineValues, Outline } from '@moge/types';
 
 interface OutlineState {
-  outlines: OutlineItem[];
+  outlines: Outline[];
   loading: boolean;
   error: string | null;
-  createOutline: (data: CreateOutlineValues) => Promise<void>;
+  createOutline: (data: CreateOutlineValues) => Promise<Outline>;
   getOutlines: () => Promise<void>;
   resetError: () => void;
 }
@@ -29,14 +19,15 @@ export const useOutlineStore = create<OutlineState>((set) => ({
   createOutline: async (data) => {
     set({ loading: true, error: null });
     try {
-      const result = await createOutlineApi(data);
+      const newOutline = await createOutlineApi(data);
       set((state) => ({
-        outlines: [...state.outlines, result],
+        outlines: [newOutline, ...state.outlines],
         loading: false,
       }));
+      return newOutline;
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Create outline failed',
+        error: error instanceof Error ? error.message : '创建大纲失败',
         loading: false,
       });
       throw error;
@@ -50,7 +41,7 @@ export const useOutlineStore = create<OutlineState>((set) => ({
       set({ outlines: result, loading: false });
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Get outlines failed',
+        error: error instanceof Error ? error.message : '获取大纲列表失败',
         loading: false,
       });
     }
