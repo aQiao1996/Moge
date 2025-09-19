@@ -1,6 +1,4 @@
 'use client';
-import { type ControllerRenderProps, type FieldPath, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -10,15 +8,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  MogeSelect,
+  MogeSelectContent,
+  MogeSelectItem,
+  MogeSelectTrigger,
+  MogeSelectValue,
+} from '@/app/components/MogeSelect';
+import { MogeTextarea } from '@/app/components/MogeTextarea';
+import { MogeInput } from '@/app/components/MogeInput';
 import { Button } from '@/components/ui/button';
-import { FilePlus } from 'lucide-react';
 import HookForm from '@/app/components/HookForm';
+import { type ControllerRenderProps, type FieldPath, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FilePlus } from 'lucide-react';
 import type { CreateOutlineValues } from '@moge/types';
 import { createOutlineSchema } from '@moge/types';
 import { useOutlineStore } from '@/stores/outlineStore';
@@ -50,26 +52,25 @@ export default function CreateOutlineDialog() {
   const renderControl: RenderControl = (field, name) => {
     if (name === 'type') {
       return (
-        <Select onValueChange={field.onChange} value={field.value as string}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="请选择" />
-          </SelectTrigger>
-          <SelectContent>
+        <MogeSelect onValueChange={field.onChange} value={field.value as string}>
+          <MogeSelectTrigger>
+            <MogeSelectValue placeholder="请选择" />
+          </MogeSelectTrigger>
+          <MogeSelectContent>
             {novelTypes.map((t) => (
-              <SelectItem key={t.id} value={t.label}>
+              <MogeSelectItem key={t.id} value={t.label}>
                 {t.label}
-              </SelectItem>
+              </MogeSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </MogeSelectContent>
+        </MogeSelect>
       );
     }
 
     if (name === 'conflict' || name === 'remark') {
       return (
-        <textarea
+        <MogeTextarea
           rows={name === 'conflict' ? 3 : 2}
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring col-span-3 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           placeholder={
             name === 'conflict' ? '例：一颗会说话的核弹要求主角 24 小时内帮它自杀……' : '备忘信息'
           }
@@ -79,11 +80,7 @@ export default function CreateOutlineDialog() {
     }
 
     return (
-      <input
-        className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring col-span-3 flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        placeholder={name === 'era' ? '例：近未来 2150 年' : '会说话的核弹'}
-        {...field}
-      />
+      <MogeInput placeholder={name === 'era' ? '例：近未来 2150 年' : '会说话的核弹'} {...field} />
     );
   };
 
