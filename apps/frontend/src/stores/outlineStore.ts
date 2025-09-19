@@ -4,15 +4,17 @@ import type { CreateOutlineValues, Outline } from '@moge/types';
 
 interface OutlineState {
   outlines: Outline[];
+  total: number;
   loading: boolean;
   error: string | null;
   createOutline: (data: CreateOutlineValues) => Promise<Outline>;
-  getOutlines: () => Promise<void>;
+  getOutlines: (params: { pageNum?: number; pageSize?: number }) => Promise<void>;
   resetError: () => void;
 }
 
 export const useOutlineStore = create<OutlineState>((set) => ({
   outlines: [],
+  total: 0,
   loading: false,
   error: null,
 
@@ -22,6 +24,7 @@ export const useOutlineStore = create<OutlineState>((set) => ({
       const newOutline = await createOutlineApi(data);
       set((state) => ({
         outlines: [newOutline, ...state.outlines],
+        total: state.total + 1,
         loading: false,
       }));
       return newOutline;
@@ -34,11 +37,11 @@ export const useOutlineStore = create<OutlineState>((set) => ({
     }
   },
 
-  getOutlines: async () => {
+  getOutlines: async (params) => {
     set({ loading: true, error: null });
     try {
-      const result = await getOutlinesApi();
-      set({ outlines: result, loading: false });
+      const result = await getOutlinesApi(params);
+      set({ outlines: result.list, total: result.total, loading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : '获取大纲列表失败',

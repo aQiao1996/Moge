@@ -25,11 +25,23 @@ export class OutlineService {
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.outline.findMany({
-      where: { userId: parseInt(userId) },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(userId: string, pageNum = 1, pageSize = 10) {
+    const skip = (pageNum - 1) * pageSize;
+    const take = pageSize;
+
+    const [list, total] = await this.prisma.$transaction([
+      this.prisma.outline.findMany({
+        where: { userId: parseInt(userId) },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.outline.count({
+        where: { userId: parseInt(userId) },
+      }),
+    ]);
+
+    return { list, total };
   }
 
   async findOne(id: number, userId: string) {

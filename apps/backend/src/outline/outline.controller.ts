@@ -1,4 +1,14 @@
-import { Body, Controller, Post, Request, Get, Patch, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Request,
+  Get,
+  Patch,
+  Param,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { OutlineService } from './outline.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
@@ -15,6 +25,7 @@ import {
   ApiBearerAuth,
   ApiUnauthorizedResponse,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 import type { User } from '@moge/types';
@@ -60,11 +71,17 @@ export class OutlineController {
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '获取当前用户的大纲列表' })
+  @ApiQuery({ name: 'pageNum', required: false, type: Number, description: '页码' })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, description: '每页条数' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
-  async findAll(@Request() req: AuthenticatedRequest) {
+  async findAll(
+    @Request() req: AuthenticatedRequest,
+    @Query('pageNum') pageNum?: number,
+    @Query('pageSize') pageSize?: number
+  ) {
     const userId = req.user.id;
-    return this.outlineService.findAll(userId);
+    return this.outlineService.findAll(userId, pageNum, pageSize);
   }
 
   @Get(':id')

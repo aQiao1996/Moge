@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface Outline {
   id: string;
@@ -17,11 +17,13 @@ export interface Outline {
 }
 
 export default function OutlineList() {
-  const { outlines, loading, getOutlines } = useOutlineStore();
+  const { outlines, total, loading, getOutlines } = useOutlineStore();
+  const [pageNum, setPageNum] = useState(1);
+  const [pageSize] = useState(10);
 
   useEffect(() => {
-    void getOutlines();
-  }, [getOutlines]);
+    void getOutlines({ pageNum, pageSize });
+  }, [getOutlines, pageNum, pageSize]);
 
   if (loading) {
     return (
@@ -107,6 +109,27 @@ export default function OutlineList() {
           </div>
         </Card>
       ))}
+      <div className="mt-4 flex items-center justify-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPageNum((prev) => Math.max(prev - 1, 1))}
+          disabled={pageNum <= 1}
+        >
+          上一页
+        </Button>
+        <span className="text-sm text-[var(--moge-text-sub)]">
+          第 {pageNum} 页 / {Math.ceil(total / pageSize)}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPageNum((prev) => (prev * pageSize < total ? prev + 1 : prev))}
+          disabled={pageNum * pageSize >= total}
+        >
+          下一页
+        </Button>
+      </div>
     </div>
   );
 }
