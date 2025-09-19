@@ -65,7 +65,6 @@ export default function LoginPage() {
         ]}
         loading={loading}
         onSubmit={onSubmit}
-        submitText="登录"
         renderControl={(field, name) =>
           name === 'username' ? (
             <MogeInput type="text" placeholder="用户名 / 邮箱" {...field} autoComplete="username" />
@@ -78,6 +77,19 @@ export default function LoginPage() {
             />
           )
         }
+        renderSubmitButton={({ loading: isLoading }) => (
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 w-full rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              boxShadow:
+                '0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))',
+            }}
+          >
+            {isLoading ? '登录中...' : '登录'}
+          </Button>
+        )}
       />
 
       <div className="relative my-4">

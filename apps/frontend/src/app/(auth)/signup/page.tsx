@@ -10,6 +10,7 @@ import { MogeInput } from '@/app/components/MogeInput';
 import HookForm from '@/app/components/HookForm';
 import { signIn } from 'next-auth/react';
 import { registerApi } from '@/api/auth.api';
+import { Button } from '@/components/ui/button';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -71,7 +72,6 @@ export default function SignupPage() {
         ]}
         loading={loading}
         onSubmit={onSubmit}
-        submitText="注册"
         renderControl={(field, name) => (
           <MogeInput
             type={name === 'confirm' || name === 'password' ? 'password' : 'text'}
@@ -85,6 +85,19 @@ export default function SignupPage() {
             {...field}
             autoComplete={name === 'username' ? 'username' : 'new-password'}
           />
+        )}
+        renderSubmitButton={({ loading: isLoading }) => (
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 w-full rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              boxShadow:
+                '0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))',
+            }}
+          >
+            {isLoading ? '注册中...' : '注册'}
+          </Button>
         )}
       />
 

@@ -38,6 +38,7 @@ interface HookFormProps<T extends FieldValues> {
   onSubmit: (values: T) => Promise<void> | void;
   submitButtonClassName?: string;
   hiddenFields?: HiddenField[];
+  renderSubmitButton?: (props: { loading?: boolean }) => React.ReactNode;
 }
 
 export default function HookForm<T extends FieldValues>({
@@ -51,6 +52,7 @@ export default function HookForm<T extends FieldValues>({
   onSubmit,
   submitButtonClassName,
   hiddenFields,
+  renderSubmitButton,
 }: HookFormProps<T>) {
   return (
     <Form {...form}>
@@ -87,26 +89,27 @@ export default function HookForm<T extends FieldValues>({
         ))}
 
         {/* 底部按钮区 */}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           {cancelText && (
             <Button
               type="button"
               onClick={onCancel}
-              className="h-10 rounded-md bg-gray-400 px-4 py-2 text-base text-gray-100 shadow-[0_4px_14px_0_rgba(0,0,0,.2)] transition-all duration-300 hover:shadow-[0_6px_20px_0_rgba(0,0,0,.25)] hover:brightness-110"
+              className="rounded-md bg-gray-400 px-4 py-2 text-base text-gray-100 shadow-[0_4px_14px_0_rgba(0,0,0,.2)] transition-all duration-300 hover:shadow-[0_6px_20px_0_rgba(0,0,0,.25)] hover:brightness-105"
             >
               {cancelText}
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={loading}
-            className={`from-moge-primary-400 to-moge-primary-500 hover:brightness-130 h-10 rounded-md bg-gradient-to-r px-4 py-2 text-base text-white/90 shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 ${cancelText ? '' : 'w-full'} ${submitButtonClassName}`}
-            style={{
-              boxShadow: `0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))`,
-            }}
-          >
-            {loading ? `${submitText}中...` : submitText}
-          </Button>
+          {renderSubmitButton ? (
+            renderSubmitButton({ loading })
+          ) : (
+            <Button
+              type="submit"
+              disabled={loading}
+              className={`gap-2 shadow-[var(--moge-glow-btn)] ${submitButtonClassName}`}
+            >
+              {loading ? `${submitText}中...` : submitText}
+            </Button>
+          )}
         </div>
       </form>
     </Form>
