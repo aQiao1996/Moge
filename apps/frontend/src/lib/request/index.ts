@@ -174,6 +174,7 @@ const errorHandler = (error: unknown, silent?: boolean): never => {
           break;
         case 401:
           globalHandlers.notify?.(errorMessage, 'error');
+          globalHandlers.onAuthError?.(); // 触发认证失败回调
           break;
         case 403:
           globalHandlers.notify?.(errorMessage, 'error');
