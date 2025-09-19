@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
-// import { useEffect } from 'react';
+import { useEffect } from 'react';
 
 export interface Outline {
   id: string;
@@ -17,11 +17,11 @@ export interface Outline {
 }
 
 export default function OutlineList() {
-  const { outlines, loading } = useOutlineStore();
+  const { outlines, loading, getOutlines } = useOutlineStore();
 
-  // useEffect(() => {
-  //   void getOutlines();
-  // }, [getOutlines]);
+  useEffect(() => {
+    void getOutlines();
+  }, [getOutlines]);
 
   if (loading) {
     return (
@@ -63,17 +63,22 @@ export default function OutlineList() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3">
+                {/* 小说名称 */}
                 <h3 className="font-han font-semibold text-[var(--moge-text-main)]">{it.name}</h3>
+                {/* 小说类型 */}
                 <Badge className="text-xs">{it.type}</Badge>
+                {/* 小说时代 */}
                 {it.era && (
                   <Badge variant="outline" className="text-xs">
                     {it.era}
                   </Badge>
                 )}
               </div>
+              {/* 小说备注 */}
               {it.remark && (
                 <p className="mt-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">{it.remark}</p>
               )}
+              {/* 小说标签 */}
               {it.tags && it.tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {it.tags.map((tag: string, index: number) => (
@@ -90,6 +95,7 @@ export default function OutlineList() {
                 </span>
               </div>
             </div>
+            {/* 操作组 */}
             <div className="flex items-center gap-2">
               <Button size="sm" variant="ghost">
                 <Edit className="h-4 w-4" />
