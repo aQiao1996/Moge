@@ -36,6 +36,8 @@ model users {
   updatedAt       DateTime   @updatedAt @map("updated_at")
   /// 该用户绑定的所有第三方账号
   accounts        accounts[]
+  /// 所属的所有大纲
+  outlines        outline[]
 }
 
 // * ==================== 第三方账号关联表 ====================
@@ -63,17 +65,17 @@ model accounts {
 // * ==================== 字典管理 ====================
 /// 字典分类表
 model dict_categories {
-  id          Int           @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   /// 分类编码，如 'novel_types'
-  code        String        @unique
+  code        String       @unique
   /// 分类名称，如 '小说类型'
   name        String
   /// 描述
   description String?
   /// 创建时间
-  createdAt   DateTime      @default(now()) @map("created_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
   /// 字典项
   items       dict_items[]
 }
@@ -101,4 +103,45 @@ model dict_items {
   category     dict_categories @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
 
   @@unique([categoryCode, code])
+}
+
+// * ==================== 小说大纲 ====================
+
+/// 小说大纲表
+model outline {
+  id        Int           @id @default(autoincrement())
+  /// 小说名称
+  name      String
+  /// 小说类型（存 label）
+  type      String
+  /// 故事时代背景
+  era       String?
+  /// 核心冲突描述
+  conflict  String?       @db.Text
+  /// 标签数组（Pg text[]）
+  tags      String[]      @default([])
+  /// 备注信息
+  remark    String?       @db.Text
+  /// 业务生命周期状态
+  status    OutlineStatus @default(DRAFT)
+  /// 最终 Markdown 全文（生成/编辑后回写）
+  content   String?       @db.Text
+  /// 所属用户 ID
+  userId    Int           @map("user_id")
+  /// 创建人关联
+  user      users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 记录创建时间
+  createdAt DateTime      @default(now()) @map("created_at")
+  /// 记录更新时间
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+/// 大纲业务状态枚举
+enum OutlineStatus {
+  DRAFT // 草稿箱
+  PUBLISHED // 已完成
+  DISCARDED // 已放弃
 }
