@@ -1,7 +1,12 @@
-import { Body, Controller, Post, Request } from '@nestjs/common';
+import { Body, Controller, Post, Request, Get, Patch, Param, ParseIntPipe } from '@nestjs/common';
 import { OutlineService } from './outline.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { createOutlineSchema, type CreateOutlineValues } from '@moge/types';
+import {
+  createOutlineSchema,
+  type CreateOutlineValues,
+  updateOutlineSchema,
+  type UpdateOutlineValues,
+} from '@moge/types';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiUnauthorizedResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 
 import type { User } from '@moge/types';
@@ -49,5 +55,44 @@ export class OutlineController {
   ) {
     const userId = req.user.id;
     return this.outlineService.create(userId, data);
+  }
+
+  @Get()
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '获取当前用户的大纲列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  async findAll(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.outlineService.findAll(userId);
+  }
+
+  @Get(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '获取指定ID的大纲详情' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.outlineService.findOne(id, userId);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新大纲' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({ description: '要更新的大纲信息', type: Object })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(updateOutlineSchema)) data: UpdateOutlineValues
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.update(id, userId, data);
   }
 }

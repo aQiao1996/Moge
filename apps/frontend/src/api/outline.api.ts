@@ -17,6 +17,6 @@ export const createOutlineApi = async (data: CreateOutlineValues): Promise<Outli
 };
 
 export const getOutlinesApi = async (): Promise<OutlineItem[]> => {
-  const response = await httpRequest.get<OutlineItem[]>('/outlines');
+  const response = await httpRequest.get<OutlineItem[]>('/outline');
   return response.data;
 };

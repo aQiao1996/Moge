@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateOutlineValues } from '@moge/types';
+import type { CreateOutlineValues, UpdateOutlineValues } from '@moge/types';
 
 @Injectable()
 export class OutlineService {
@@ -22,6 +22,33 @@ export class OutlineService {
           },
         },
       },
+    });
+  }
+
+  async findAll(userId: string) {
+    return this.prisma.outline.findMany({
+      where: { userId: parseInt(userId) },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOne(id: number, userId: string) {
+    const outline = await this.prisma.outline.findUnique({
+      where: { id },
+    });
+
+    if (outline?.userId !== parseInt(userId)) {
+      throw new ForbiddenException('无权访问此大纲');
+    }
+
+    return outline;
+  }
+
+  async update(id: number, userId: string, data: UpdateOutlineValues) {
+    await this.findOne(id, userId);
+    return this.prisma.outline.update({
+      where: { id },
+      data,
     });
   }
 }

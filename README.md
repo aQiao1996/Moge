@@ -15,12 +15,13 @@ pnpm install
 
 ```bash
 # 语法: pnpm --filter <package-name> add <dependency-name> --save-catalog
+# -F 等价于 --filter
 
 # 示例: 为 backend 添加一个新的生产依赖
-pnpm --filter @moge/backend add lodash --save-catalog
+pnpm -F @moge/backend add lodash --save-catalog
 
 # 示例: 为 frontend 添加一个新的开发依赖
-pnpm --filter @moge/frontend add -D @types/lodash --save-catalog
+pnpm -F @moge/frontend add -D @types/lodash --save-catalog
 ```
 
 ---
@@ -36,7 +37,7 @@ pnpm --filter @moge/frontend add -D @types/lodash --save-catalog
 
 ```bash
 # 示例: 为 frontend 添加 catalog 中已有的 sonner
-pnpm --filter @moge/frontend add sonner@catalog:
+pnpm -F @moge/frontend add sonner@catalog:
 ```
 
 **添加项目级开发工具 (到根目录)**
@@ -51,7 +52,6 @@ pnpm add -Dw <tool-name> --save-catalog
 **子包使用 `packages/*` 共享包**
 
 ```bash
-# -F 等价于 --filter
 # @moge/backend 是子包的名称
 # @moge/types 是共享包的名称
 # "workspace:*" 协议表示这个包来自当前 monorepo 的 workspace
