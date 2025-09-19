@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Request } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -18,7 +18,6 @@ import {
   type ChangePasswordData,
 } from '@moge/types';
 import { Public } from '../common/decorators/public.decorator';
-import { JwtAuthGuard } from './jwt-auth.guard';
 
 interface AuthenticatedRequest extends Request {
   user: User;
@@ -75,7 +74,6 @@ export class AuthController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '获取当前用户信息' })
@@ -85,7 +83,6 @@ export class AuthController {
     return req.user;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '修改密码' })

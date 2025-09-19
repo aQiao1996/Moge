@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Request } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,7 +10,7 @@ import {
 import { UserService } from './user.service';
 import { updateProfileInputSchema, type UpdateProfileInput } from '@moge/types';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
 import type { User } from '@moge/types';
 
 interface AuthenticatedRequest extends Request {
@@ -22,7 +22,6 @@ interface AuthenticatedRequest extends Request {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post('profile')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '更新用户资料' })
