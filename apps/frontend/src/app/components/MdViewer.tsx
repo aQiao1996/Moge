@@ -1,0 +1,34 @@
+'use client';
+import ReactMarkdown from 'react-markdown';
+import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
+
+type Props = { md: string; className?: string };
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return h; // 32 位整数
+}
+
+export default function MdViewer({ md, className = '' }: Props) {
+  if (!md || md.trim() === '') return null;
+
+  const { resolvedTheme } = useTheme();
+  const key = useMemo(() => `${md.length}-${hashCode(md.slice(0, 50))}`, [md]);
+
+  return (
+    <div
+      className={cn(
+        'prose prose-slate max-w-none',
+        resolvedTheme === 'dark' && 'prose-invert',
+        className
+      )}
+    >
+      <ReactMarkdown key={key}>{md}</ReactMarkdown>
+    </div>
+  );
+}
