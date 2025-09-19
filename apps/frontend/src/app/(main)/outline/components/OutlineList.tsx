@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 export interface Outline {
   id: string;
@@ -31,7 +41,8 @@ export default function OutlineList() {
         className="border p-10 text-center backdrop-blur-xl"
         style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
       >
-        <div className="mx-auto h-12 w-12 animate-pulse bg-[var(--moge-text-muted)]" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
         <p className="mt-4 text-[var(--moge-text-sub)]">加载中...</p>
       </Card>
     );
@@ -66,7 +77,7 @@ export default function OutlineList() {
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 {/* 小说名称 */}
-                <h3 className="font-han font-semibold text-[var(--moge-text-main)]">{it.name}</h3>
+                <h3 className="font-semibold text-[var(--moge-text-main)]">{it.name}</h3>
                 {/* 小说类型 */}
                 <Badge className="text-xs">{it.type}</Badge>
                 {/* 小说时代 */}
@@ -109,27 +120,22 @@ export default function OutlineList() {
           </div>
         </Card>
       ))}
-      <div className="mt-4 flex items-center justify-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPageNum((prev) => Math.max(prev - 1, 1))}
-          disabled={pageNum <= 1}
-        >
-          上一页
-        </Button>
-        <span className="text-sm text-[var(--moge-text-sub)]">
-          第 {pageNum} 页 / {Math.ceil(total / pageSize)}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPageNum((prev) => (prev * pageSize < total ? prev + 1 : prev))}
-          disabled={pageNum * pageSize >= total}
-        >
-          下一页
-        </Button>
-      </div>
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious href="#" onClick={() => setPageNum((prev) => prev - 1)} />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#">{total}</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext href="#" onClick={() => setPageNum((prev) => prev + 1)} />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 }

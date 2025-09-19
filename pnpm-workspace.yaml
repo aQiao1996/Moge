@@ -38,6 +38,7 @@ catalogs:
     '@types/jest': ^29.5.12
     '@types/jsonwebtoken': ^9.0.3
     '@types/node': 18.18.0
+    '@types/passport-jwt': ^4.0.1
     '@types/react': ^19
     '@types/react-dom': ^19
     '@types/supertest': ^6.0.2
@@ -45,7 +46,6 @@ catalogs:
     '@typescript-eslint/eslint-plugin': ^8.0.0
     '@typescript-eslint/parser': ^8.0.0
     '@typescript-eslint/typescript-estree': ^8.0.0
-    '@types/passport-jwt': ^4.0.1
     bcryptjs: ^2.4.3
     chokidar: ^4.0.0
     class-transformer: ^0.5.1
