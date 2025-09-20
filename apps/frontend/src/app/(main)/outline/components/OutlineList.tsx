@@ -6,15 +6,8 @@ import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import MogePagination from '@/app/components/MogePagination';
+import dayjs from 'dayjs';
 
 export interface Outline {
   id: string;
@@ -29,7 +22,7 @@ export interface Outline {
 export default function OutlineList() {
   const { outlines, total, loading, getOutlines } = useOutlineStore();
   const [pageNum, setPageNum] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5);
 
   useEffect(() => {
     void getOutlines({ pageNum, pageSize });
@@ -123,7 +116,7 @@ export default function OutlineList() {
               <div className="mt-3 flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {new Date().toLocaleDateString()}
+                  {dayjs(it.createdAt).format('YYYY-MM-DD HH:mm:ss')}
                 </span>
               </div>
             </div>
@@ -139,22 +132,13 @@ export default function OutlineList() {
           </div>
         </Card>
       ))}
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious href="#" onClick={() => setPageNum((prev) => prev - 1)} />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#">{total}</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext href="#" onClick={() => setPageNum((prev) => prev + 1)} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <MogePagination
+        currentPage={pageNum}
+        totalPages={Math.ceil(total / pageSize)}
+        onPageChange={setPageNum}
+        showTotal={true}
+        totalItems={total}
+      />
     </div>
   );
 }

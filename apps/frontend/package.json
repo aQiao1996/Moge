@@ -24,6 +24,7 @@
     "@tailwindcss/typography": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
+    "dayjs": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",
