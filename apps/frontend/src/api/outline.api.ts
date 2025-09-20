@@ -1,30 +1,41 @@
 import httpRequest from '@/lib/request';
-import type { CreateOutlineValues } from '@moge/types';
-
-interface OutlineItem {
-  id: string;
-  name: string;
-  type: string;
-  era?: string;
-  conflict?: string;
-  tags?: string[];
-  remark?: string;
-}
-
-export const createOutlineApi = async (data: CreateOutlineValues): Promise<OutlineItem> => {
-  const response = await httpRequest.post<OutlineItem>('/outline', data);
-  return response.data;
-};
+import type { CreateOutlineValues, Outline } from '@moge/types';
 
 interface GetOutlinesResponse {
-  list: OutlineItem[];
+  list: Outline[];
   total: number;
 }
 
-export const getOutlinesApi = async (params: {
+interface GetOutlinesParams {
   pageNum?: number;
   pageSize?: number;
-}): Promise<GetOutlinesResponse> => {
-  const response = await httpRequest.get<GetOutlinesResponse>('/outline', { params });
+  search?: string;
+  type?: string;
+  era?: string;
+  tags?: string[];
+  sortBy?: 'name' | 'createdAt' | 'type';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export const createOutlineApi = async (data: CreateOutlineValues): Promise<Outline> => {
+  const response = await httpRequest.post<Outline>('/outline', data);
+  return response.data;
+};
+
+export const getOutlinesApi = async (params: GetOutlinesParams): Promise<GetOutlinesResponse> => {
+  // 过滤掉 undefined、null、空字符串和空数组
+  const filteredParams = Object.fromEntries(
+    Object.entries(params).filter(([, value]) => {
+      if (value === undefined || value === null || value === '') {
+        return false;
+      }
+      if (Array.isArray(value) && value.length === 0) {
+        return false;
+      }
+      return true;
+    })
+  );
+
+  const response = await httpRequest.get<GetOutlinesResponse>('/outline', filteredParams);
   return response.data;
 };

@@ -80,4 +80,9 @@
     font-size: 1.2rem;
     line-height: 1;
   }
+
+  /* 自适应网格布局 */
+  .auto-fit-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
 }

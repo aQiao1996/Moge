@@ -73,15 +73,50 @@ export class OutlineController {
   @ApiOperation({ summary: '获取当前用户的大纲列表' })
   @ApiQuery({ name: 'pageNum', required: false, type: Number, description: '页码' })
   @ApiQuery({ name: 'pageSize', required: false, type: Number, description: '每页条数' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: '搜索关键词' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: '大纲类型' })
+  @ApiQuery({ name: 'era', required: false, type: String, description: '时代' })
+  @ApiQuery({ name: 'tags', required: false, type: [String], description: '标签' })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['name', 'createdAt', 'type'],
+    description: '排序字段',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: '排序方向',
+  })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
   async findAll(
     @Request() req: AuthenticatedRequest,
     @Query('pageNum') pageNum?: number,
-    @Query('pageSize') pageSize?: number
+    @Query('pageSize') pageSize?: number,
+    @Query('search') search?: string,
+    @Query('type') type?: string,
+    @Query('era') era?: string,
+    @Query('tags') tags?: string | string[],
+    @Query('sortBy') sortBy?: 'name' | 'createdAt' | 'type',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc'
   ) {
     const userId = req.user.id;
-    return this.outlineService.findAll(userId, pageNum, pageSize);
+
+    // 处理 tags 参数（可能是字符串或数组）
+    const tagsArray = tags ? (Array.isArray(tags) ? tags : [tags]) : undefined;
+
+    return this.outlineService.findAll(userId, {
+      pageNum,
+      pageSize,
+      search,
+      type,
+      era,
+      tags: tagsArray,
+      sortBy,
+      sortOrder,
+    });
   }
 
   @Get(':id')

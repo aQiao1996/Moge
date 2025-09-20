@@ -8,7 +8,16 @@ interface OutlineState {
   loading: boolean;
   error: string | null;
   createOutline: (data: CreateOutlineValues) => Promise<Outline>;
-  getOutlines: (params: { pageNum?: number; pageSize?: number }) => Promise<void>;
+  getOutlines: (params: {
+    pageNum?: number;
+    pageSize?: number;
+    search?: string;
+    type?: string;
+    era?: string;
+    tags?: string[];
+    sortBy?: 'name' | 'createdAt' | 'type';
+    sortOrder?: 'asc' | 'desc';
+  }) => Promise<void>;
   resetError: () => void;
 }
 
