@@ -247,7 +247,7 @@ export default function OutlineFilter({
         </Button>
 
         {/* 视图切换 */}
-        <div className="flex rounded-md border">
+        <div className="flex h-9 rounded-md border">
           <Button
             variant={filters.viewMode === 'list' ? 'default' : 'ghost'}
             size="sm"
@@ -271,7 +271,7 @@ export default function OutlineFilter({
           variant="outline"
           size="sm"
           onClick={resetFilters}
-          className="text-red-600 hover:border-red-300 hover:text-red-700"
+          className="h-9 text-red-600 hover:border-red-300 hover:text-red-700"
           disabled={!hasActiveFilters}
         >
           <RotateCcw className="mr-1 h-4 w-4" />
