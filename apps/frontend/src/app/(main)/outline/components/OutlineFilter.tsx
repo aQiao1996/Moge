@@ -271,7 +271,7 @@ export default function OutlineFilter({
           variant="outline"
           size="sm"
           onClick={resetFilters}
-          className="h-9 text-red-600 hover:border-red-300 hover:text-red-700"
+          className="h-9"
           disabled={!hasActiveFilters}
         >
           <RotateCcw className="mr-1 h-4 w-4" />
