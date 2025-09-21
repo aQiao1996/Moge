@@ -11,6 +11,7 @@ export default function Home() {
     type: '',
     era: '',
     tags: [],
+    status: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
     viewMode: 'list',

@@ -13,12 +13,14 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, Filter, RotateCcw, SortAsc, SortDesc, Grid3X3, List } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
+import { Outline } from '@moge/types';
 
 export interface FilterState {
   search: string;
   type: string;
   era: string;
   tags: string[];
+  status: string;
   sortBy: 'name' | 'createdAt' | 'type';
   sortOrder: 'asc' | 'desc';
   viewMode: 'list' | 'grid';
@@ -71,6 +73,7 @@ export default function OutlineFilter({
       type: '',
       era: '',
       tags: [],
+      status: '',
       sortBy: 'createdAt',
       sortOrder: 'desc',
       viewMode: 'list',
@@ -95,7 +98,8 @@ export default function OutlineFilter({
     searchInput.trim() || // 包括还未搜索的输入
     filters.type ||
     filters.era ||
-    filters.tags.length > 0
+    filters.tags.length > 0 ||
+    filters.status
   );
 
   // 同步外部搜索值变化
@@ -136,7 +140,10 @@ export default function OutlineFilter({
               筛选
               {hasActiveFilters && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
-                  {[filters.type, filters.era, ...filters.tags].filter(Boolean).length}
+                  {
+                    [filters.type, filters.era, filters.status, ...filters.tags].filter(Boolean)
+                      .length
+                  }
                 </Badge>
               )}
             </Button>
@@ -189,6 +196,29 @@ export default function OutlineFilter({
                         {era}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 状态筛选 */}
+              <div>
+                <label className="mb-2 block text-sm font-medium">状态</label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) =>
+                    updateFilters({
+                      status: (value === 'all' ? '' : value) as Outline['status'] | '',
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="DRAFT">草稿</SelectItem>
+                    <SelectItem value="PUBLISHED">已完成</SelectItem>
+                    <SelectItem value="DISCARDED">已放弃</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

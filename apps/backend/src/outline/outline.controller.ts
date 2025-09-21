@@ -28,7 +28,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 
-import type { User } from '@moge/types';
+import type { Outline, User } from '@moge/types';
 
 interface AuthenticatedRequest extends Request {
   user: User;
@@ -98,6 +98,7 @@ export class OutlineController {
     @Query('search') search?: string,
     @Query('type') type?: string,
     @Query('era') era?: string,
+    @Query('status') status?: Outline['status'],
     @Query('tags') tags?: string | string[],
     @Query('sortBy') sortBy?: 'name' | 'createdAt' | 'type',
     @Query('sortOrder') sortOrder?: 'asc' | 'desc'
@@ -113,6 +114,7 @@ export class OutlineController {
       search,
       type,
       era,
+      status,
       tags: tagsArray,
       sortBy,
       sortOrder,

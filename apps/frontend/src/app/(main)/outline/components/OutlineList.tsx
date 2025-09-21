@@ -15,6 +15,15 @@ interface OutlineListProps {
   filters: FilterState;
 }
 
+const statusConfig: Record<
+  NonNullable<Outline['status']>,
+  { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+> = {
+  DRAFT: { text: '草稿', variant: 'secondary' },
+  PUBLISHED: { text: '已完成', variant: 'default' },
+  DISCARDED: { text: '已放弃', variant: 'destructive' },
+};
+
 export default function OutlineList({ filters }: OutlineListProps) {
   const { outlines, total, loading, getOutlines } = useOutlineStore();
   const [pageNum, setPageNum] = useState(1);
@@ -27,6 +36,7 @@ export default function OutlineList({ filters }: OutlineListProps) {
       search: filters.search || undefined,
       type: filters.type || undefined,
       era: filters.era || undefined,
+      status: filters.status || undefined,
       tags: filters.tags.length > 0 ? filters.tags : undefined,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
@@ -40,6 +50,7 @@ export default function OutlineList({ filters }: OutlineListProps) {
     filters.search,
     filters.type,
     filters.era,
+    filters.status,
     filters.tags,
     filters.sortBy,
     filters.sortOrder,
@@ -48,7 +59,15 @@ export default function OutlineList({ filters }: OutlineListProps) {
   // 当筛选条件改变时，重置到第一页
   useEffect(() => {
     setPageNum(1);
-  }, [filters.search, filters.type, filters.era, filters.tags, filters.sortBy, filters.sortOrder]);
+  }, [
+    filters.search,
+    filters.type,
+    filters.era,
+    filters.tags,
+    filters.status,
+    filters.sortBy,
+    filters.sortOrder,
+  ]);
 
   if (loading) {
     return (
@@ -90,7 +109,11 @@ export default function OutlineList({ filters }: OutlineListProps) {
       >
         <BookOpen className="mx-auto h-12 w-12 text-[var(--moge-text-muted)]" />
         <p className="mt-4 text-[var(--moge-text-sub)]">
-          {filters.search || filters.type || filters.era || filters.tags.length > 0
+          {filters.search ||
+          filters.type ||
+          filters.era ||
+          filters.tags.length > 0 ||
+          filters.status
             ? '没有找到符合条件的大纲'
             : '暂无大纲，点击右上角「新增大纲」创建第一条'}
         </p>
@@ -98,58 +121,66 @@ export default function OutlineList({ filters }: OutlineListProps) {
     );
   }
 
-  const renderOutlineCard = (outline: Outline) => (
-    <Card
-      key={outline.id}
-      className="border p-4 backdrop-blur-xl transition hover:shadow-[var(--moge-glow-card)]"
-      style={{
-        backgroundColor: 'var(--moge-card-bg)',
-        borderColor: 'var(--moge-card-border)',
-      }}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-semibold text-[var(--moge-text-main)]">{outline.name}</h3>
-            <Badge className="text-xs">{outline.type}</Badge>
-            {outline.era && (
-              <Badge variant="outline" className="text-xs">
-                {outline.era}
-              </Badge>
-            )}
-          </div>
-          {outline.remark && (
-            <p className="mt-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-              {outline.remark}
-            </p>
-          )}
-          {outline.tags && outline.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {outline.tags.map((tag: string, index: number) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {tag}
+  const renderOutlineCard = (outline: Outline) => {
+    const status = statusConfig[outline.status as keyof typeof statusConfig];
+    return (
+      <Card
+        key={outline.id}
+        className="border p-4 backdrop-blur-xl transition hover:shadow-[var(--moge-glow-card)]"
+        style={{
+          backgroundColor: 'var(--moge-card-bg)',
+          borderColor: 'var(--moge-card-border)',
+        }}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-[var(--moge-text-main)]">{outline.name}</h3>
+              {status && (
+                <Badge variant={status.variant} className="text-xs">
+                  {status.text}
                 </Badge>
-              ))}
+              )}
+              <Badge className="text-xs">{outline.type}</Badge>
+              {outline.era && (
+                <Badge variant="outline" className="text-xs">
+                  {outline.era}
+                </Badge>
+              )}
             </div>
-          )}
-          <div className="mt-3 flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {dayjs(outline.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-            </span>
+            {outline.remark && (
+              <p className="mt-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
+                {outline.remark}
+              </p>
+            )}
+            {outline.tags && outline.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {outline.tags.map((tag: string, index: number) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="mt-3 flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {dayjs(outline.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost">
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="ghost">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-4">

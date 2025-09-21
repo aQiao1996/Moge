@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateOutlineValues, UpdateOutlineValues } from '@moge/types';
+import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -8,6 +8,7 @@ interface FindAllOptions {
   search?: string;
   type?: string;
   era?: string;
+  status?: Outline['status'];
   tags?: string[];
   sortBy?: 'name' | 'createdAt' | 'type';
   sortOrder?: 'asc' | 'desc';
@@ -46,6 +47,7 @@ export class OutlineService {
       tags,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      status,
     } = options;
 
     const skip = (pageNum - 1) * pageSize;
@@ -60,6 +62,7 @@ export class OutlineService {
       }>;
       type?: string;
       era?: string;
+      status?: Outline['status'];
       tags?: { hasSome: string[] };
     } = {
       userId: parseInt(userId),
@@ -81,6 +84,10 @@ export class OutlineService {
     // 时代筛选
     if (era) {
       where.era = era;
+    }
+    // 状态筛选
+    if (status) {
+      where.status = status;
     }
 
     // 标签筛选
