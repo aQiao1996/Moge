@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
+import { BaseService } from '../base/base.service';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -15,8 +16,10 @@ interface FindAllOptions {
 }
 
 @Injectable()
-export class OutlineService {
-  constructor(private readonly prisma: PrismaService) {}
+export class OutlineService extends BaseService {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   async create(userId: string, data: CreateOutlineValues) {
     const { name, type, era, conflict, tags, remark } = data;
@@ -38,78 +41,14 @@ export class OutlineService {
   }
 
   async findAll(userId: string, options: FindAllOptions = {}) {
-    const {
-      pageNum = 1,
-      pageSize = 10,
-      search,
-      type,
-      era,
-      tags,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      status,
-    } = options;
+    const { search, type, era, tags, status, ...paginationOptions } = options;
 
-    const skip = (pageNum - 1) * pageSize;
-    const take = Number(pageSize);
+    const { skip, take, orderBy } = this.buildPaginationAndSort<Outline>({
+      ...paginationOptions,
+      defaultSortBy: 'createdAt',
+    });
 
-    // 构建查询条件
-    const where: {
-      userId: number;
-      OR?: Array<{
-        name?: { contains: string; mode: 'insensitive' };
-        remark?: { contains: string; mode: 'insensitive' };
-      }>;
-      type?: string;
-      era?: string;
-      status?: Outline['status'];
-      tags?: { hasSome: string[] };
-    } = {
-      userId: parseInt(userId),
-    };
-
-    // 搜索条件
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { remark: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    // 类型筛选
-    if (type) {
-      where.type = type;
-    }
-
-    // 时代筛选
-    if (era) {
-      where.era = era;
-    }
-    // 状态筛选
-    if (status) {
-      where.status = status;
-    }
-
-    // 标签筛选
-    if (tags && tags.length > 0) {
-      where.tags = {
-        hasSome: tags,
-      };
-    }
-
-    // 构建排序条件
-    const orderBy: {
-      name?: 'asc' | 'desc';
-      type?: 'asc' | 'desc';
-      createdAt?: 'asc' | 'desc';
-    } = {};
-    if (sortBy === 'name') {
-      orderBy.name = sortOrder;
-    } else if (sortBy === 'type') {
-      orderBy.type = sortOrder;
-    } else {
-      orderBy.createdAt = sortOrder;
-    }
+    const where = this.buildWhereConditions(userId, { search, type, era, tags, status });
 
     const [list, total] = await this.prisma.$transaction([
       this.prisma.outline.findMany({
@@ -124,6 +63,52 @@ export class OutlineService {
     ]);
 
     return { list, total };
+  }
+
+  private buildWhereConditions(
+    userId: string,
+    filters: {
+      search?: string;
+      type?: string;
+      era?: string;
+      tags?: string[];
+      status?: Outline['status'];
+    }
+  ) {
+    const { search, type, era, tags, status } = filters;
+
+    const where: {
+      userId: number;
+      OR?: Array<{
+        name?: { contains: string; mode: 'insensitive' };
+        remark?: { contains: string; mode: 'insensitive' };
+      }>;
+      type?: string;
+      era?: string;
+      status?: Outline['status'];
+      tags?: { hasSome: string[] };
+    } = {
+      userId: parseInt(userId),
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { remark: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (type) where.type = type;
+
+    if (era) where.era = era;
+
+    if (status) where.status = status;
+
+    if (tags && tags.length > 0) {
+      where.tags = { hasSome: tags };
+    }
+
+    return where;
   }
 
   async findOne(id: number, userId: string) {
