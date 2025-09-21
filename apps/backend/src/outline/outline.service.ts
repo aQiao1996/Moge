@@ -2,6 +2,11 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 import { BaseService } from '../base/base.service';
+import { AIService } from '../ai/ai.service';
+import { Observable } from 'rxjs';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+import { MessageEvent } from '@nestjs/common';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -17,8 +22,74 @@ interface FindAllOptions {
 
 @Injectable()
 export class OutlineService extends BaseService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AIService
+  ) {
     super();
+  }
+
+  generateContentStream(id: string): Observable<MessageEvent> {
+    return new Observable((subscriber) => {
+      const generate = async () => {
+        try {
+          // 1. 从数据库获取大纲元数据
+          const outline = await this.prisma.outline.findUnique({
+            where: { id: parseInt(id) },
+          });
+          if (!outline) {
+            subscriber.error(new Error('Outline not found'));
+            return;
+          }
+
+          // 2. 实例化支持流式的模型 (这里用我推荐的 Gemini Pro)
+          const model = this.aiService.getStreamingModel('gemini');
+
+          // 3. 创建一个优秀的 Prompt
+          const prompt = ChatPromptTemplate.fromMessages([
+            ['system', '你是一位经验丰富的小说家和创意作家，擅长构建引人入胜的故事大纲。'],
+            [
+              'human',
+              `请根据以下信息，为我生成一份详细、结构清晰、章节分明的小说大纲。请使用 Markdown 格式输出。
+              - 标题: {name}
+              - 类型/题材: {type}
+              - 所处时代: {era}
+              - 标签: {tags}
+              - 备注: {remark}
+            `,
+            ],
+          ]);
+
+          // 4. 创建 Chain
+          const chain = prompt.pipe(model).pipe(new StringOutputParser());
+
+          // 5. 调用 stream 方法获取流
+          const stream = await chain.stream({
+            name: outline.name,
+            type: outline.type,
+            era: outline.era,
+            tags: outline.tags.join(', '),
+            remark: outline.remark,
+          });
+
+          // 6. 遍历 LangChain 的流，并发送给前端
+          for await (const chunk of stream) {
+            if (subscriber.closed) {
+              // 如果前端断开连接，则停止
+              break;
+            }
+            subscriber.next({ data: chunk }); // SSE 的标准格式
+          }
+
+          subscriber.next({ data: '__DONE__' }); // 发送结束信号
+          subscriber.complete(); // 告知前端数据已发送完毕
+        } catch (error) {
+          subscriber.error(error); // 发生错误
+        }
+      };
+
+      void generate();
+    });
   }
 
   async create(userId: string, data: CreateOutlineValues) {

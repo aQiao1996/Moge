@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { OutlineController } from './outline.controller';
 import { OutlineService } from './outline.service';
-import { AuthModule } from '../auth/auth.module';
+import { AIModule } from '../ai/ai.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AIModule],
   controllers: [OutlineController],
   providers: [OutlineService],
 })

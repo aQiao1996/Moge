@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@langchain/core": "catalog:",
+    "@langchain/google-genai": "catalog:",
     "@langchain/openai": "catalog:",
     "@moge/types": "workspace:*",
     "@nestjs/common": "catalog:",

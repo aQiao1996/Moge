@@ -12,7 +12,9 @@ import {
   getOutlineContentApi,
   updateOutlineContentApi,
 } from '@/api/outline.api';
+import { EventSourcePolyfill } from 'event-source-polyfill';
 import type { Outline } from '@moge/types';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function OutlineEditPage() {
   const params = useParams();
@@ -83,15 +85,34 @@ export default function OutlineEditPage() {
       }
     }
 
-    try {
-      setIsGenerating(true);
-      toast.info('正在生成大纲内容，请稍候...');
-    } catch (error) {
-      toast.error('生成失败');
-      console.error('Generate content error:', error);
-    } finally {
+    setIsGenerating(true);
+    setContent('');
+    toast.info('正在生成大纲内容，请稍候...');
+
+    const token = useAuthStore.getState().token;
+
+    const eventSource = new EventSourcePolyfill(`/outline/${id}/generate-stream`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    eventSource.onmessage = function (this, event) {
+      if (event.data === '__DONE__') {
+        eventSource.close();
+        setIsGenerating(false);
+        toast.success('生成完成！');
+        return;
+      }
+      setContent((prev) => prev + event.data);
+    };
+
+    eventSource.onerror = function (this, error) {
+      console.error('EventSource failed:', error);
+      toast.error('生成时发生网络错误');
+      eventSource.close();
       setIsGenerating(false);
-    }
+    };
   };
 
   const handleBack = () => {

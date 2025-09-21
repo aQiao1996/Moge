@@ -33,6 +33,9 @@ catalogs:
     '@langchain/core':
       specifier: 0.3.76
       version: 0.3.76
+    '@langchain/google-genai':
+      specifier: 0.1.10
+      version: 0.1.10
     '@langchain/openai':
       specifier: 0.6.12
       version: 0.6.12
@@ -69,12 +72,21 @@ catalogs:
     '@prisma/client':
       specifier: 6.15.0
       version: 6.15.0
+    '@radix-ui/react-avatar':
+      specifier: ^1.1.10
+      version: 1.1.10
     '@radix-ui/react-dialog':
       specifier: ^1.1.15
       version: 1.1.15
+    '@radix-ui/react-dropdown-menu':
+      specifier: ^2.1.16
+      version: 2.1.16
     '@radix-ui/react-label':
       specifier: 2.1.7
       version: 2.1.7
+    '@radix-ui/react-popover':
+      specifier: ^1.1.15
+      version: 1.1.15
     '@radix-ui/react-select':
       specifier: ^2.2.6
       version: 2.2.6
@@ -96,6 +108,9 @@ catalogs:
     '@types/bcryptjs':
       specifier: ^2.4.6
       version: 2.4.6
+    '@types/event-source-polyfill':
+      specifier: 1.0.5
+      version: 1.0.5
     '@types/express':
       specifier: ^5.0.0
       version: 5.0.3
@@ -129,6 +144,9 @@ catalogs:
     '@typescript-eslint/parser':
       specifier: ^8.0.0
       version: 8.43.0
+    '@uiw/react-md-editor':
+      specifier: ^4.0.8
+      version: 4.0.8
     bcryptjs:
       specifier: ^2.4.3
       version: 2.4.3
@@ -162,6 +180,9 @@ catalogs:
     eslint-plugin-prettier:
       specifier: 5.5.4
       version: 5.5.4
+    event-source-polyfill:
+      specifier: 1.0.31
+      version: 1.0.31
     globals:
       specifier: ^16.0.0
       version: 16.3.0
@@ -341,6 +362,9 @@ importers:
       '@langchain/core':
         specifier: 'catalog:'
         version: 0.3.76(openai@5.12.2(zod@3.25.76))
+      '@langchain/google-genai':
+        specifier: 'catalog:'
+        version: 0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76)
       '@langchain/openai':
         specifier: 'catalog:'
         version: 0.6.12(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))
@@ -490,19 +514,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       '@radix-ui/react-avatar':
-        specifier: ^1.1.10
+        specifier: 'catalog:'
         version: 1.1.10(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dialog':
         specifier: 'catalog:'
         version: 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.16
+        specifier: 'catalog:'
         version: 2.1.16(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-label':
         specifier: 'catalog:'
         version: 2.1.7(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-popover':
-        specifier: ^1.1.15
+        specifier: 'catalog:'
         version: 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-select':
         specifier: 'catalog:'
@@ -520,7 +544,7 @@ importers:
         specifier: 'catalog:'
         version: 0.5.16(tailwindcss@4.1.13)
       '@uiw/react-md-editor':
-        specifier: ^4.0.8
+        specifier: 'catalog:'
         version: 4.0.8(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       class-variance-authority:
         specifier: 'catalog:'
@@ -531,6 +555,9 @@ importers:
       dayjs:
         specifier: 'catalog:'
         version: 1.11.18
+      event-source-polyfill:
+        specifier: 'catalog:'
+        version: 1.0.31
       lucide-react:
         specifier: 'catalog:'
         version: 0.542.0(react@18.3.1)
@@ -577,6 +604,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: 'catalog:'
         version: 4.1.12
+      '@types/event-source-polyfill':
+        specifier: 'catalog:'
+        version: 1.0.5
       '@types/node':
         specifier: 'catalog:'
         version: 18.18.0
@@ -1011,6 +1041,10 @@ packages:
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
+  '@google/generative-ai@0.21.0':
+    resolution: {integrity: sha512-7XhUbtnlkSEZK15kN3t+tzIMxsbKm/dSkKBFalj+20NvPKe1kBY7mR2P7vuijEn+f06z5+A8bVGKO0v39cr6Wg==}
+    engines: {node: '>=18.0.0'}
+
   '@hookform/resolvers@5.2.1':
     resolution: {integrity: sha512-u0+6X58gkjMcxur1wRWokA7XsiiBJ6aK17aPZxhkoYiK5J+HcTx0Vhu9ovXe6H+dVpO6cjrn2FkJTryXEMlryQ==}
     peerDependencies:
@@ -1157,6 +1191,12 @@ packages:
   '@langchain/core@0.3.76':
     resolution: {integrity: sha512-jYQ9Djbmp/iQNzZOtXc+/WACsBKV2Bha83+p7TddN+aC7Sb7jTRENoNWypnIFCd5EaEn1XVQazuXlaWZoxkA+A==}
     engines: {node: '>=18'}
+
+  '@langchain/google-genai@0.1.10':
+    resolution: {integrity: sha512-+0xFWvauNDNp8Nvhy5F5g8RbB5g4WWQSIxoPI4IQIUICBBT/kS/Omf1VJI6Loc0IH93m9ZSwYxRVCRu3qx51TQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.3.17 <0.4.0'
 
   '@langchain/openai@0.6.12':
     resolution: {integrity: sha512-xc81QFQ2E5IuwCOYN91TG2prsbsxH2jAqMbZx2nRO+3XUzqH5RNqxSHvJKFmh9793KcPw3PE3vEvBQ8oO+3iOA==}
@@ -2012,6 +2052,9 @@ packages:
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+
+  '@types/event-source-polyfill@1.0.5':
+    resolution: {integrity: sha512-iaiDuDI2aIFft7XkcwMzDWLqo7LVDixd2sR6B4wxJut9xcp/Ev9bO4EFg4rm6S9QxATLBj5OPxdeocgmhjwKaw==}
 
   '@types/express-serve-static-core@5.0.7':
     resolution: {integrity: sha512-R+33OsgWw7rOhD1emjU7dzCDHucJrgJXMA5PYCzJxVil0dsyx5iBEPHqpPfiKNJQb7lZ1vxwoLR4Z87bBUpeGQ==}
@@ -3403,6 +3446,9 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
+
+  event-source-polyfill@1.0.31:
+    resolution: {integrity: sha512-4IJSItgS/41IxN5UVAVuAyczwZF7ZIEsM1XAoUzIHA6A+xzusEZUutdXz2Nr+MQPLxfTiCvqE79/C8HT8fKFvA==}
 
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
@@ -6956,6 +7002,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
+  '@google/generative-ai@0.21.0': {}
+
   '@hookform/resolvers@5.2.1(react-hook-form@7.62.0(react@18.3.1))':
     dependencies:
       '@standard-schema/utils': 0.3.0
@@ -7218,6 +7266,14 @@ snapshots:
       - '@opentelemetry/exporter-trace-otlp-proto'
       - '@opentelemetry/sdk-trace-base'
       - openai
+
+  '@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76)':
+    dependencies:
+      '@google/generative-ai': 0.21.0
+      '@langchain/core': 0.3.76(openai@5.12.2(zod@3.25.76))
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+    transitivePeerDependencies:
+      - zod
 
   '@langchain/openai@0.6.12(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))':
     dependencies:
@@ -8067,6 +8123,8 @@ snapshots:
       '@types/estree': 1.0.8
 
   '@types/estree@1.0.8': {}
+
+  '@types/event-source-polyfill@1.0.5': {}
 
   '@types/express-serve-static-core@5.0.7':
     dependencies:
@@ -9635,6 +9693,8 @@ snapshots:
   esutils@2.0.3: {}
 
   etag@1.8.1: {}
+
+  event-source-polyfill@1.0.31: {}
 
   eventemitter3@4.0.7: {}
 
