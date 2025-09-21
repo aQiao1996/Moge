@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
 import {
@@ -23,6 +23,7 @@ export default function OutlineEditPage() {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,6 +61,36 @@ export default function OutlineEditPage() {
       console.error('Save content error:', error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!id) return;
+
+    if (content) {
+      const confirmed = await new Promise((resolve) => {
+        toast.warning('智能生成会覆盖当前内容，确定要继续吗？', {
+          action: {
+            label: '确定',
+            onClick: () => resolve(true),
+          },
+          onDismiss: () => resolve(false),
+          onAutoClose: () => resolve(false),
+        });
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    try {
+      setIsGenerating(true);
+      toast.info('正在生成大纲内容，请稍候...');
+    } catch (error) {
+      toast.error('生成失败');
+      console.error('Generate content error:', error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -107,21 +138,45 @@ export default function OutlineEditPage() {
             </p>
           </div>
         </div>
-        <Button onClick={void handleSave} disabled={saving}>
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? '保存中...' : '保存'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => void handleGenerate()}
+            disabled={isGenerating || saving}
+            variant="outline"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            {isGenerating ? '生成中...' : '智能生成'}
+          </Button>
+          <Button onClick={() => void handleSave()} disabled={saving || isGenerating}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? '保存中...' : '保存'}
+          </Button>
+        </div>
       </div>
 
       {/* 编辑器 */}
-      <Card className="p-6">
-        <MdEditor
-          value={content}
-          onChange={setContent}
-          placeholder="开始编写你的大纲内容..."
-          height={600}
-          className="border-0"
-        />
+      <Card className="p-6" style={{ minHeight: 600 }}>
+        {content ? (
+          <MdEditor
+            value={content}
+            onChange={setContent}
+            placeholder="开始编写你的大纲内容..."
+            height={600}
+            className="border-0"
+          />
+        ) : (
+          <div className="flex h-[550px] flex-col items-center justify-center text-center">
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                当前大纲内容为空，开始手动编写或让 AI 为你生成。
+              </p>
+              <Button onClick={() => void handleGenerate()} disabled={isGenerating}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isGenerating ? '生成中...' : '🚀 智能生成'}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
