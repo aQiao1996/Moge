@@ -23,7 +23,7 @@ export class OutlineService extends BaseService {
 
   async create(userId: string, data: CreateOutlineValues) {
     const { name, type, era, conflict, tags, remark } = data;
-    return this.prisma.outline.create({
+    const outline = await this.prisma.outline.create({
       data: {
         name,
         type,
@@ -38,6 +38,13 @@ export class OutlineService extends BaseService {
         },
       },
     });
+
+    // 转换为前端期望的字符串格式
+    return {
+      ...outline,
+      id: outline.id.toString(),
+      userId: outline.userId.toString(),
+    };
   }
 
   async findAll(userId: string, options: FindAllOptions = {}) {
@@ -62,7 +69,14 @@ export class OutlineService extends BaseService {
       }),
     ]);
 
-    return { list, total };
+    // 转换 ID 为字符串格式
+    const transformedList = list.map((outline) => ({
+      ...outline,
+      id: outline.id.toString(),
+      userId: outline.userId.toString(),
+    }));
+
+    return { list: transformedList, total };
   }
 
   private buildWhereConditions(
@@ -120,14 +134,36 @@ export class OutlineService extends BaseService {
       throw new ForbiddenException('无权访问此大纲');
     }
 
+    // 转换为前端期望的字符串格式
+    if (outline) {
+      return {
+        ...outline,
+        id: outline.id.toString(),
+        userId: outline.userId.toString(),
+      };
+    }
+
     return outline;
   }
 
   async update(id: number, userId: string, data: UpdateOutlineValues) {
     await this.findOne(id, userId);
-    return this.prisma.outline.update({
+    const updatedOutline = await this.prisma.outline.update({
       where: { id },
       data,
+    });
+
+    return {
+      ...updatedOutline,
+      id: updatedOutline.id.toString(),
+      userId: updatedOutline.userId.toString(),
+    };
+  }
+
+  async delete(id: number, userId: string) {
+    await this.findOne(id, userId);
+    await this.prisma.outline.delete({
+      where: { id },
     });
   }
 }

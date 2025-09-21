@@ -5,6 +5,7 @@ import {
   Request,
   Get,
   Patch,
+  Delete,
   Param,
   ParseIntPipe,
   Query,
@@ -148,5 +149,18 @@ export class OutlineController {
   ) {
     const userId = req.user.id;
     return this.outlineService.update(id, userId, data);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '删除大纲' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async delete(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    await this.outlineService.delete(id, userId);
+    return { message: '删除成功' };
   }
 }
