@@ -2,7 +2,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Edit, Trash2 } from 'lucide-react';
+import { BookOpen, Clock, Edit, Trash2, FileText } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +10,7 @@ import MogePagination from '@/app/components/MogePagination';
 import dayjs from 'dayjs';
 import { FilterState } from './OutlineFilter';
 import type { Outline } from '@moge/types';
+import { useRouter } from 'next/navigation';
 
 interface OutlineListProps {
   filters: FilterState;
@@ -28,6 +29,7 @@ export default function OutlineList({ filters }: OutlineListProps) {
   const { outlines, total, loading, getOutlines } = useOutlineStore();
   const [pageNum, setPageNum] = useState(1);
   const [pageSize] = useState(5);
+  const router = useRouter();
 
   useEffect(() => {
     const params = {
@@ -170,10 +172,18 @@ export default function OutlineList({ filters }: OutlineListProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => router.push(`/outline/${outline.id}/edit`)}
+              title="编辑内容"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" title="编辑基本信息">
               <Edit className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="ghost" title="删除">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>

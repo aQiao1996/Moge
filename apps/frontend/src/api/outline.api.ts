@@ -1,5 +1,10 @@
 import httpRequest from '@/lib/request';
-import type { CreateOutlineValues, Outline } from '@moge/types';
+import type {
+  CreateOutlineValues,
+  Outline,
+  OutlineContent,
+  UpdateOutlineContentValues,
+} from '@moge/types';
 
 interface GetOutlinesResponse {
   list: Outline[];
@@ -37,5 +42,28 @@ export const getOutlinesApi = async (params: GetOutlinesParams): Promise<GetOutl
   );
 
   const response = await httpRequest.get<GetOutlinesResponse>('/outline', filteredParams);
+  return response.data;
+};
+
+export const getOutlineByIdApi = async (id: string): Promise<Outline> => {
+  const response = await httpRequest.get<Outline>(`/outline/${id}`);
+  return response.data;
+};
+
+export const getOutlineContentApi = async (id: string): Promise<OutlineContent | null> => {
+  try {
+    const response = await httpRequest.get<OutlineContent>(`/outline/${id}/content`);
+    return response.data;
+  } catch {
+    // 如果内容不存在，返回 null
+    return null;
+  }
+};
+
+export const updateOutlineContentApi = async (
+  id: string,
+  data: UpdateOutlineContentValues
+): Promise<OutlineContent> => {
+  const response = await httpRequest.put<OutlineContent>(`/outline/${id}/content`, data);
   return response.data;
 };
