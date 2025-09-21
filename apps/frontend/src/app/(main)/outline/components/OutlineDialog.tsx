@@ -163,7 +163,9 @@ export default function OutlineDialog({
       } else {
         const newOutline = await createOutline(values as CreateOutlineValues);
         toast.success('大纲创建成功, 正在跳转...');
-        router.push(`/outline/${newOutline.id}`);
+        setTimeout(() => {
+          router.push(`/outline/${newOutline.id}`);
+        }, 1000);
       }
     } catch {
       toast.error(isEditMode ? '更新大纲失败' : '创建大纲失败');

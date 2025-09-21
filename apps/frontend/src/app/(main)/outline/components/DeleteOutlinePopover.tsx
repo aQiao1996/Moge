@@ -18,6 +18,7 @@ export default function DeleteOutlinePopover({ outline }: DeleteOutlinePopoverPr
   const [open, setOpen] = useState(false);
 
   const handleDelete = async () => {
+    console.log('🚀 ~ DeleteOutlinePopover.tsx:21 ~ handleDelete ~ outline:', outline);
     if (!outline.id) return;
 
     try {
@@ -58,7 +59,12 @@ export default function DeleteOutlinePopover({ outline }: DeleteOutlinePopoverPr
             <Button variant="outline" size="sm" onClick={() => setOpen(false)} disabled={loading}>
               取消
             </Button>
-            <Button variant="destructive" size="sm" onClick={void handleDelete} disabled={loading}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => void handleDelete()}
+              disabled={loading}
+            >
               {loading ? '删除中...' : '确认删除'}
             </Button>
           </div>
