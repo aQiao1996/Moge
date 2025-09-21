@@ -20,15 +20,15 @@ export class AIService {
   getStreamingModel(provider: AIProvider): BaseChatModel {
     switch (provider) {
       case 'gemini':
-        console.log('Using Gemini model');
+        console.log('🚀 ~ Using Gemini model');
         return new ChatGoogleGenerativeAI({
           apiKey: this.configService.get<string>('GEMINI_API_KEY'),
-          modelName: 'gemini-pro',
+          modelName: 'gemini-1.5-pro-latest',
           streaming: true,
         });
 
       case 'openai':
-        console.log('Using OpenAI model');
+        console.log('🚀 ~ Using OpenAI model');
         return new ChatOpenAI({
           apiKey: this.configService.get<string>('OPENAI_API_KEY'),
           modelName: 'gpt-4-turbo-preview',

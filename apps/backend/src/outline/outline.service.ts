@@ -1,13 +1,12 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 import { BaseService } from '../base/base.service';
 import { AIService } from '../ai/ai.service';
-import { Observable } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MessageEvent } from '@nestjs/common';
-
 interface FindAllOptions {
   pageNum?: number;
   pageSize?: number;
@@ -22,74 +21,165 @@ interface FindAllOptions {
 
 @Injectable()
 export class OutlineService extends BaseService {
+  private readonly logger = new Logger(OutlineService.name);
+  private readonly STREAM_DONE_SIGNAL = '__DONE__';
+  private readonly STREAM_TIMEOUT = 120000; // 120 seconds
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService
+    // 假设 SensitiveFilterService 已注入，请取消下面的注释
+    // private readonly sensitiveFilter: SensitiveFilterService,
   ) {
     super();
   }
 
-  generateContentStream(id: string): Observable<MessageEvent> {
+  /**
+   * 流式生成大纲内容 - 生产级加固版
+   * @param id 大纲 ID
+   * @param userId 用户 ID
+   * @returns 一个包含 SSE 事件的 Observable
+   */
+  generateContentStream(id: string, userId: string): Observable<MessageEvent> {
     return new Observable((subscriber) => {
-      const generate = async () => {
-        try {
-          // 1. 从数据库获取大纲元数据
-          const outline = await this.prisma.outline.findUnique({
-            where: { id: parseInt(id) },
-          });
-          if (!outline) {
-            subscriber.error(new Error('Outline not found'));
-            return;
-          }
+      const ac = new AbortController();
+      const { signal } = ac;
+      let timeoutId: NodeJS.Timeout | null = null;
 
-          // 2. 实例化支持流式的模型 (这里用我推荐的 Gemini Pro)
-          const model = this.aiService.getStreamingModel('gemini');
-
-          // 3. 创建一个优秀的 Prompt
-          const prompt = ChatPromptTemplate.fromMessages([
-            ['system', '你是一位经验丰富的小说家和创意作家，擅长构建引人入胜的故事大纲。'],
-            [
-              'human',
-              `请根据以下信息，为我生成一份详细、结构清晰、章节分明的小说大纲。请使用 Markdown 格式输出。
-              - 标题: {name}
-              - 类型/题材: {type}
-              - 所处时代: {era}
-              - 标签: {tags}
-              - 备注: {remark}
-            `,
-            ],
-          ]);
-
-          // 4. 创建 Chain
-          const chain = prompt.pipe(model).pipe(new StringOutputParser());
-
-          // 5. 调用 stream 方法获取流
-          const stream = await chain.stream({
-            name: outline.name,
-            type: outline.type,
-            era: outline.era,
-            tags: outline.tags.join(', '),
-            remark: outline.remark,
-          });
-
-          // 6. 遍历 LangChain 的流，并发送给前端
-          for await (const chunk of stream) {
-            if (subscriber.closed) {
-              // 如果前端断开连接，则停止
-              break;
-            }
-            subscriber.next({ data: chunk }); // SSE 的标准格式
-          }
-
-          subscriber.next({ data: '__DONE__' }); // 发送结束信号
-          subscriber.complete(); // 告知前端数据已发送完毕
-        } catch (error) {
-          subscriber.error(error); // 发生错误
+      // 重置超时定时器
+      const resetTimeout = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
         }
+        timeoutId = setTimeout(() => {
+          if (!ac.signal.aborted) {
+            ac.abort('timeout'); // 发出超时中断信号
+          }
+        }, this.STREAM_TIMEOUT);
       };
 
-      void generate();
+      // 启动初始超时
+      resetTimeout();
+
+      // 异步执行流生成逻辑
+      this._generateStream(id, userId, subscriber, signal, resetTimeout).catch((error) => {
+        if (!subscriber.closed) {
+          subscriber.error(error);
+        }
+      });
+
+      // 清理逻辑：当 Observable 被取消订阅时（如客户端断开连接）执行
+      return () => {
+        if (!ac.signal.aborted) {
+          this.logger.warn(
+            `[客户端断开连接] 正在中止流，大纲ID: ${id}, 用户ID: ${userId}`,
+            'client_disconnect'
+          );
+          ac.abort('client_disconnect');
+        }
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     });
+  }
+
+  private async _generateStream(
+    id: string,
+    userId: string,
+    subscriber: Subscriber<MessageEvent>,
+    signal: AbortSignal,
+    resetTimeout: () => void
+  ) {
+    this.logger.debug(`[流开始] 大纲ID: ${id}, 用户ID: ${userId}`);
+    let chunkCount = 0;
+
+    try {
+      // 验证权限并获取大纲
+      const outline = await this.findOne(parseInt(id, 10), userId);
+      if (!outline) {
+        throw new NotFoundException('大纲不存在或无权限访问');
+      }
+
+      // 内容安全检查
+      // const fullPromptText = `${outline.name} ${outline.type} ${outline.era} ${outline.tags.join(', ')} ${outline.remark}`;
+      // if (this.sensitiveFilter.check(fullPromptText)) {
+      //   throw new BadRequestException('输入内容包含敏感词，已拒绝生成。');
+      // }
+
+      // 实例化模型和 Prompt
+      const model = this.aiService.getStreamingModel('gemini');
+      const prompt = this.createPromptTemplate();
+      const chain = prompt.pipe(model).pipe(new StringOutputParser());
+
+      // 获取并处理流
+      const stream = await chain.stream(
+        {
+          name: outline.name,
+          type: outline.type,
+          era: outline.era,
+          tags: outline.tags.join(', '),
+          remark: outline.remark,
+        },
+        { configurable: { signal } } // 将 AbortSignal 传递给 LangChain
+      );
+
+      // for-await-of 处理了背压,是“拉”的一种模式
+      for await (const chunk of stream) {
+        if (signal.aborted) break; // 双重保险
+
+        resetTimeout(); // 收到新数据，重置超时
+        chunkCount++;
+        this.logger.debug(
+          `[流数据块] 大纲ID: ${id}, 用户ID: ${userId}, 数据块长度: ${chunk.length}`
+        );
+
+        subscriber.next({ data: chunk });
+      }
+
+      if (signal.aborted) {
+        this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
+      } else {
+        // 发送结束信号
+        subscriber.next({ data: this.STREAM_DONE_SIGNAL });
+        this.logger.debug(`[流完成] 大纲ID: ${id}, 用户ID: ${userId}, 总数据块: ${chunkCount}`);
+      }
+    } catch (error) {
+      // 特别处理 AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
+      } else {
+        if (error instanceof Error) {
+          this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error.stack);
+        } else {
+          this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error);
+        }
+        if (!subscriber.closed) {
+          subscriber.error(error);
+        }
+      }
+    } finally {
+      this.logger.debug(`[流结束] 大纲ID: ${id}, 用户ID: ${userId}`);
+      if (!subscriber.closed) {
+        subscriber.complete(); // 确保流在任何情况下都能关闭
+      }
+    }
+  }
+
+  private createPromptTemplate() {
+    return ChatPromptTemplate.fromMessages([
+      ['system', '你是一位经验丰富的小说家和创意作家，擅长构建引人入胜的故事大纲。'],
+      [
+        'human',
+        `请根据以下信息，为我生成一份详细、结构清晰、章节分明的小说大纲。请使用 Markdown 格式输出。
+        - 标题: {name}
+        - 类型/题材: {type}
+        - 所处时代: {era}
+        - 标签: {tags}
+        - 备注: {remark}
+      `,
+      ],
+    ]);
   }
 
   async create(userId: string, data: CreateOutlineValues) {
@@ -126,7 +216,13 @@ export class OutlineService extends BaseService {
       defaultSortBy: 'createdAt',
     });
 
-    const where = this.buildWhereConditions(userId, { search, type, era, tags, status });
+    const where = this.buildWhereConditions(userId, {
+      search,
+      type,
+      era,
+      tags,
+      status,
+    });
 
     const [list, total] = await this.prisma.$transaction([
       this.prisma.outline.findMany({

@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Query,
+  Sse,
 } from '@nestjs/common';
 import { OutlineService } from './outline.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -162,5 +163,17 @@ export class OutlineController {
     const userId = req.user.id;
     await this.outlineService.delete(id, userId);
     return { message: '删除成功' };
+  }
+
+  @Get(':id/generate-stream')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '通过流式生成大纲内容' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 200, description: '开始流式传输' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @Sse()
+  generateContentStream(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.outlineService.generateContentStream(id, userId);
   }
 }

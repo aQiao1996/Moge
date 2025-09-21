@@ -90,12 +90,12 @@ export default function OutlineEditPage() {
     toast.info('正在生成大纲内容，请稍候...');
 
     const token = useAuthStore.getState().token;
+    const baseUrl = process.env.NEXT_APP_BASE_URL ?? '';
 
-    const eventSource = new EventSourcePolyfill(`/outline/${id}/generate-stream`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const eventSource = new EventSourcePolyfill(
+      `${baseUrl}/moge-api/outline/${id}/generate-stream`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     eventSource.onmessage = function (this, event) {
       if (event.data === '__DONE__') {
