@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import CreateOutlineDialog from './components/CreateOutlineDialog';
+import OutlineDialog from './components/OutlineDialog';
 import OutlineList from './components/OutlineList';
 import OutlineFilter, { FilterState } from './components/OutlineFilter';
 
@@ -28,7 +28,7 @@ export default function Home() {
         <div>
           <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">我的大纲</h1>
         </div>
-        <CreateOutlineDialog />
+        <OutlineDialog mode="create" />
       </div>
 
       {/* 筛选组件 */}

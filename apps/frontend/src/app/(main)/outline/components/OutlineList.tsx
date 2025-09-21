@@ -2,7 +2,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Edit, Trash2, FileText } from 'lucide-react';
+import { BookOpen, Clock, Edit, FileText } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,8 @@ import dayjs from 'dayjs';
 import { FilterState } from './OutlineFilter';
 import type { Outline } from '@moge/types';
 import { useRouter } from 'next/navigation';
+import OutlineDialog from './OutlineDialog';
+import DeleteOutlinePopover from './DeleteOutlinePopover';
 
 interface OutlineListProps {
   filters: FilterState;
@@ -30,6 +32,10 @@ export default function OutlineList({ filters }: OutlineListProps) {
   const [pageNum, setPageNum] = useState(1);
   const [pageSize] = useState(5);
   const router = useRouter();
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingOutline, setEditingOutline] = useState<Outline | null>(null);
 
   useEffect(() => {
     const params = {
@@ -70,6 +76,11 @@ export default function OutlineList({ filters }: OutlineListProps) {
     filters.sortBy,
     filters.sortOrder,
   ]);
+
+  const handleEdit = (outline: Outline) => {
+    setEditingOutline(outline);
+    setEditDialogOpen(true);
+  };
 
   if (loading) {
     return (
@@ -180,12 +191,15 @@ export default function OutlineList({ filters }: OutlineListProps) {
             >
               <FileText className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost" title="编辑基本信息">
+            <Button
+              size="sm"
+              variant="ghost"
+              title="编辑基本信息"
+              onClick={() => handleEdit(outline)}
+            >
               <Edit className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost" title="删除">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <DeleteOutlinePopover outline={outline} />
           </div>
         </div>
       </Card>
@@ -206,6 +220,14 @@ export default function OutlineList({ filters }: OutlineListProps) {
         onPageChange={setPageNum}
         showTotal={true}
         totalItems={total}
+      />
+
+      {/* 编辑对话框 */}
+      <OutlineDialog
+        mode="edit"
+        outline={editingOutline ?? undefined}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
       />
     </div>
   );

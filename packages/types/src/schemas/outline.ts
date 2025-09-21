@@ -21,6 +21,10 @@ export const outlineSchema = createOutlineSchema.extend({
 
 export type Outline = z.infer<typeof outlineSchema>;
 
-export const updateOutlineSchema = createOutlineSchema.partial(); // 所有字段都可选
+export const updateOutlineSchema = createOutlineSchema
+  .extend({
+    status: z.enum(['DRAFT', 'PUBLISHED', 'DISCARDED']).optional(),
+  })
+  .partial(); // 所有字段都可选
 
 export type UpdateOutlineValues = z.infer<typeof updateOutlineSchema>;

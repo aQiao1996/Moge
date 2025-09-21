@@ -4,6 +4,7 @@ import type {
   Outline,
   OutlineContent,
   UpdateOutlineContentValues,
+  UpdateOutlineValues,
 } from '@moge/types';
 
 interface GetOutlinesResponse {
@@ -66,4 +67,13 @@ export const updateOutlineContentApi = async (
 ): Promise<OutlineContent> => {
   const response = await httpRequest.put<OutlineContent>(`/outline/${id}/content`, data);
   return response.data;
+};
+
+export const updateOutlineApi = async (id: string, data: UpdateOutlineValues): Promise<Outline> => {
+  const response = await httpRequest.put<Outline>(`/outline/${id}`, data);
+  return response.data;
+};
+
+export const deleteOutlineApi = async (id: string): Promise<void> => {
+  await httpRequest.delete(`/outline/${id}`);
 };

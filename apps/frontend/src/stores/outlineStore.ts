@@ -1,6 +1,11 @@
 import { create } from 'zustand';
-import { createOutlineApi, getOutlinesApi } from '@/api/outline.api';
-import type { CreateOutlineValues, Outline } from '@moge/types';
+import {
+  createOutlineApi,
+  getOutlinesApi,
+  updateOutlineApi,
+  deleteOutlineApi,
+} from '@/api/outline.api';
+import type { CreateOutlineValues, Outline, UpdateOutlineValues } from '@moge/types';
 
 interface OutlineState {
   outlines: Outline[];
@@ -18,6 +23,8 @@ interface OutlineState {
     sortBy?: 'name' | 'createdAt' | 'type';
     sortOrder?: 'asc' | 'desc';
   }) => Promise<void>;
+  updateOutline: (id: string, data: UpdateOutlineValues) => Promise<Outline>;
+  deleteOutline: (id: string) => Promise<void>;
   resetError: () => void;
 }
 
@@ -61,5 +68,41 @@ export const useOutlineStore = create<OutlineState>((set) => ({
 
   resetError: () => {
     set({ error: null });
+  },
+
+  updateOutline: async (id, data) => {
+    set({ loading: true, error: null });
+    try {
+      const updatedOutline = await updateOutlineApi(id, data);
+      set((state) => ({
+        outlines: state.outlines.map((outline) => (outline.id === id ? updatedOutline : outline)),
+        loading: false,
+      }));
+      return updatedOutline;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : '更新大纲失败',
+        loading: false,
+      });
+      throw error;
+    }
+  },
+
+  deleteOutline: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      await deleteOutlineApi(id);
+      set((state) => ({
+        outlines: state.outlines.filter((outline) => outline.id !== id),
+        total: state.total - 1,
+        loading: false,
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : '删除大纲失败',
+        loading: false,
+      });
+      throw error;
+    }
   },
 }));
