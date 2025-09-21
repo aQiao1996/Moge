@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { toast } from 'sonner';
 import { FilePlus, Edit } from 'lucide-react';
@@ -60,7 +59,6 @@ export default function OutlineDialog({
   onOpenChange: controlledOnOpenChange,
 }: OutlineDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const router = useRouter();
   const { createOutline, updateOutline, submitting, resetError } = useOutlineStore();
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
@@ -87,7 +85,7 @@ export default function OutlineDialog({
     if (open) {
       void fetchNovelTypes();
 
-      // 🔧 在对话框打开时设置表单值
+      // 在对话框打开时设置表单值
       if (isEditMode && outline) {
         form.reset({
           name: outline.name,
@@ -163,12 +161,9 @@ export default function OutlineDialog({
         toast.success('大纲更新成功');
         setOpen(false);
       } else {
-        const newOutline = await createOutline(values as CreateOutlineValues);
-        toast.success('大纲创建成功, 正在跳转...');
-        setTimeout(() => {
-          setOpen(false);
-          router.push(`/outline/${newOutline.id}`);
-        }, 1000);
+        await createOutline(values as CreateOutlineValues);
+        toast.success('大纲创建成功');
+        setOpen(false);
       }
     } catch {
       toast.error(isEditMode ? '更新大纲失败' : '创建大纲失败');
