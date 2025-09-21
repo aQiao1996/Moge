@@ -11,6 +11,7 @@ interface OutlineState {
   outlines: Outline[];
   total: number;
   loading: boolean;
+  submitting: boolean;
   error: string | null;
   createOutline: (data: CreateOutlineValues) => Promise<Outline>;
   getOutlines: (params: {
@@ -32,22 +33,23 @@ export const useOutlineStore = create<OutlineState>((set) => ({
   outlines: [],
   total: 0,
   loading: true,
+  submitting: false,
   error: null,
 
   createOutline: async (data) => {
-    set({ loading: true, error: null });
+    set({ submitting: true, error: null });
     try {
       const newOutline = await createOutlineApi(data);
       set((state) => ({
         outlines: [newOutline, ...state.outlines],
         total: state.total + 1,
-        loading: false,
+        submitting: false,
       }));
       return newOutline;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : '创建大纲失败',
-        loading: false,
+        submitting: false,
       });
       throw error;
     }
@@ -71,18 +73,18 @@ export const useOutlineStore = create<OutlineState>((set) => ({
   },
 
   updateOutline: async (id, data) => {
-    set({ loading: true, error: null });
+    set({ submitting: true, error: null });
     try {
       const updatedOutline = await updateOutlineApi(id, data);
       set((state) => ({
         outlines: state.outlines.map((outline) => (outline.id === id ? updatedOutline : outline)),
-        loading: false,
+        submitting: false,
       }));
       return updatedOutline;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : '更新大纲失败',
-        loading: false,
+        submitting: false,
       });
       throw error;
     }

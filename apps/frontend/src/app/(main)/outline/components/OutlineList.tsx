@@ -62,7 +62,7 @@ export default function OutlineList({ filters }: OutlineListProps) {
     filters.tags,
     filters.sortBy,
     filters.sortOrder,
-  ]); // 移除 viewMode 依赖
+  ]);
 
   // 当筛选条件改变时，重置到第一页
   useEffect(() => {

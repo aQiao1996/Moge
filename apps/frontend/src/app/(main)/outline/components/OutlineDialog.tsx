@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { toast } from 'sonner';
@@ -61,24 +61,35 @@ export default function OutlineDialog({
 }: OutlineDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const router = useRouter();
-  const { createOutline, updateOutline, loading, resetError } = useOutlineStore();
+  const { createOutline, updateOutline, submitting, resetError } = useOutlineStore();
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
 
+  const isEditMode = mode === 'edit';
+  const schema = isEditMode ? updateOutlineSchema : createOutlineSchema;
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      type: '',
+      era: '',
+      conflict: '',
+      tags: [],
+      remark: '',
+    },
+  });
+
   useEffect(() => {
     if (open) {
       void fetchNovelTypes();
-    }
-  }, [open, fetchNovelTypes]);
 
-  const isEditMode = mode === 'edit';
-  const schema = isEditMode ? updateOutlineSchema : createOutlineSchema;
-  const defaultValues =
-    isEditMode && outline
-      ? {
+      // 🔧 在对话框打开时设置表单值
+      if (isEditMode && outline) {
+        form.reset({
           name: outline.name,
           type: outline.type,
           era: outline.era ?? '',
@@ -86,70 +97,61 @@ export default function OutlineDialog({
           tags: outline.tags ?? [],
           remark: outline.remark ?? '',
           status: outline.status,
-        }
-      : {
+        });
+      } else if (!isEditMode) {
+        // 创建模式时重置为空
+        form.reset({
           name: '',
           type: '',
           era: '',
           conflict: '',
           tags: [],
           remark: '',
-        };
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues,
-  });
-
-  // 重置表单当outline改变时（编辑模式）
-  useEffect(() => {
-    if (isEditMode && outline) {
-      form.reset({
-        name: outline.name,
-        type: outline.type,
-        era: outline.era ?? '',
-        conflict: outline.conflict ?? '',
-        tags: outline.tags ?? [],
-        remark: outline.remark ?? '',
-        status: outline.status,
-      });
+        });
+      }
     }
-  }, [isEditMode, outline, form]);
+  }, [open, isEditMode, outline?.id, fetchNovelTypes]);
 
-  const renderControl: RenderControl = (field, name) => {
-    if (name === 'type') {
-      return (
-        <MogeSelect onValueChange={field.onChange} value={field.value as string}>
-          <MogeSelectTrigger>
-            <MogeSelectValue placeholder="请选择" />
-          </MogeSelectTrigger>
-          <MogeSelectContent>
-            {novelTypes.map((t) => (
-              <MogeSelectItem key={t.id} value={t.label}>
-                {t.label}
-              </MogeSelectItem>
-            ))}
-          </MogeSelectContent>
-        </MogeSelect>
-      );
-    }
+  const renderControl: RenderControl = useCallback(
+    (field, name) => {
+      if (name === 'type') {
+        return (
+          <MogeSelect onValueChange={field.onChange} value={field.value as string}>
+            <MogeSelectTrigger>
+              <MogeSelectValue placeholder="请选择" />
+            </MogeSelectTrigger>
+            <MogeSelectContent>
+              {novelTypes.map((t) => (
+                <MogeSelectItem key={t.id} value={t.label}>
+                  {t.label}
+                </MogeSelectItem>
+              ))}
+            </MogeSelectContent>
+          </MogeSelect>
+        );
+      }
 
-    if (name === 'conflict' || name === 'remark') {
+      if (name === 'conflict' || name === 'remark') {
+        return (
+          <MogeTextarea
+            rows={name === 'conflict' ? 3 : 2}
+            placeholder={
+              name === 'conflict' ? '例：一颗会说话的核弹要求主角 24 小时内帮它自杀……' : '备忘信息'
+            }
+            {...field}
+          />
+        );
+      }
+
       return (
-        <MogeTextarea
-          rows={name === 'conflict' ? 3 : 2}
-          placeholder={
-            name === 'conflict' ? '例：一颗会说话的核弹要求主角 24 小时内帮它自杀……' : '备忘信息'
-          }
+        <MogeInput
+          placeholder={name === 'era' ? '例：近未来 2150 年' : '会说话的核弹'}
           {...field}
         />
       );
-    }
-
-    return (
-      <MogeInput placeholder={name === 'era' ? '例：近未来 2150 年' : '会说话的核弹'} {...field} />
-    );
-  };
+    },
+    [novelTypes]
+  );
 
   const onSubmit = async (values: FormValues) => {
     toast.dismiss();
@@ -164,6 +166,7 @@ export default function OutlineDialog({
         const newOutline = await createOutline(values as CreateOutlineValues);
         toast.success('大纲创建成功, 正在跳转...');
         setTimeout(() => {
+          setOpen(false);
           router.push(`/outline/${newOutline.id}`);
         }, 1000);
       }
@@ -208,7 +211,7 @@ export default function OutlineDialog({
           { name: 'conflict', label: '核心冲突' },
           { name: 'remark', label: '备注' },
         ]}
-        loading={loading}
+        loading={submitting}
         submitText={isEditMode ? '保存' : '确认'}
         cancelText="取消"
         onCancel={() => {
@@ -220,17 +223,9 @@ export default function OutlineDialog({
     </DialogContent>
   );
 
-  if (isControlled) {
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        {dialogContent}
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>
+      {!isControlled && <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>}
       {dialogContent}
     </Dialog>
   );

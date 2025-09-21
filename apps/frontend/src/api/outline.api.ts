@@ -70,7 +70,7 @@ export const updateOutlineContentApi = async (
 };
 
 export const updateOutlineApi = async (id: string, data: UpdateOutlineValues): Promise<Outline> => {
-  const response = await httpRequest.put<Outline>(`/outline/${id}`, data);
+  const response = await httpRequest.patch<Outline>(`/outline/${id}`, data);
   return response.data;
 };
 
