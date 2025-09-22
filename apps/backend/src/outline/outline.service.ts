@@ -107,11 +107,8 @@ export class OutlineService extends BaseService {
         throw new NotFoundException('大纲不存在或无权限访问');
       }
 
-      // 内容安全检查
-      const fullPromptText = `${outline.name} ${outline.type} ${outline.era} ${outline.tags.join(', ')} ${outline.remark}`;
-      if (this.sensitiveFilter.check(fullPromptText)) {
-        throw new BadRequestException('输入内容包含敏感词，已拒绝生成。');
-      }
+      // AI生成内容的敏感词过滤会在输出时处理
+      // 这里直接使用原始数据进行生成
 
       // 实例化模型和 Prompt
       const model = this.aiService.getStreamingModel('gemini');
@@ -130,7 +127,7 @@ export class OutlineService extends BaseService {
         { configurable: { signal } } // 将 AbortSignal 传递给 LangChain
       );
 
-      // for-await-of 处理了背压,是“拉”的一种模式
+      // for-await-of 处理了背压,是"拉"的一种模式
       for await (const chunk of stream) {
         if (signal.aborted) break; // 双重保险
 
@@ -140,7 +137,15 @@ export class OutlineService extends BaseService {
           `[流数据块] 大纲ID: ${id}, 用户ID: ${userId}, 数据块长度: ${chunk.length}`
         );
 
-        subscriber.next({ data: chunk });
+        // 对AI生成的内容进行敏感词过滤
+        const filteredChunk = this.sensitiveFilter.replace(chunk);
+        const safeChunk = typeof filteredChunk.text === 'string' ? filteredChunk.text : chunk;
+
+        if (!filteredChunk.pass) {
+          console.log('🚀 ~ AI生成内容检测到敏感词并已过滤:', filteredChunk.filter);
+        }
+
+        subscriber.next({ data: safeChunk });
       }
 
       if (signal.aborted) {
@@ -190,6 +195,13 @@ export class OutlineService extends BaseService {
 
   async create(userId: string, data: CreateOutlineValues) {
     const { name, type, era, conflict, tags, remark } = data;
+
+    // 用户输入敏感词检查 - 直接拒绝
+    const inputText = `${name} ${type} ${era} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
+    if (this.sensitiveFilter.check(inputText)) {
+      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    }
+
     const outline = await this.prisma.outline.create({
       data: {
         name,
@@ -321,6 +333,14 @@ export class OutlineService extends BaseService {
 
   async update(id: number, userId: string, data: UpdateOutlineValues) {
     await this.findOne(id, userId);
+
+    // 用户输入敏感词检查 - 直接拒绝
+    const { name, type, era, conflict, tags, remark } = data;
+    const inputText = `${name || ''} ${type || ''} ${era || ''} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
+    if (this.sensitiveFilter.check(inputText)) {
+      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    }
+
     const updatedOutline = await this.prisma.outline.update({
       where: { id },
       data,
