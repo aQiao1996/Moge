@@ -14,6 +14,8 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MessageEvent } from '@nestjs/common';
 import { SensitiveFilterService } from '../sensitive-filter/sensitive-filter.service';
+import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
+
 interface FindAllOptions {
   pageNum?: number;
   pageSize?: number;
@@ -179,17 +181,8 @@ export class OutlineService extends BaseService {
 
   private createPromptTemplate() {
     return ChatPromptTemplate.fromMessages([
-      ['system', '你是一位经验丰富的小说家和创意作家，擅长构建引人入胜的故事大纲。'],
-      [
-        'human',
-        `请根据以下信息，为我生成一份详细、结构清晰、章节分明的小说大纲。请使用 Markdown 格式输出。
-        - 标题: {name}
-        - 类型/题材: {type}
-        - 所处时代: {era}
-        - 标签: {tags}
-        - 备注: {remark}
-      `,
-      ],
+      ['system', SYSTEM_PROMPT],
+      ['human', USER_PROMPT],
     ]);
   }
 
