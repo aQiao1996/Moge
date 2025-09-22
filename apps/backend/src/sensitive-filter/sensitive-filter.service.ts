@@ -1,6 +1,8 @@
 // sensitive-filter.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import Mint from 'mint-filter';
+import { readFileSync } from 'fs';
+import * as path from 'path';
 
 interface FilterValue {
   text?: string | boolean;
@@ -12,10 +14,37 @@ interface FilterValue {
 export class SensitiveFilterService implements OnModuleInit {
   private filter: Mint;
 
-  onModuleInit() {
-    // 默认词库
-    const defaultWords = ['暴力', '血腥', '色情', 'fuck', '操'];
-    this.filter = new Mint(defaultWords);
+  async onModuleInit() {
+    this.filter = new Mint(['暴力']);
+
+    const wordsPath = path.join(__dirname, '../public/Tencent-offline-sensitive-words.json');
+
+    try {
+      const jsonContent = readFileSync(wordsPath, 'utf8');
+      const words = JSON.parse(jsonContent) as string[];
+
+      console.log(`🚀 ~ 开始加载 ${words.length} 个敏感词...`);
+
+      // 分批加载，避免阻塞事件循环
+      const batchSize = 1000;
+      for (let i = 0; i < words.length; i += batchSize) {
+        const batch = words.slice(i, i + batchSize);
+        for (const word of batch) {
+          if (word && word.trim()) {
+            this.filter.insert(word.trim());
+          }
+        }
+
+        // 每处理一批后让出控制权
+        if (i + batchSize < words.length) {
+          await new Promise((resolve) => setImmediate(resolve));
+        }
+      }
+
+      console.log('🚀 ~ 敏感词加载完成');
+    } catch (error) {
+      console.error('🚀 ~ 加载敏感词文件失败:', error);
+    }
   }
 
   /** 同步检测：只要命中一个就返回 true */
