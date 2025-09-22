@@ -297,13 +297,7 @@ export default function OutlineFilter({
         </div>
 
         {/* 主重置按钮 - 始终显示 */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={resetFilters}
-          className="h-9"
-          disabled={!hasActiveFilters}
-        >
+        <Button variant="outline" size="sm" onClick={resetFilters} className="h-9">
           <RotateCcw className="mr-1 h-4 w-4" />
           重置
         </Button>
