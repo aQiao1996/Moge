@@ -5,9 +5,9 @@ export const SYSTEM_PROMPT = `你是一位资深小说策划编辑，只输出�
 export const USER_PROMPT = `请为我的小说生成一份**分卷-分章-分场景**的三级大纲，使用 Markdown。
 
 ### **要求**
-- 卷数：{volumes|3}
-- 每卷章数：{chaptersPerVolume|10}
-- 每章场景数：{scenesPerChapter|3}
+- 卷数：{volumes}
+- 每卷章数：{chaptersPerVolume}
+- 每章场景数：{scenesPerChapter}
 
 ---
 

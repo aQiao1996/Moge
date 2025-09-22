@@ -125,6 +125,9 @@ export class OutlineService extends BaseService {
           era: outline.era,
           tags: outline.tags.join(', '),
           remark: outline.remark,
+          volumes: 3,
+          chaptersPerVolume: 10,
+          scenesPerChapter: 3,
         },
         { configurable: { signal } } // 将 AbortSignal 传递给 LangChain
       );
