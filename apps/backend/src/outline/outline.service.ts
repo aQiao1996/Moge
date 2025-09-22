@@ -1,4 +1,10 @@
-import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 import { BaseService } from '../base/base.service';
@@ -7,6 +13,7 @@ import { Observable, Subscriber } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MessageEvent } from '@nestjs/common';
+import { SensitiveFilterService } from '../sensitive-filter/sensitive-filter.service';
 interface FindAllOptions {
   pageNum?: number;
   pageSize?: number;
@@ -27,9 +34,8 @@ export class OutlineService extends BaseService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly aiService: AIService
-    // 假设 SensitiveFilterService 已注入，请取消下面的注释
-    // private readonly sensitiveFilter: SensitiveFilterService,
+    private readonly aiService: AIService,
+    private readonly sensitiveFilter: SensitiveFilterService
   ) {
     super();
   }
@@ -102,10 +108,10 @@ export class OutlineService extends BaseService {
       }
 
       // 内容安全检查
-      // const fullPromptText = `${outline.name} ${outline.type} ${outline.era} ${outline.tags.join(', ')} ${outline.remark}`;
-      // if (this.sensitiveFilter.check(fullPromptText)) {
-      //   throw new BadRequestException('输入内容包含敏感词，已拒绝生成。');
-      // }
+      const fullPromptText = `${outline.name} ${outline.type} ${outline.era} ${outline.tags.join(', ')} ${outline.remark}`;
+      if (this.sensitiveFilter.check(fullPromptText)) {
+        throw new BadRequestException('输入内容包含敏感词，已拒绝生成。');
+      }
 
       // 实例化模型和 Prompt
       const model = this.aiService.getStreamingModel('gemini');

@@ -41,6 +41,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "swagger-ui-express": "catalog:",
+    "mint-filter": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
