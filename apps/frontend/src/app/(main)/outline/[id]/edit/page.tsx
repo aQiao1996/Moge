@@ -97,19 +97,40 @@ export default function OutlineEditPage() {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
+    let errorHandled = false;
+
     eventSource.onmessage = function (this, event) {
+      try {
+        const parsed: unknown = JSON.parse(event.data as string);
+        const data = parsed as { error?: { message?: string } };
+        if (data?.error) {
+          toast.error(data.error.message || '生成时发生未知错误');
+          errorHandled = true;
+          // 不追加内容，只返回。流将被__DONE__关闭。
+          return;
+        }
+      } catch (error) {
+        console.log('🚀 ~ page.tsx:112 ~ handleGenerate ~ error:', error);
+      }
+
       if (event.data === '__DONE__') {
         eventSource.close();
         setIsGenerating(false);
-        toast.success('生成完成！');
+        if (!errorHandled) {
+          toast.success('生成完成！');
+        }
         return;
       }
+
+      // 拼接流
       setContent((prev) => prev + event.data);
     };
 
     eventSource.onerror = function (this, error) {
       console.error('EventSource failed:', error);
-      toast.error('生成时发生网络错误');
+      if (!errorHandled) {
+        toast.error('生成时发生网络错误');
+      }
       eventSource.close();
       setIsGenerating(false);
     };

@@ -157,27 +157,39 @@ export class OutlineService extends BaseService {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
         // 发送结束信号
-        subscriber.next({ data: this.STREAM_DONE_SIGNAL });
         this.logger.debug(`[流完成] 大纲ID: ${id}, 用户ID: ${userId}, 总数据块: ${chunkCount}`);
       }
     } catch (error) {
-      // 特别处理 AbortError
+      // AbortError is special, client might be gone.
       if (error instanceof Error && error.name === 'AbortError') {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
+        let errorMessage = '生成大纲时发生未知错误，请稍后重试。';
+        let errorCode = 'UNKNOWN_ERROR';
+
         if (error instanceof Error) {
           this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error.stack);
+          if (error.message.includes('429 Too Many Requests')) {
+            errorMessage = '您的请求过于频繁，已超出当前使用额度。请检查您的套餐详情或稍后再试。';
+            errorCode = 'RATE_LIMIT_EXCEEDED';
+          }
         } else {
           this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error);
         }
+
         if (!subscriber.closed) {
-          subscriber.error(error);
+          // Send a structured error message to the client
+          const errorPayload = { error: { message: errorMessage, code: errorCode } };
+          subscriber.next({ data: JSON.stringify(errorPayload) });
         }
       }
     } finally {
       this.logger.debug(`[流结束] 大纲ID: ${id}, 用户ID: ${userId}`);
       if (!subscriber.closed) {
-        subscriber.complete(); // 确保流在任何情况下都能关闭
+        // Always send DONE signal and complete, even after an error message.
+        // The client can decide what to do.
+        subscriber.next({ data: this.STREAM_DONE_SIGNAL });
+        subscriber.complete();
       }
     }
   }
