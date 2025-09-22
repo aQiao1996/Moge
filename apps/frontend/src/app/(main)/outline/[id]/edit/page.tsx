@@ -102,12 +102,15 @@ export default function OutlineEditPage() {
     eventSource.onmessage = function (this, event) {
       try {
         const parsed: unknown = JSON.parse(event.data as string);
-        const data = parsed as { error?: { message?: string } };
-        if (data?.error) {
-          toast.error(data.error.message || '生成时发生未知错误');
-          errorHandled = true;
-          // 不追加内容，只返回。流将被__DONE__关闭。
-          return;
+        if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+          const errorObj = parsed as Record<string, unknown>;
+          const error = errorObj.error as Record<string, unknown> | undefined;
+          if (error && typeof error.message === 'string') {
+            toast.error(error.message);
+            errorHandled = true;
+            // 不追加内容，只返回。流将被__DONE__关闭。
+            return;
+          }
         }
       } catch (error) {
         console.log('🚀 ~ page.tsx:112 ~ handleGenerate ~ error:', error);
