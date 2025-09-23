@@ -31,7 +31,6 @@ interface FindAllOptions {
 @Injectable()
 export class OutlineService extends BaseService {
   private readonly logger = new Logger(OutlineService.name);
-  private readonly STREAM_DONE_SIGNAL = '__DONE__';
   private readonly STREAM_TIMEOUT = 120000; // 120 s
 
   constructor(
