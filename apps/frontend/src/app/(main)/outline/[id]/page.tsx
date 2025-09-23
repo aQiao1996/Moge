@@ -22,6 +22,7 @@ import type { OutlineWithStructure } from '@moge/types';
 import { useAuthStore } from '@/stores/authStore';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
 export default function OutlineViewPage() {
   const params = useParams();
@@ -66,24 +67,8 @@ export default function OutlineViewPage() {
     void loadData();
   }, [id]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!id) return;
-
-    if (selectedContent) {
-      const confirmed = await new Promise((resolve) => {
-        toast.warning('智能生成会覆盖当前内容，确定要继续吗？', {
-          action: {
-            label: '确定',
-            onClick: () => resolve(true),
-          },
-          onDismiss: () => resolve(false),
-          onAutoClose: () => resolve(false),
-        });
-      });
-      if (!confirmed) {
-        return;
-      }
-    }
 
     setIsGenerating(true);
     setSelectedContent('');
@@ -257,10 +242,28 @@ export default function OutlineViewPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => void handleGenerate()} disabled={isGenerating} variant="outline">
-            <Sparkles className="mr-2 h-4 w-4" />
-            {isGenerating ? '生成中...' : '智能生成'}
-          </Button>
+          {selectedContent ? (
+            <MogeConfirmPopover
+              trigger={
+                <Button disabled={isGenerating} variant="outline">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {isGenerating ? '生成中...' : '智能生成'}
+                </Button>
+              }
+              title="确认智能生成"
+              description="智能生成会覆盖当前内容，确定要继续吗？"
+              confirmText="确定生成"
+              cancelText="取消"
+              loadingText="生成中..."
+              confirmVariant="default"
+              onConfirm={handleGenerate}
+            />
+          ) : (
+            <Button onClick={() => void handleGenerate()} disabled={isGenerating} variant="outline">
+              <Sparkles className="mr-2 h-4 w-4" />
+              {isGenerating ? '生成中...' : '智能生成'}
+            </Button>
+          )}
           <Button
             onClick={() => void handleSave()}
             disabled={isSaving || isGenerating || !selectedContent || selectedTitle !== '大纲总览'}

@@ -2,7 +2,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Edit, FileText } from 'lucide-react';
+import { BookOpen, Clock, Edit, FileText, Trash2 } from 'lucide-react';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,9 +10,10 @@ import MogePagination from '@/app/components/MogePagination';
 import dayjs from 'dayjs';
 import { FilterState } from './OutlineFilter';
 import type { Outline } from '@moge/types';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import OutlineDialog from './OutlineDialog';
-import DeleteOutlinePopover from './DeleteOutlinePopover';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
 interface OutlineListProps {
   filters: FilterState;
@@ -28,7 +29,7 @@ const statusConfig: Record<
 };
 
 export default function OutlineList({ filters }: OutlineListProps) {
-  const { outlines, total, loading, getOutlines } = useOutlineStore();
+  const { outlines, total, loading, getOutlines, deleteOutline } = useOutlineStore();
   const [pageNum, setPageNum] = useState(1);
   const [pageSize] = useState(5);
   const router = useRouter();
@@ -80,6 +81,19 @@ export default function OutlineList({ filters }: OutlineListProps) {
   const handleEdit = (outline: Outline) => {
     setEditingOutline(outline);
     setEditDialogOpen(true);
+  };
+
+  const handleDelete = async (outline: Outline) => {
+    if (!outline.id) return;
+
+    try {
+      await deleteOutline(outline.id);
+      toast.success('删除成功');
+    } catch (error) {
+      toast.error('删除失败');
+      console.error('Delete outline error:', error);
+      throw error; // 重新抛出错误，让 MogeConfirmPopover 处理
+    }
   };
 
   if (loading) {
@@ -199,7 +213,20 @@ export default function OutlineList({ filters }: OutlineListProps) {
             >
               <Edit className="h-4 w-4" />
             </Button>
-            <DeleteOutlinePopover outline={outline} />
+            <MogeConfirmPopover
+              trigger={
+                <Button size="sm" variant="ghost" title="删除">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+              title="确认删除"
+              description={`此操作无法撤销，确定要删除大纲「${outline.name}」吗？`}
+              confirmText="确认删除"
+              cancelText="取消"
+              loadingText="删除中..."
+              confirmVariant="destructive"
+              onConfirm={() => handleDelete(outline)}
+            />
           </div>
         </div>
       </Card>
