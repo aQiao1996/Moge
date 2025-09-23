@@ -67,11 +67,45 @@ export default function OutlineViewPage() {
     void loadData();
   }, [id]);
 
+  // 重新加载最新数据（用于生成完成后刷新）
+  const loadLatestData = async () => {
+    if (!id) return;
+
+    try {
+      const data = await getOutlineDetailApi(id);
+      setOutlineData(data);
+
+      // 更新选中的内容（如果当前是大纲总览）
+      if (selectedTitle === '大纲总览' && data.content?.content) {
+        setSelectedContent(data.content.content);
+      }
+
+      // 默认展开所有卷
+      const volumeIds = new Set(
+        data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
+      );
+      setExpandedVolumes(volumeIds);
+    } catch (error) {
+      console.error('Load latest data error:', error);
+    }
+  };
+
   const handleGenerate = () => {
     if (!id) return;
 
     setIsGenerating(true);
     setSelectedContent('');
+
+    // 清空旧的大纲结构数据，给用户明确的反馈
+    if (outlineData) {
+      setOutlineData({
+        ...outlineData,
+        volumes: [],
+        chapters: [],
+      });
+    }
+    setExpandedVolumes(new Set());
+
     toast.info('正在生成大纲内容，请稍候...');
 
     const token = useAuthStore.getState().token;
@@ -134,6 +168,8 @@ export default function OutlineViewPage() {
           setSelectedTitle('大纲总览');
           if (!errorHandled) {
             toast.success('生成完成！');
+            // 生成完成后重新加载数据以获取最新的结构化数据
+            void loadLatestData();
           }
           return;
         }

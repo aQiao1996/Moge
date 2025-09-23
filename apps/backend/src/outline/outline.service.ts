@@ -15,6 +15,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MessageEvent } from '@nestjs/common';
 import { SensitiveFilterService } from '../sensitive-filter/sensitive-filter.service';
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
+import { MarkdownParserService, ParsedOutlineStructure } from './markdown-parser.service';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -36,7 +37,8 @@ export class OutlineService extends BaseService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
-    private readonly sensitiveFilter: SensitiveFilterService
+    private readonly sensitiveFilter: SensitiveFilterService,
+    private readonly markdownParser: MarkdownParserService
   ) {
     super();
   }
@@ -90,6 +92,7 @@ export class OutlineService extends BaseService {
   ) {
     this.logger.debug(`[流开始] 大纲ID: ${id}, 用户ID: ${userId}`);
     let chunkCount = 0;
+    let fullContent = ''; // 收集完整内容
 
     try {
       const outline = await this.findOne(parseInt(id, 10), userId);
@@ -119,6 +122,7 @@ export class OutlineService extends BaseService {
         if (signal.aborted) break;
 
         chunkCount++;
+        fullContent += chunk; // 收集内容
         this.logger.debug(
           `[流数据块] 大纲ID: ${id}, 用户ID: ${userId}, 数据块长度: ${chunk.length}`
         );
@@ -130,6 +134,10 @@ export class OutlineService extends BaseService {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
         this.logger.debug(`[流完成] 大纲ID: ${id}, 用户ID: ${userId}, 总数据块: ${chunkCount}`);
+
+        // 流完成后自动保存并解析结构化数据
+        await this.autoSaveAndParseContent(parseInt(id, 10), userId, fullContent);
+
         subject.next({ type: 'complete' });
       }
     } catch (error) {
@@ -165,6 +173,56 @@ export class OutlineService extends BaseService {
       ['system', SYSTEM_PROMPT],
       ['human', USER_PROMPT],
     ]);
+  }
+
+  /**
+   * 自动保存生成的内容并解析结构化数据
+   */
+  private async autoSaveAndParseContent(
+    outlineId: number,
+    userId: string,
+    content: string
+  ): Promise<void> {
+    this.logger.debug(
+      `[自动保存] 大纲ID: ${outlineId}, 用户ID: ${userId}, 内容长度: ${content.length}`
+    );
+
+    try {
+      // 1. 保存内容到 outline_content 表
+      const existingContent = await this.prisma.outline_content.findUnique({
+        where: { outlineId },
+      });
+
+      if (existingContent) {
+        await this.prisma.outline_content.update({
+          where: { outlineId },
+          data: {
+            content,
+            version: existingContent.version + 1,
+          },
+        });
+      } else {
+        await this.prisma.outline_content.create({
+          data: {
+            outlineId,
+            content,
+            version: 1,
+          },
+        });
+      }
+
+      // 2. 解析并存储结构化数据
+      const parsedStructure = this.markdownParser.parseOutlineMarkdown(content);
+      if (this.markdownParser.validateParsedStructure(parsedStructure)) {
+        await this.saveStructuredOutline(outlineId, parsedStructure);
+        this.logger.debug(`[自动保存完成] 大纲ID: ${outlineId}, 已存储结构化数据`);
+      } else {
+        this.logger.warn(`[自动保存警告] 大纲ID: ${outlineId}, 结构化数据不合理`);
+      }
+    } catch (error) {
+      this.logger.error(`[自动保存失败] 大纲ID: ${outlineId}`, error);
+      // 不抛出错误，避免影响生成流程
+    }
   }
 
   async create(userId: string, data: CreateOutlineValues) {
@@ -426,6 +484,20 @@ export class OutlineService extends BaseService {
       });
     }
 
+    // 尝试解析并存储结构化数据
+    try {
+      const parsedStructure = this.markdownParser.parseOutlineMarkdown(content);
+      if (this.markdownParser.validateParsedStructure(parsedStructure)) {
+        await this.saveStructuredOutline(id, parsedStructure);
+        this.logger.debug(`[解析成功] 大纲ID: ${id}, 已存储结构化数据`);
+      } else {
+        this.logger.warn(`[解析失败] 大纲ID: ${id}, 结构化数据不合理`);
+      }
+    } catch (error) {
+      this.logger.error(`[解析异常] 大纲ID: ${id}`, error);
+      // 不影响主流程，继续返回结果
+    }
+
     // 转换为前端期望的格式
     return {
       ...result,
@@ -461,5 +533,102 @@ export class OutlineService extends BaseService {
     await this.prisma.outline.delete({
       where: { id },
     });
+  }
+
+  /**
+   * 将解析后的结构化数据存储到数据库
+   */
+  private async saveStructuredOutline(
+    outlineId: number,
+    structure: ParsedOutlineStructure
+  ): Promise<void> {
+    this.logger.debug(
+      `[结构化存储] 大纲ID: ${outlineId}, 卷数: ${structure.volumes.length}, 直接章节数: ${structure.directChapters.length}`
+    );
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // 1. 清理现有的结构化数据（如果有的话）
+        await tx.outline_volume.deleteMany({
+          where: { outlineId },
+        });
+        await tx.outline_chapter.deleteMany({
+          where: { outlineId },
+        });
+
+        // 2. 存储卷和章节
+        let volumeSortOrder = 1;
+        for (const volumeData of structure.volumes) {
+          // 创建卷
+          const volume = await tx.outline_volume.create({
+            data: {
+              outlineId,
+              title: volumeData.title,
+              description: volumeData.description,
+              sortOrder: volumeSortOrder,
+            },
+          });
+
+          // 创建卷下的章节
+          let chapterSortOrder = 1;
+          for (const chapterData of volumeData.chapters) {
+            const chapter = await tx.outline_chapter.create({
+              data: {
+                volumeId: volume.id,
+                title: chapterData.title,
+                sortOrder: chapterSortOrder,
+              },
+            });
+
+            // 如果有场景内容，存储到章节内容表
+            if (chapterData.scenes.length > 0) {
+              const sceneContent = chapterData.scenes.join('\n\n');
+              await tx.outline_chapter_content.create({
+                data: {
+                  chapterId: chapter.id,
+                  content: sceneContent,
+                  version: 1,
+                },
+              });
+            }
+
+            chapterSortOrder++;
+          }
+
+          volumeSortOrder++;
+        }
+
+        // 3. 存储直接章节（无卷的章节）
+        let directChapterSortOrder = 1;
+        for (const chapterData of structure.directChapters) {
+          const chapter = await tx.outline_chapter.create({
+            data: {
+              outlineId,
+              title: chapterData.title,
+              sortOrder: directChapterSortOrder,
+            },
+          });
+
+          // 如果有场景内容，存储到章节内容表
+          if (chapterData.scenes.length > 0) {
+            const sceneContent = chapterData.scenes.join('\n\n');
+            await tx.outline_chapter_content.create({
+              data: {
+                chapterId: chapter.id,
+                content: sceneContent,
+                version: 1,
+              },
+            });
+          }
+
+          directChapterSortOrder++;
+        }
+      });
+
+      this.logger.debug(`[结构化存储完成] 大纲ID: ${outlineId}`);
+    } catch (error) {
+      this.logger.error(`[结构化存储失败] 大纲ID: ${outlineId}`, error);
+      // 不抛出错误，避免影响主流程
+    }
   }
 }
