@@ -124,8 +124,6 @@ model outline {
   remark    String?       @db.Text
   /// 业务生命周期状态
   status    OutlineStatus @default(DRAFT)
-  /// 最终 Markdown 全文（生成/编辑后回写）
-  content   String?       @db.Text
   /// 所属用户 ID
   userId    Int           @map("user_id")
   /// 创建人关联
@@ -134,9 +132,140 @@ model outline {
   createdAt DateTime      @default(now()) @map("created_at")
   /// 记录更新时间
   updatedAt DateTime      @updatedAt @map("updated_at")
+  /// 大纲内容（一对一）
+  content   outline_content?
+  /// 所属的卷
+  volumes   outline_volume[]
+  /// 无卷的直接章节（序章、后记等）
+  chapters  outline_chapter[]
 
   @@index([userId, status])
   @@index([createdAt])
+}
+
+/// 大纲内容表
+model outline_content {
+  id        Int      @id @default(autoincrement())
+  /// 所属大纲ID
+  outlineId Int      @unique @map("outline_id")
+  /// Markdown全文内容
+  content   String   @db.Text
+  /// 内容版本号
+  version   Int      @default(1)
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @updatedAt @map("updated_at")
+  /// 所属大纲
+  outline   outline  @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  /// 版本历史
+  versions  outline_content_version[]
+}
+
+/// 卷表
+model outline_volume {
+  id        Int     @id @default(autoincrement())
+  /// 所属大纲ID
+  outlineId Int     @map("outline_id")
+  /// 卷名，如"第一卷 风起云涌"
+  title     String
+  /// 卷描述
+  description String? @db.Text
+  /// 卷排序（使用十进制避免并发冲突）
+  sortOrder Decimal @map("sort_order") @db.Decimal(10, 5)
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @updatedAt @map("updated_at")
+  /// 所属大纲
+  outline   outline  @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  /// 卷下的章节
+  chapters  outline_chapter[]
+
+  @@index([outlineId, sortOrder])
+}
+
+/// 章节表（元数据）
+/// 注意：需在数据库迁移时添加 CHECK 约束：CHECK (outline_id IS NOT NULL OR volume_id IS NOT NULL)
+model outline_chapter {
+  id        Int            @id @default(autoincrement())
+  /// 所属大纲ID（用于无卷章节，如序章、后记）
+  outlineId Int?           @map("outline_id")
+  /// 所属卷ID（用于正文章节）
+  volumeId  Int?           @map("volume_id")
+  /// 章名，如"第一章 初入江湖"
+  title     String
+  /// 章节在卷内或大纲内的排序（使用十进制避免并发冲突）
+  sortOrder Decimal        @map("sort_order") @db.Decimal(10, 5)
+  /// 创建时间
+  createdAt DateTime       @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  /// 所属大纲（无卷章节）
+  outline   outline?       @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  /// 所属卷
+  volume    outline_volume? @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  /// 章节内容（一对一）
+  content   outline_chapter_content?
+
+  @@index([outlineId, sortOrder])
+  @@index([volumeId, sortOrder])
+  @@map("outline_chapter")
+}
+
+/// 章节内容表
+model outline_chapter_content {
+  id        Int     @id @default(autoincrement())
+  /// 所属章节ID
+  chapterId Int     @unique @map("chapter_id")
+  /// 章节内容
+  content   String  @db.Text
+  /// 内容版本号
+  version   Int     @default(1)
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime @updatedAt @map("updated_at")
+  /// 所属章节
+  chapter   outline_chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  /// 版本历史
+  versions  outline_chapter_content_version[]
+}
+
+/// 章节内容版本历史表
+model outline_chapter_content_version {
+  id        Int     @id @default(autoincrement())
+  /// 所属章节内容ID
+  contentId Int     @map("content_id")
+  /// 版本号
+  version   Int
+  /// 该版本的内容
+  content   String  @db.Text
+  /// 版本创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 所属章节内容
+  contentRecord outline_chapter_content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, version])
+  @@index([contentId, version])
+}
+
+/// 大纲内容版本历史表
+model outline_content_version {
+  id        Int      @id @default(autoincrement())
+  /// 所属大纲内容ID
+  contentId Int      @map("content_id")
+  /// 版本号
+  version   Int
+  /// 该版本的内容
+  content   String   @db.Text
+  /// 版本创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 所属大纲内容
+  outlineContent outline_content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, version])
+  @@index([contentId, version])
 }
 
 /// 大纲业务状态枚举
