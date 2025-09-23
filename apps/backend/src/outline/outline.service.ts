@@ -65,9 +65,9 @@ export class OutlineService extends BaseService {
       const sub = subject.subscribe({
         next: (data) => {
           if (data.type === 'complete') {
-            observer.next({ data: JSON.stringify({ type: 'complete' }) });
+            observer.next({ type: 'complete', data: null });
           } else {
-            observer.next({ data: JSON.stringify({ type: 'content', data: data.data }) });
+            observer.next({ type: 'content', data: data.data });
           }
         },
         error: (error) => observer.error(error),
