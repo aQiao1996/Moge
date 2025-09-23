@@ -185,7 +185,7 @@ export default function OutlineViewPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl p-6">
+    <div className="container mx-auto flex h-full max-w-6xl flex-col overflow-hidden p-6">
       {/* 头部 */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -213,7 +213,7 @@ export default function OutlineViewPage() {
       </div>
 
       {/* 内容展示 */}
-      <Card className="p-6" style={{ minHeight: 600 }}>
+      <Card className="flex-1 overflow-y-auto p-6">
         {content ? (
           <MdViewer md={content} />
         ) : (

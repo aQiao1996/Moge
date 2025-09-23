@@ -8,9 +8,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <SidebarProvider className={hanFont.variable}>
       <AppSidebar />
-      <SidebarInset className="relative flex min-h-screen flex-col">
+      <SidebarInset className="relative flex h-screen flex-col">
         <MainHeader className="sticky top-0 z-20" />
-        <main className="relative z-10 flex-grow overflow-y-auto px-6 py-10">{children}</main>
+        <main className="relative z-10 flex-1 overflow-hidden px-6 py-10">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
