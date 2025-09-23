@@ -4,10 +4,19 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Edit, Sparkles, ChevronDown, ChevronRight, Book, FileText } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Book,
+  FileText,
+  Save,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import MdViewer from '@/app/components/MdViewer';
-import { getOutlineDetailApi } from '@/api/outline.api';
+import { getOutlineDetailApi, updateOutlineContentApi } from '@/api/outline.api';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import type { OutlineWithStructure } from '@moge/types';
 import { useAuthStore } from '@/stores/authStore';
@@ -24,6 +33,7 @@ export default function OutlineViewPage() {
   const [selectedTitle, setSelectedTitle] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -136,6 +146,8 @@ export default function OutlineViewPage() {
         if (type === 'complete') {
           eventSource.close();
           setIsGenerating(false);
+          // 生成完成后自动选中大纲总览
+          setSelectedTitle('大纲总览');
           if (!errorHandled) {
             toast.success('生成完成！');
           }
@@ -154,6 +166,28 @@ export default function OutlineViewPage() {
       eventSource.close();
       setIsGenerating(false);
     };
+  };
+
+  const handleSave = async () => {
+    if (!id || !selectedContent || selectedTitle !== '大纲总览') {
+      toast.warning('只能保存大纲总览内容');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await updateOutlineContentApi(id, { content: selectedContent });
+      toast.success('保存成功！');
+
+      // 重新加载数据以更新版本号等信息
+      const data = await getOutlineDetailApi(id);
+      setOutlineData(data);
+    } catch (error) {
+      toast.error('保存失败，请重试');
+      console.error('Save content error:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEdit = () => {
@@ -228,6 +262,25 @@ export default function OutlineViewPage() {
           <Button onClick={() => void handleGenerate()} disabled={isGenerating} variant="outline">
             <Sparkles className="mr-2 h-4 w-4" />
             {isGenerating ? '生成中...' : '智能生成'}
+          </Button>
+          <Button
+            onClick={() => void handleSave()}
+            disabled={isSaving || isGenerating || !selectedContent || selectedTitle !== '大纲总览'}
+            variant="outline"
+            title={
+              isSaving
+                ? '保存中...'
+                : isGenerating
+                  ? '生成中，请等待...'
+                  : !selectedContent
+                    ? '暂无内容可保存'
+                    : selectedTitle !== '大纲总览'
+                      ? '只能保存大纲总览内容'
+                      : '保存大纲内容'
+            }
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isSaving ? '保存中...' : '保存'}
           </Button>
           <Button onClick={handleEdit} disabled={isGenerating}>
             <Edit className="mr-2 h-4 w-4" />

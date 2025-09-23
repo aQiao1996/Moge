@@ -389,6 +389,51 @@ export class OutlineService extends BaseService {
     };
   }
 
+  async updateContent(id: number, userId: string, content: string) {
+    // 先检查权限
+    await this.findOne(id, userId);
+
+    // 检查是否已有内容记录
+    const existingContent = await this.prisma.outline_content.findUnique({
+      where: { outlineId: id },
+    });
+
+    let result: {
+      id: number;
+      outlineId: number;
+      content: string;
+      version: number;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    if (existingContent) {
+      // 更新现有内容，版本号递增
+      result = await this.prisma.outline_content.update({
+        where: { outlineId: id },
+        data: {
+          content,
+          version: existingContent.version + 1,
+        },
+      });
+    } else {
+      // 创建新的内容记录
+      result = await this.prisma.outline_content.create({
+        data: {
+          outlineId: id,
+          content,
+          version: 1,
+        },
+      });
+    }
+
+    // 转换为前端期望的格式
+    return {
+      ...result,
+      id: result.id.toString(),
+      outlineId: result.outlineId.toString(),
+    };
+  }
+
   async update(id: number, userId: string, data: UpdateOutlineValues) {
     await this.findOne(id, userId);
 

@@ -6,6 +6,7 @@ import {
   Get,
   Patch,
   Delete,
+  Put,
   Param,
   ParseIntPipe,
   Query,
@@ -145,6 +146,32 @@ export class OutlineController {
   async findDetail(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.outlineService.findDetail(id, userId);
+  }
+
+  @Put(':id/content')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '保存大纲内容' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '大纲内容',
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: '大纲内容' },
+      },
+      required: ['content'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '保存成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateContent(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { content: string }
+  ): Promise<unknown> {
+    const userId = req.user.id;
+    return this.outlineService.updateContent(id, userId, data.content);
   }
 
   @Patch(':id')
