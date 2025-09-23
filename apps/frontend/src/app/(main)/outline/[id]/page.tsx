@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import { statusConfig } from '../components/constants';
 
 export default function OutlineViewPage() {
   const params = useParams();
@@ -267,7 +268,7 @@ export default function OutlineViewPage() {
       </div>
     );
   }
-
+  const status = statusConfig[outlineData.status as keyof typeof statusConfig];
   return (
     <div className="container mx-auto flex h-full max-w-7xl flex-col overflow-hidden p-6">
       {/* 头部 */}
@@ -280,7 +281,7 @@ export default function OutlineViewPage() {
           <div>
             <h1 className="text-2xl font-bold">{outlineData.name}</h1>
             <p className="text-muted-foreground text-sm">
-              {outlineData.type} · {outlineData.era} · {outlineData.status}
+              {outlineData.type} · {outlineData.era} · {status.text}
             </p>
           </div>
         </div>
