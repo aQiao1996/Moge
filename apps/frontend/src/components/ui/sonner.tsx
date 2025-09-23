@@ -1,11 +1,11 @@
 'use client';
 
-import { useSettings } from '@/stores/settingStore';
+import { useTheme } from 'next-themes';
 import type { ToasterProps } from 'sonner';
 import { Toaster as Sonner } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const theme = useSettings((state) => state.theme);
+  const { theme = 'system' } = useTheme();
 
   return (
     <Sonner

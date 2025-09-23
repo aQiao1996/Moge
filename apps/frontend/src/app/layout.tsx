@@ -1,8 +1,6 @@
 import Providers from './providers';
-import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/sonner';
-import StoreInitializer from './components/StoreInitializer';
 import './styles/index.css';
 
 export const metadata: Metadata = {
@@ -12,16 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const themeCookie = cookies().get('theme')?.value;
-  const theme = themeCookie === 'dark' || themeCookie === 'light' ? themeCookie : 'light';
-
   return (
-    <html lang="zh-CN" suppressHydrationWarning className={theme === 'dark' ? 'dark' : ''}>
+    <html lang="zh-CN" suppressHydrationWarning>
       <body>
-        <Providers>
-          <StoreInitializer theme={theme} />
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
         <Toaster richColors position="top-center" duration={2000} />
       </body>
     </html>

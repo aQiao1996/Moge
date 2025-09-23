@@ -1,28 +1,24 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/stores/settingStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 
 export default function AuthSetting({ isAbsolute = true }) {
-  const { theme, lang, setTheme, setLang } = useSettings();
+  const { lang, setLang } = useSettings();
+  const { theme, setTheme } = useTheme();
 
   const [themeAnim, setThemeAnim] = useState('');
   const [langAnim, setLangAnim] = useState('');
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
     setThemeAnim('rotate-90');
-    setTheme(newTheme);
-
-    // Also update the cookie via our API
-    fetch('/api/set-theme', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ theme: newTheme }),
-    }).catch((error) => {
-      console.error('Failed to set theme cookie:', error);
-    });
-
+    setTheme(theme === 'light' || theme === 'system' ? 'dark' : 'light');
     setTimeout(() => {
       setThemeAnim('');
     }, 250);
@@ -36,6 +32,16 @@ export default function AuthSetting({ isAbsolute = true }) {
       setLangAnim('');
     }, 200);
   };
+
+  if (!mounted) {
+    // 防止布局移位
+    return (
+      <div className={`right-4 top-4 z-10 flex items-center gap-2 ${isAbsolute ? 'absolute' : ''}`}>
+        <div className="h-8 w-8 rounded-full border border-[var(--moge-btn-border)] bg-[var(--moge-btn-bg)]"></div>
+        <div className="h-8 w-8 rounded-full border border-[var(--moge-btn-border)] bg-[var(--moge-btn-bg)]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={`right-4 top-4 z-10 flex items-center gap-2 ${isAbsolute ? 'absolute' : ''}`}>

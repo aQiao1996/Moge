@@ -3,29 +3,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Theme = 'light' | 'dark';
+// Theme is no longer managed here
 type Lang = 'zh' | 'en';
 
 interface SettingsState {
-  theme: Theme;
   lang: Lang;
-  setTheme: (t: Theme) => void;
   setLang: (l: Lang) => void;
 }
 
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      theme: 'light',
       lang: 'zh',
-      setTheme: (theme) => {
-        set({ theme });
-      },
       setLang: (lang) => set({ lang }),
     }),
-    {
-      name: 'moge-settings',
-      partialize: (state) => ({ lang: state.lang }),
-    }
+    { name: 'moge-settings' }
   )
 );

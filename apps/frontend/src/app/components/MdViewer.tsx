@@ -2,7 +2,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm'; // 表格支持
 import { useMemo } from 'react';
-import { useSettings } from '@/stores/settingStore';
+import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
 type Props = { md: string; className?: string };
@@ -18,12 +18,16 @@ function hashCode(s: string): number {
 export default function MdViewer({ md, className = '' }: Props) {
   if (!md || md.trim() === '') return null;
 
-  const theme = useSettings((state) => state.theme);
+  const { resolvedTheme } = useTheme();
   const key = useMemo(() => `${md.length}-${hashCode(md.slice(0, 50))}`, [md]);
 
   return (
     <div
-      className={cn('prose prose-slate max-w-none', theme === 'dark' && 'prose-invert', className)}
+      className={cn(
+        'prose prose-slate max-w-none',
+        resolvedTheme === 'dark' && 'prose-invert',
+        className
+      )}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} key={key}>
         {md}
