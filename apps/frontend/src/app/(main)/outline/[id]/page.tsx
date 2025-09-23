@@ -57,7 +57,6 @@ export default function OutlineViewPage() {
         );
         setExpandedVolumes(volumeIds);
       } catch (error) {
-        toast.error('加载大纲数据失败');
         console.error('Load outline data error:', error);
       } finally {
         setLoading(false);
@@ -183,7 +182,6 @@ export default function OutlineViewPage() {
       const data = await getOutlineDetailApi(id);
       setOutlineData(data);
     } catch (error) {
-      toast.error('保存失败，请重试');
       console.error('Save content error:', error);
     } finally {
       setIsSaving(false);
