@@ -14,6 +14,7 @@
     "@icons-pack/react-simple-icons": "catalog:",
     "@moge/types": "workspace:*",
     "@radix-ui/react-avatar": "catalog:",
+    "@radix-ui/react-collapsible": "catalog:",
     "@radix-ui/react-dialog": "catalog:",
     "@radix-ui/react-dropdown-menu": "catalog:",
     "@radix-ui/react-label": "catalog:",

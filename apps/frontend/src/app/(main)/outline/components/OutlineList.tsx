@@ -186,8 +186,8 @@ export default function OutlineList({ filters }: OutlineListProps) {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => router.push(`/outline/${outline.id}/edit`)}
-              title="编辑内容"
+              onClick={() => router.push(`/outline/${outline.id}`)}
+              title="查看内容"
             >
               <FileText className="h-4 w-4" />
             </Button>

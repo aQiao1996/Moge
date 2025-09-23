@@ -3,6 +3,7 @@ import type {
   CreateOutlineValues,
   Outline,
   OutlineContent,
+  OutlineWithStructure,
   UpdateOutlineContentValues,
   UpdateOutlineValues,
 } from '@moge/types';
@@ -51,6 +52,14 @@ export const getOutlineByIdApi = async (id: string): Promise<Outline> => {
   return response.data;
 };
 
+// 获取完整的大纲结构（包含卷、章节和内容）
+export const getOutlineWithStructureApi = async (id: string): Promise<OutlineWithStructure> => {
+  const response = await httpRequest.get<OutlineWithStructure>(`/outline/${id}/structure`);
+  return response.data;
+};
+
+// 保留旧的 API 以兼容现有代码，但标记为已废弃
+/** @deprecated 使用 getOutlineWithStructureApi 替代 */
 export const getOutlineContentApi = async (id: string): Promise<OutlineContent | null> => {
   try {
     const response = await httpRequest.get<OutlineContent>(`/outline/${id}/content`);
