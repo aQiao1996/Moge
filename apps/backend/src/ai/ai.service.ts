@@ -3,10 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { ChatOpenAI } from '@langchain/openai'; // 预先引入，方便未来切换
+import { ChatOpenAI } from '@langchain/openai';
+import { ChatMoonshot } from '@langchain/community/chat_models/moonshot';
 
 // 定义支持的 AI供应商类型，方便扩展
-export type AIProvider = 'gemini' | 'openai';
+export type AIProvider = 'gemini' | 'openai' | 'moonshot';
 
 @Injectable()
 export class AIService {
@@ -33,6 +34,16 @@ export class AIService {
           apiKey: this.configService.get<string>('OPENAI_API_KEY'),
           modelName: 'gpt-4-turbo-preview',
           streaming: true,
+        });
+
+      case 'moonshot':
+        console.log('🚀 ~ Using Moonshot model');
+        return new ChatMoonshot({
+          apiKey: this.configService.get<string>('MOONSHOT_API_KEY'),
+          modelName: 'moonshot-v1-8k',
+          streaming: true, // 启用流式响应
+          maxTokens: 3000, // 适中的token数量，平衡速度和完整性
+          temperature: 0.8, // 稍微提高创造性
         });
 
       default:

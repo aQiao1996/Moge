@@ -12,6 +12,7 @@ catalogs:
     '@eslint/js': ^9.13.0
     '@hookform/resolvers': 5.2.1
     '@icons-pack/react-simple-icons': 13.7.0
+    '@langchain/community': 0.3.56
     '@langchain/core': 0.3.76
     '@langchain/google-genai': 0.1.10
     '@langchain/openai': 0.6.12
@@ -37,7 +38,6 @@ catalogs:
     '@radix-ui/react-tooltip': ^1.2.8
     '@tailwindcss/postcss': 4.1.12
     '@tailwindcss/typography': ^0.5.16
-    '@uiw/react-md-editor': ^4.0.8
     '@types/bcryptjs': ^2.4.6
     '@types/event-source-polyfill': 1.0.5
     '@types/express': ^5.0.0
@@ -52,6 +52,7 @@ catalogs:
     '@typescript-eslint/eslint-plugin': ^8.0.0
     '@typescript-eslint/parser': ^8.0.0
     '@typescript-eslint/typescript-estree': ^8.0.0
+    '@uiw/react-md-editor': ^4.0.8
     bcryptjs: ^2.4.3
     chokidar: ^4.0.0
     class-transformer: ^0.5.1
@@ -60,11 +61,11 @@ catalogs:
     clsx: ^2.1.1
     concurrently: ^8.2.2
     dayjs: ^1.11.18
-    'event-source-polyfill': 1.0.31
     eslint: ^9.34.0
     eslint-config-next: 15.5.2
     eslint-config-prettier: 9.1.2
     eslint-plugin-prettier: 5.5.4
+    event-source-polyfill: 1.0.31
     globals: ^16.0.0
     husky: ^9.1.7
     inquirer: ^9.2.0
@@ -72,6 +73,7 @@ catalogs:
     jsonwebtoken: ^9.0.2
     lint-staged: ^16.1.5
     lucide-react: 0.542.0
+    mint-filter: 1.1.2
     next: ^14.2.4
     next-auth: 4.24.11
     next-themes: ^0.4.6
@@ -91,7 +93,6 @@ catalogs:
     source-map-support: ^0.5.21
     supertest: ^7.0.0
     swagger-ui-express: ^4.6.3
-    mint-filter: 1.1.2
     tailwind-merge: ^3.3.1
     tailwindcss: ^4.1.12
     ts-jest: ^29.4.1
