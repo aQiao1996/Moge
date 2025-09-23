@@ -20,17 +20,12 @@ export const useSettings = create<SettingsState>()(
       lang: 'zh',
       setTheme: (theme) => {
         set({ theme });
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        fetch('/set-theme', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ theme }),
-        }).catch((error) => {
-          console.log('🚀 ~ settings.ts:29 ~ error:', error);
-        });
       },
       setLang: (lang) => set({ lang }),
     }),
-    { name: 'moge-settings' }
+    {
+      name: 'moge-settings',
+      partialize: (state) => ({ lang: state.lang }),
+    }
   )
 );

@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
-import { useTheme } from 'next-themes';
+import { useSettings } from '@/stores/settingStore';
 import { cn } from '@/lib/utils';
 
 // 动态导入编辑器以避免 SSR 问题
@@ -25,9 +25,9 @@ export default function MdEditor({
   height = 400,
   preview = 'live',
 }: MdEditorProps) {
-  const { resolvedTheme } = useTheme();
+  const theme = useSettings((state) => state.theme);
 
-  const colorMode: 'dark' | 'light' = resolvedTheme === 'dark' ? 'dark' : 'light';
+  const colorMode: 'dark' | 'light' = theme;
   const editorProps = useMemo(
     () => ({
       value,
@@ -39,7 +39,7 @@ export default function MdEditor({
       preview,
       'data-color-mode': colorMode,
     }),
-    [value, onChange, placeholder, height, preview, resolvedTheme]
+    [value, onChange, placeholder, height, preview, theme]
   );
 
   return (

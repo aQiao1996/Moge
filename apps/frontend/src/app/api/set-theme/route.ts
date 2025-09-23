@@ -1,19 +1,20 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import type { NextRequest } from 'next/server';
 
-export type Theme = 'light' | 'dark' | '';
+interface RequestBody {
+  theme: 'light' | 'dark';
+}
 
-export async function POST(req: NextRequest) {
-  const { theme } = (await req.json()) as { theme: Theme };
-  if (theme !== 'light' && theme !== 'dark') {
-    return NextResponse.json({ error: 'invalid theme' }, { status: 400 });
+export async function POST(request: NextRequest) {
+  try {
+    const { theme } = (await request.json()) as RequestBody;
+    if (theme === 'light' || theme === 'dark') {
+      const response = NextResponse.json({ success: true });
+      response.cookies.set('theme', theme, { path: '/', maxAge: 60 * 60 * 24 * 365 }); // 1年
+      return response;
+    }
+    return NextResponse.json({ success: false, error: 'Invalid theme' }, { status: 400 });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
-  cookies().set('theme', theme, {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 365, // 1 年
-    sameSite: 'lax',
-    httpOnly: false, // 需让 JS 读到
-  });
-  return NextResponse.json({ ok: true });
 }

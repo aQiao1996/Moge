@@ -1,7 +1,6 @@
 'use client';
 
 import { Menu, User, LogOut } from 'lucide-react';
-import AuthSetting from '@/app/components/AuthSetting';
 import { useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import {
@@ -12,6 +11,9 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { signOut } from 'next-auth/react';
+import dynamic from 'next/dynamic';
+
+const AuthSetting = dynamic(() => import('@/app/components/AuthSetting'), { ssr: false });
 
 export default function MainHeader({ className }: { className?: string }) {
   const { toggleSidebar } = useSidebar();

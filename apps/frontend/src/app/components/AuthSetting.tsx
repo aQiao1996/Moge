@@ -10,16 +10,28 @@ export default function AuthSetting({ isAbsolute = true }) {
   const [langAnim, setLangAnim] = useState('');
 
   const handleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
     setThemeAnim('rotate-90');
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    setTheme(newTheme);
+
+    // Also update the cookie via our API
+    fetch('/api/set-theme', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: newTheme }),
+    }).catch((error) => {
+      console.error('Failed to set theme cookie:', error);
+    });
+
     setTimeout(() => {
       setThemeAnim('');
     }, 250);
   };
 
   const handleLang = () => {
+    const newLang = lang === 'zh' ? 'en' : 'zh';
     setLangAnim('scale-95');
-    setLang(lang === 'zh' ? 'en' : 'zh');
+    setLang(newLang);
     setTimeout(() => {
       setLangAnim('');
     }, 200);

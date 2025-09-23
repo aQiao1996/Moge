@@ -1,8 +1,8 @@
 import Providers from './providers';
-import SettingInjector from './components/SettingInjector';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
-import { Toaster } from '@/components/ui/sonner'; // 导入 Toaster 组件
+import { Toaster } from '@/components/ui/sonner';
+import StoreInitializer from './components/StoreInitializer';
 import './styles/index.css';
 
 export const metadata: Metadata = {
@@ -12,12 +12,16 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const theme = cookies().get('theme')?.value || 'light';
+  const themeCookie = cookies().get('theme')?.value;
+  const theme = themeCookie === 'dark' || themeCookie === 'light' ? themeCookie : 'light';
+
   return (
     <html lang="zh-CN" suppressHydrationWarning className={theme === 'dark' ? 'dark' : ''}>
       <body>
-        <SettingInjector />
-        <Providers>{children}</Providers>
+        <Providers>
+          <StoreInitializer theme={theme} />
+          {children}
+        </Providers>
         <Toaster richColors position="top-center" duration={2000} />
       </body>
     </html>
