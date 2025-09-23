@@ -1,5 +1,6 @@
 'use client';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; // 表格支持
 import { useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -28,7 +29,9 @@ export default function MdViewer({ md, className = '' }: Props) {
         className
       )}
     >
-      <ReactMarkdown key={key}>{md}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} key={key}>
+        {md}
+      </ReactMarkdown>
     </div>
   );
 }

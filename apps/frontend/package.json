@@ -36,6 +36,7 @@
     "react-dom": "catalog:",
     "react-hook-form": "catalog:",
     "react-markdown": "catalog:",
+    "remark-gfm": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
     "zod": "catalog:",

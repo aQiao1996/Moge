@@ -252,6 +252,9 @@ catalogs:
     reflect-metadata:
       specifier: ^0.2.2
       version: 0.2.2
+    remark-gfm:
+      specifier: ^4.0.1
+      version: 4.0.1
     rxjs:
       specifier: ^7.8.1
       version: 7.8.2
@@ -594,6 +597,9 @@ importers:
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.1.12)(react@18.3.1)
+      remark-gfm:
+        specifier: 'catalog:'
+        version: 4.0.1
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
