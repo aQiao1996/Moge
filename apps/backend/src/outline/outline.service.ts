@@ -78,13 +78,13 @@ export class OutlineService extends BaseService {
 
       // 清理逻辑：当 Observable 被取消订阅时（如客户端断开连接）执行
       return () => {
-        if (!ac.signal.aborted) {
-          this.logger.warn(
-            `[客户端断开连接] 正在中止流，大纲ID: ${id}, 用户ID: ${userId}`,
-            'client_disconnect'
-          );
-          ac.abort('client_disconnect');
-        }
+        // if (!ac.signal.aborted) {
+        //   this.logger.warn(
+        //     `[客户端断开连接] 正在中止流，大纲ID: ${id}, 用户ID: ${userId}`,
+        //     'client_disconnect'
+        //   );
+        //   ac.abort('client_disconnect');
+        // }
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
@@ -131,6 +131,7 @@ export class OutlineService extends BaseService {
         },
         { configurable: { signal } } // 将 AbortSignal 传递给 LangChain
       );
+      console.log('🚀 ~ outline.service.ts:140 ~ _generateStream ~ stream:', stream);
 
       // for-await-of 处理了背压,是"拉"的一种模式
       for await (const chunk of stream) {
@@ -143,14 +144,14 @@ export class OutlineService extends BaseService {
         );
 
         // 对AI生成的内容进行敏感词过滤
-        const filteredChunk = this.sensitiveFilter.replace(chunk);
-        const safeChunk = typeof filteredChunk.text === 'string' ? filteredChunk.text : chunk;
+        // const filteredChunk = this.sensitiveFilter.replace(chunk);
+        // const safeChunk = typeof filteredChunk.text === 'string' ? filteredChunk.text : chunk;
 
-        if (!filteredChunk.pass) {
-          console.log('🚀 ~ AI生成内容检测到敏感词并已过滤:', filteredChunk.filter);
-        }
+        // if (!filteredChunk.pass) {
+        //   console.log('🚀 ~ AI生成内容检测到敏感词并已过滤:', filteredChunk.filter);
+        // }
 
-        subscriber.next({ data: safeChunk });
+        subscriber.next({ data: chunk });
       }
 
       if (signal.aborted) {

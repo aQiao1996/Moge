@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
-import { ChatMoonshot } from '@langchain/community/chat_models/moonshot';
+// import { ChatMoonshot } from '@langchain/community/chat_models/moonshot'; // 不使用这个,这个流式有问题
 
 // 定义支持的 AI供应商类型，方便扩展
 export type AIProvider = 'gemini' | 'openai' | 'moonshot';
@@ -38,12 +38,15 @@ export class AIService {
 
       case 'moonshot':
         console.log('🚀 ~ Using Moonshot model');
-        return new ChatMoonshot({
+        return new ChatOpenAI({
           apiKey: this.configService.get<string>('MOONSHOT_API_KEY'),
           modelName: 'moonshot-v1-8k',
+          configuration: {
+            baseURL: 'https://api.moonshot.cn/v1', // 把请求发到 Kimi（Moonshot）的兼容接口地址
+          },
           streaming: true, // 启用流式响应
-          maxTokens: 3000, // 适中的token数量，平衡速度和完整性
-          temperature: 0.8, // 稍微提高创造性
+          maxTokens: 2000, // 适中的token数量，平衡速度和完整性
+          temperature: 0.6, // 稍微提高创造性
         });
 
       default:
