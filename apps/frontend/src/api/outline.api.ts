@@ -52,9 +52,9 @@ export const getOutlineByIdApi = async (id: string): Promise<Outline> => {
   return response.data;
 };
 
-// 获取完整的大纲结构（包含卷、章节和内容）
-export const getOutlineWithStructureApi = async (id: string): Promise<OutlineWithStructure> => {
-  const response = await httpRequest.get<OutlineWithStructure>(`/outline/${id}/structure`);
+// 获取大纲详情（包含完整的卷、章节和内容结构）
+export const getOutlineDetailApi = async (id: string): Promise<OutlineWithStructure> => {
+  const response = await httpRequest.get<OutlineWithStructure>(`/outline/${id}/detail`);
   return response.data;
 };
 

@@ -125,7 +125,7 @@ export class OutlineController {
 
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: '获取指定ID的大纲详情' })
+  @ApiOperation({ summary: '获取指定ID的大纲基本信息' })
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
@@ -133,6 +133,18 @@ export class OutlineController {
   async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.outlineService.findOne(id, userId);
+  }
+
+  @Get(':id/detail')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '获取指定ID的大纲详情（包含完整结构）' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async findDetail(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.outlineService.findDetail(id, userId);
   }
 
   @Patch(':id')

@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Edit, Sparkles, ChevronDown, ChevronRight, Book, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import MdViewer from '@/app/components/MdViewer';
-import { getOutlineWithStructureApi } from '@/api/outline.api';
+import { getOutlineDetailApi } from '@/api/outline.api';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import type { OutlineWithStructure } from '@moge/types';
 import { useAuthStore } from '@/stores/authStore';
@@ -32,7 +32,7 @@ export default function OutlineViewPage() {
 
       try {
         setLoading(true);
-        const data = await getOutlineWithStructureApi(id);
+        const data = await getOutlineDetailApi(id);
         setOutlineData(data);
 
         // 默认显示大纲总体内容
@@ -249,14 +249,14 @@ export default function OutlineViewPage() {
                 'h-auto w-full justify-start p-2 text-left',
                 selectedTitle === '大纲总览' && 'bg-accent'
               )}
-              onClick={() => handleSelectContent(outlineData.content?.content || '', '大纲总览')}
+              onClick={() => handleSelectContent(outlineData?.content?.content || '', '大纲总览')}
             >
               <Book className="mr-2 h-4 w-4 flex-shrink-0" />
               <span className="truncate">大纲总览</span>
             </Button>
 
             {/* 无卷的直接章节 */}
-            {outlineData.chapters?.map((chapter) => (
+            {outlineData?.chapters?.map((chapter) => (
               <Button
                 key={chapter.id}
                 variant="ghost"
@@ -274,7 +274,7 @@ export default function OutlineViewPage() {
             )) || null}
 
             {/* 卷和章节 */}
-            {outlineData.volumes?.map((volume) => (
+            {outlineData?.volumes?.map((volume) => (
               <Collapsible
                 key={volume.id}
                 open={expandedVolumes.has(volume.id || '')}

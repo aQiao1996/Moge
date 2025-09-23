@@ -305,6 +305,90 @@ export class OutlineService extends BaseService {
     return outline;
   }
 
+  async findDetail(id: number, userId: string) {
+    // 先检查权限
+    const outline = await this.prisma.outline.findUnique({
+      where: { id },
+    });
+
+    if (!outline || outline.userId !== parseInt(userId)) {
+      throw new ForbiddenException('无权访问此大纲');
+    }
+
+    // 获取完整的大纲结构，包括内容、卷和章节
+    const fullOutline = await this.prisma.outline.findUnique({
+      where: { id },
+      include: {
+        content: true,
+        volumes: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            chapters: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                content: true,
+              },
+            },
+          },
+        },
+        chapters: {
+          where: { outlineId: id }, // 无卷的直接章节
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            content: true,
+          },
+        },
+      },
+    });
+
+    if (!fullOutline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    // 转换为前端期望的格式
+    return {
+      ...fullOutline,
+      id: fullOutline.id.toString(),
+      userId: fullOutline.userId.toString(),
+      content: fullOutline.content
+        ? {
+            ...fullOutline.content,
+            id: fullOutline.content.id.toString(),
+            outlineId: fullOutline.content.outlineId.toString(),
+          }
+        : null,
+      volumes: fullOutline.volumes.map((volume) => ({
+        ...volume,
+        id: volume.id.toString(),
+        outlineId: volume.outlineId.toString(),
+        chapters: volume.chapters.map((chapter) => ({
+          ...chapter,
+          id: chapter.id.toString(),
+          volumeId: chapter.volumeId?.toString(),
+          content: chapter.content
+            ? {
+                ...chapter.content,
+                id: chapter.content.id.toString(),
+                chapterId: chapter.content.chapterId.toString(),
+              }
+            : null,
+        })),
+      })),
+      chapters: fullOutline.chapters.map((chapter) => ({
+        ...chapter,
+        id: chapter.id.toString(),
+        outlineId: chapter.outlineId?.toString(),
+        content: chapter.content
+          ? {
+              ...chapter.content,
+              id: chapter.content.id.toString(),
+              chapterId: chapter.content.chapterId.toString(),
+            }
+          : null,
+      })),
+    };
+  }
+
   async update(id: number, userId: string, data: UpdateOutlineValues) {
     await this.findOne(id, userId);
 
