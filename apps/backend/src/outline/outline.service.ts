@@ -310,16 +310,23 @@ export class OutlineService extends BaseService {
 
     const where: {
       userId: number;
+      status?:
+        | {
+            not?: Outline['status'];
+            in?: Outline['status'][];
+          }
+        | Outline['status'];
       OR?: Array<{
         name?: { contains: string; mode: 'insensitive' };
         remark?: { contains: string; mode: 'insensitive' };
       }>;
       type?: string;
       era?: string;
-      status?: Outline['status'];
       tags?: { hasSome: string[] };
     } = {
       userId: parseInt(userId),
+      // 默认过滤掉已删除/废弃的大纲
+      status: { not: 'DISCARDED' },
     };
 
     if (search) {
@@ -333,7 +340,12 @@ export class OutlineService extends BaseService {
 
     if (era) where.era = era;
 
-    if (status) where.status = status;
+    // 如果用户明确指定了状态，使用用户指定的状态；否则过滤掉已删除的
+    if (status) {
+      where.status = status;
+    }
+    // 如果没有指定状态，默认过滤掉已删除的大纲
+    // (上面已经设置了默认的 not: 'DISCARDED')
 
     if (tags && tags.length > 0) {
       where.tags = { hasSome: tags };
@@ -530,8 +542,10 @@ export class OutlineService extends BaseService {
 
   async delete(id: number, userId: string) {
     await this.findOne(id, userId);
-    await this.prisma.outline.delete({
+    // 软删除：将状态改为 DISCARDED 而不是物理删除
+    await this.prisma.outline.update({
       where: { id },
+      data: { status: 'DISCARDED' },
     });
   }
 

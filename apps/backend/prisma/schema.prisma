@@ -270,7 +270,9 @@ model outline_content_version {
 
 /// 大纲业务状态枚举
 enum OutlineStatus {
-  DRAFT // 草稿箱
-  PUBLISHED // 已完成
-  DISCARDED // 已放弃
+  DRAFT       // 草稿 - 刚创建
+  GENERATING  // 生成中 - AI生成过程中
+  GENERATED   // 已生成 - AI生成完成但未保存
+  PUBLISHED   // 已发布 - 用户确认保存
+  DISCARDED   // 已放弃 - 软删除
 }

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import MdViewer from '@/app/components/MdViewer';
-import { getOutlineDetailApi, updateOutlineContentApi } from '@/api/outline.api';
+import { getOutlineDetailApi, updateOutlineContentApi, updateOutlineApi } from '@/api/outline.api';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import type { OutlineWithStructure } from '@moge/types';
 import { useAuthStore } from '@/stores/authStore';
@@ -197,12 +197,19 @@ export default function OutlineViewPage() {
     try {
       setIsSaving(true);
       await updateOutlineContentApi(id, { content: selectedContent });
+
+      // 如果当前状态是草稿且有内容，自动变更为已完成状态
+      if (outlineData?.status === 'DRAFT' && selectedContent.trim()) {
+        await updateOutlineApi(id, { status: 'PUBLISHED' });
+      }
+
       toast.success('保存成功！');
 
       // 重新加载数据以更新版本号等信息
       const data = await getOutlineDetailApi(id);
       setOutlineData(data);
     } catch (error) {
+      toast.error('保存失败，请重试');
       console.error('Save content error:', error);
     } finally {
       setIsSaving(false);

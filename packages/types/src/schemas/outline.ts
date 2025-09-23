@@ -13,7 +13,7 @@ export type CreateOutlineValues = z.infer<typeof createOutlineSchema>;
 
 export const outlineSchema = createOutlineSchema.extend({
   id: z.string(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'DISCARDED']),
+  status: z.enum(['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED']),
   userId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -88,7 +88,7 @@ export type OutlineWithStructure = z.infer<typeof outlineWithStructureSchema>;
 
 export const updateOutlineSchema = createOutlineSchema
   .extend({
-    status: z.enum(['DRAFT', 'PUBLISHED', 'DISCARDED']).optional(),
+    status: z.enum(['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED']).optional(),
   })
   .partial(); // 所有字段都可选
 
