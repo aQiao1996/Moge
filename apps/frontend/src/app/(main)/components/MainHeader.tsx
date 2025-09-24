@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, User, LogOut } from 'lucide-react';
+import { User, LogOut, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import {
@@ -12,11 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
+import { Button } from '@/components/ui/button';
 
 const AuthSetting = dynamic(() => import('@/app/components/AuthSetting'), { ssr: false });
 
 export default function MainHeader({ className }: { className?: string }) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, open } = useSidebar();
 
   return (
     <>
@@ -25,10 +26,17 @@ export default function MainHeader({ className }: { className?: string }) {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Menu
-              className="h-5 w-5 cursor-pointer text-[var(--moge-text-sub)] hover:text-[var(--moge-text-main)]"
+            <Button
+              variant="ghost"
               onClick={toggleSidebar}
-            />
+              className="hover:bg-muted/50 h-8 w-8 p-0"
+            >
+              {open ? (
+                <PanelLeftClose className="!h-5 !w-5" />
+              ) : (
+                <PanelLeft className="!h-5 !w-5" />
+              )}
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             <AuthSetting isAbsolute={false} />
