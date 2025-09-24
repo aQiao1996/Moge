@@ -47,9 +47,6 @@ export default function MdEditor({
       className={cn(
         'border-input bg-background w-full rounded-md border',
         '[&_.w-md-editor]:border-0 [&_.w-md-editor]:bg-transparent',
-        '[&_.w-md-editor-text-input]:!bg-background [&_.w-md-editor-text-input]:!text-foreground',
-        '[&_.w-md-editor-text-textarea]:!bg-background [&_.w-md-editor-text-textarea]:!text-foreground',
-        '[&_.w-md-editor-preview]:!bg-background [&_.w-md-editor-preview]:!text-foreground',
         '[&_.w-md-editor-toolbar]:!bg-muted/50 [&_.w-md-editor-toolbar]:!border-border',
         className
       )}
