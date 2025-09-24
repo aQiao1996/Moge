@@ -7,30 +7,18 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, ChevronDown, ChevronRight, Book, FileText } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
 import { getOutlineDetailApi, updateOutlineContentApi, updateOutlineApi } from '@/api/outline.api';
 import type { OutlineWithStructure } from '@moge/types';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
 import { statusConfig } from '../../components/constants';
-
-type EditType = 'overview' | 'volume' | 'chapter';
-
-interface VolumeEditData {
-  id: string;
-  title: string;
-  description: string;
-}
-
-interface ChapterEditData {
-  id: string;
-  title: string;
-  content: string;
-}
-
-type EditData = string | VolumeEditData | ChapterEditData;
+import OutlineStructureSidebar, {
+  type ChapterEditData,
+  type VolumeEditData,
+  type EditData,
+  type EditType,
+} from '../../components/OutlineStructureSidebar';
 
 interface EditState {
   type: EditType;
@@ -215,108 +203,14 @@ export default function OutlineEditPage() {
       {/* 主要内容区域 */}
       <div className="grid flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-4">
         {/* 左侧导航栏 */}
-        <Card className="overflow-y-auto p-4">
-          <h3 className="mb-4 font-semibold">编辑结构</h3>
-          <div className="space-y-2">
-            {/* 大纲总览 */}
-            <Button
-              variant="ghost"
-              className={cn(
-                'h-auto w-full justify-start p-2 text-left',
-                editState.title === '大纲总览' && 'bg-accent'
-              )}
-              onClick={() =>
-                handleSelectEdit('overview', '大纲总览', outlineData?.content?.content || '')
-              }
-            >
-              <Book className="mr-2 h-4 w-4 flex-shrink-0" />
-              <span className="truncate">大纲总览</span>
-            </Button>
-
-            {/* 无卷的直接章节 */}
-            {outlineData?.chapters?.map((chapter) => (
-              <Button
-                key={chapter.id}
-                variant="ghost"
-                className={cn(
-                  'h-auto w-full justify-start p-2 text-left',
-                  editState.title === chapter.title && 'bg-accent'
-                )}
-                onClick={() =>
-                  handleSelectEdit('chapter', chapter.title || '', {
-                    id: chapter.id || '',
-                    title: chapter.title || '',
-                    content: chapter.content?.content || '',
-                  })
-                }
-              >
-                <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{chapter.title}</span>
-              </Button>
-            )) || null}
-
-            {/* 卷和章节 */}
-            {outlineData?.volumes?.map((volume) => (
-              <Collapsible
-                key={volume.id}
-                open={expandedVolumes.has(volume.id || '')}
-                onOpenChange={() => toggleVolumeExpansion(volume.id || '')}
-              >
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="h-auto w-full justify-start p-2 text-left">
-                    {expandedVolumes.has(volume.id || '') ? (
-                      <ChevronDown className="mr-2 h-4 w-4 flex-shrink-0" />
-                    ) : (
-                      <ChevronRight className="mr-2 h-4 w-4 flex-shrink-0" />
-                    )}
-                    <span className="truncate font-medium">{volume.title}</span>
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="ml-6 space-y-1">
-                  {/* 卷信息编辑 */}
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      'h-auto w-full justify-start p-2 text-left text-xs',
-                      editState.title === `${volume.title} - 卷信息` && 'bg-accent'
-                    )}
-                    onClick={() =>
-                      handleSelectEdit('volume', `${volume.title} - 卷信息`, {
-                        id: volume.id || '',
-                        title: volume.title || '',
-                        description: volume.description || '',
-                      })
-                    }
-                  >
-                    <span className="text-muted-foreground truncate">📝 卷信息</span>
-                  </Button>
-
-                  {/* 章节列表 */}
-                  {volume.chapters?.map((chapter) => (
-                    <Button
-                      key={chapter.id}
-                      variant="ghost"
-                      className={cn(
-                        'h-auto w-full justify-start p-2 text-left',
-                        editState.title === chapter.title && 'bg-accent'
-                      )}
-                      onClick={() =>
-                        handleSelectEdit('chapter', chapter.title || '', {
-                          id: chapter.id || '',
-                          title: chapter.title || '',
-                          content: chapter.content?.content || '',
-                        })
-                      }
-                    >
-                      <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{chapter.title}</span>
-                    </Button>
-                  )) || null}
-                </CollapsibleContent>
-              </Collapsible>
-            )) || null}
-          </div>
-        </Card>
+        <OutlineStructureSidebar
+          mode="edit"
+          outlineData={outlineData}
+          activeItemTitle={editState.title}
+          onSelectItem={handleSelectEdit}
+          expandedVolumes={expandedVolumes}
+          onToggleVolume={toggleVolumeExpansion}
+        />
 
         {/* 右侧编辑区域 */}
         <Card className="overflow-y-auto p-6 lg:col-span-3">

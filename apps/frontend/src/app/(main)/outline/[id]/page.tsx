@@ -4,26 +4,18 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-  ArrowLeft,
-  Edit,
-  Sparkles,
-  ChevronDown,
-  ChevronRight,
-  Book,
-  FileText,
-  Save,
-} from 'lucide-react';
+import { ArrowLeft, Edit, Sparkles, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import MdViewer from '@/app/components/MdViewer';
 import { getOutlineDetailApi, updateOutlineContentApi, updateOutlineApi } from '@/api/outline.api';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import type { OutlineWithStructure } from '@moge/types';
 import { useAuthStore } from '@/stores/authStore';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import { statusConfig } from '../components/constants';
+import OutlineStructureSidebar, {
+  type ChapterEditData,
+} from '../components/OutlineStructureSidebar';
 
 export default function OutlineViewPage() {
   const params = useParams();
@@ -337,79 +329,20 @@ export default function OutlineViewPage() {
       {/* 主要内容区域 */}
       <div className="grid flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-4">
         {/* 左侧导航栏 */}
-        <Card className="overflow-y-auto p-4">
-          <h3 className="mb-4 font-semibold">大纲结构</h3>
-          <div className="space-y-2">
-            {/* 大纲总览 */}
-            <Button
-              variant="ghost"
-              className={cn(
-                'h-auto w-full justify-start p-2 text-left',
-                selectedTitle === '大纲总览' && 'bg-accent'
-              )}
-              onClick={() => handleSelectContent(outlineData?.content?.content || '', '大纲总览')}
-            >
-              <Book className="mr-2 h-4 w-4 flex-shrink-0" />
-              <span className="truncate">大纲总览</span>
-            </Button>
-
-            {/* 无卷的直接章节 */}
-            {outlineData?.chapters?.map((chapter) => (
-              <Button
-                key={chapter.id}
-                variant="ghost"
-                className={cn(
-                  'h-auto w-full justify-start p-2 text-left',
-                  selectedTitle === chapter.title && 'bg-accent'
-                )}
-                onClick={() =>
-                  handleSelectContent(chapter.content?.content || '', chapter.title || '')
-                }
-              >
-                <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{chapter.title}</span>
-              </Button>
-            )) || null}
-
-            {/* 卷和章节 */}
-            {outlineData?.volumes?.map((volume) => (
-              <Collapsible
-                key={volume.id}
-                open={expandedVolumes.has(volume.id || '')}
-                onOpenChange={() => toggleVolumeExpansion(volume.id || '')}
-              >
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="h-auto w-full justify-start p-2 text-left">
-                    {expandedVolumes.has(volume.id || '') ? (
-                      <ChevronDown className="mr-2 h-4 w-4 flex-shrink-0" />
-                    ) : (
-                      <ChevronRight className="mr-2 h-4 w-4 flex-shrink-0" />
-                    )}
-                    <span className="truncate font-medium">{volume.title}</span>
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="ml-6 space-y-1">
-                  {volume.chapters?.map((chapter) => (
-                    <Button
-                      key={chapter.id}
-                      variant="ghost"
-                      className={cn(
-                        'h-auto w-full justify-start p-2 text-left',
-                        selectedTitle === chapter.title && 'bg-accent'
-                      )}
-                      onClick={() =>
-                        handleSelectContent(chapter.content?.content || '', chapter.title || '')
-                      }
-                    >
-                      <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{chapter.title}</span>
-                    </Button>
-                  )) || null}
-                </CollapsibleContent>
-              </Collapsible>
-            )) || null}
-          </div>
-        </Card>
+        <OutlineStructureSidebar
+          mode="view"
+          outlineData={outlineData}
+          activeItemTitle={selectedTitle}
+          onSelectItem={(type, title, data) => {
+            if (type === 'overview') {
+              handleSelectContent(data as string, title);
+            } else if (type === 'chapter') {
+              handleSelectContent((data as ChapterEditData).content, title);
+            }
+          }}
+          expandedVolumes={expandedVolumes}
+          onToggleVolume={toggleVolumeExpansion}
+        />
 
         {/* 右侧内容展示区域 */}
         <Card className="overflow-y-auto p-6 lg:col-span-3">
