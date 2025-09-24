@@ -84,6 +84,50 @@ export class OutlineService extends BaseService {
     });
   }
 
+  // 定义小批量分发的配置
+  private readonly DRIP_CHUNK_SIZE = 1; // 每次发送的字符数
+  private readonly DRIP_INTERVAL = 20; // ms, 基础间隔
+  private readonly PUNCTUATION_DELAY = 100; // ms, 遇到标点时的额外延迟
+
+  /**
+   * 缓冲区分发器
+   * @param subject RxJS Subject 用于将数据推送到客户端
+   * @param bufferRef 引用对象，包含需要发送的字符串缓冲区
+   * @param isStreamFinishedRef 引用对象，标记上游 AI 流是否已结束
+   * @param signal 中止信号，用于提前终止
+   */
+  private async _dripFeedBufferToSubject(
+    subject: Subject<{ type: 'content' | 'complete'; data?: string }>,
+    bufferRef: { current: string },
+    isStreamFinishedRef: { current: boolean },
+    signal: AbortSignal
+  ) {
+    while (!signal.aborted) {
+      if (bufferRef.current.length > 0) {
+        // 从缓冲区取出小批量字符
+        const dripChunk = bufferRef.current.substring(0, this.DRIP_CHUNK_SIZE);
+        bufferRef.current = bufferRef.current.substring(this.DRIP_CHUNK_SIZE);
+
+        // 推送给前端
+        subject.next({ type: 'content', data: dripChunk });
+
+        // 检查块的最后一个字符是否为标点，以实现智能延迟
+        const lastChar = dripChunk.slice(-1);
+        if (['。', '！', '？', '，', '；', '、', '\n'].includes(lastChar)) {
+          await new Promise((resolve) => setTimeout(resolve, this.PUNCTUATION_DELAY));
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, this.DRIP_INTERVAL));
+        }
+      } else if (isStreamFinishedRef.current) {
+        // 如果上游流已结束，且缓冲区已清空，则退出循环
+        break;
+      } else {
+        // 如果缓冲区为空，但上游流尚未结束，则稍作等待，避免空转
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+  }
+
   private async _generateStreamWithSubject(
     id: string,
     userId: string,
@@ -91,8 +135,19 @@ export class OutlineService extends BaseService {
     signal: AbortSignal
   ) {
     this.logger.debug(`[流开始] 大纲ID: ${id}, 用户ID: ${userId}`);
-    let chunkCount = 0;
     let fullContent = ''; // 收集完整内容
+
+    // --- 用于缓冲和状态管理的引用对象 ---
+    const bufferRef = { current: '' };
+    const isStreamFinishedRef = { current: false };
+
+    // --- 启动独立的缓冲区分发器 ---
+    const dripPromise = this._dripFeedBufferToSubject(
+      subject,
+      bufferRef,
+      isStreamFinishedRef,
+      signal
+    );
 
     try {
       const outline = await this.findOne(parseInt(id, 10), userId);
@@ -121,19 +176,27 @@ export class OutlineService extends BaseService {
       for await (const chunk of stream) {
         if (signal.aborted) break;
 
-        chunkCount++;
-        fullContent += chunk; // 收集内容
-        this.logger.debug(
-          `[流数据块] 大纲ID: ${id}, 用户ID: ${userId}, 数据块长度: ${chunk.length}`
-        );
+        fullContent += chunk; // 收集内容以供最终保存
 
-        subject.next({ type: 'content', data: chunk });
+        // ---  ---
+        // subject.next({ type: 'content', data: chunk }); // 直接推送整个数据块
+        bufferRef.current += chunk; // 将数据块送入缓冲区
+        // ---  ---
+
+        this.logger.debug(
+          `[流数据块->缓冲] 大纲ID: ${id}, 长度: ${chunk.length}, 当前缓冲: ${bufferRef.current.length}`
+        );
       }
+
+      // 标记上游 AI 流已结束
+      isStreamFinishedRef.current = true;
+      // 等待分发器将缓冲区剩余内容全部发送完毕
+      await dripPromise;
 
       if (signal.aborted) {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
-        this.logger.debug(`[流完成] 大纲ID: ${id}, 用户ID: ${userId}, 总数据块: ${chunkCount}`);
+        this.logger.debug(`[流完成] 大纲ID: ${id}, 用户ID: ${userId}`);
 
         // 流完成后自动保存并解析结构化数据
         await this.autoSaveAndParseContent(parseInt(id, 10), userId, fullContent);
@@ -141,6 +204,7 @@ export class OutlineService extends BaseService {
         subject.next({ type: 'complete' });
       }
     } catch (error) {
+      isStreamFinishedRef.current = true; // 确保在出错时也能终止分发器循环
       if (error instanceof Error && error.name === 'AbortError') {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
