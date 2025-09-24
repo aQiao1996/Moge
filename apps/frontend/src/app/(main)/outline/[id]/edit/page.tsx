@@ -349,6 +349,7 @@ export default function OutlineEditPage() {
                     <Label htmlFor="volume-title">卷标题</Label>
                     <Input
                       id="volume-title"
+                      className="mt-2"
                       value={(editState.data as VolumeEditData).title || ''}
                       onChange={(e) =>
                         handleEditChange({
@@ -363,6 +364,7 @@ export default function OutlineEditPage() {
                     <Label htmlFor="volume-description">卷描述</Label>
                     <Textarea
                       id="volume-description"
+                      className="mt-2"
                       value={(editState.data as VolumeEditData).description || ''}
                       onChange={(e) =>
                         handleEditChange({
@@ -383,6 +385,7 @@ export default function OutlineEditPage() {
                     <Label htmlFor="chapter-title">章节标题</Label>
                     <Input
                       id="chapter-title"
+                      className="mt-2"
                       value={(editState.data as ChapterEditData).title || ''}
                       onChange={(e) =>
                         handleEditChange({
