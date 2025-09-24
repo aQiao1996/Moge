@@ -28,8 +28,14 @@ export default function AppSidebar() {
     <UISidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <Sparkles className="h-6 w-6 text-[var(--moge-primary-400)]" />
-          {open && <span className="font-han text-2xl font-bold">墨阁</span>}
+          <Sparkles className="h-6 w-6 flex-shrink-0 text-[var(--moge-primary-400)]" />
+          <span
+            className={`font-han origin-left whitespace-nowrap text-2xl font-bold transition-all duration-200 ${
+              open ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+            }`}
+          >
+            墨阁
+          </span>
         </div>
       </SidebarHeader>
 
@@ -53,8 +59,12 @@ export default function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <p className="font-han brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 whitespace-nowrap text-base">
-          {open && 'AI 生成 · 小说世界 · 无限灵感'}
+        <p
+          className={`font-han brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 origin-left whitespace-nowrap text-base transition-all duration-200 ${
+            open ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+          }`}
+        >
+          AI 生成 · 小说世界 · 无限灵感
         </p>
       </SidebarFooter>
     </UISidebar>
