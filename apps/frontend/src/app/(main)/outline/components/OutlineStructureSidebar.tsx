@@ -9,7 +9,7 @@ import type {
   OutlineVolumeWithChapters as Volume,
   OutlineChapter as Chapter,
 } from '@moge/types';
-import { Book, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { Book, ChevronDown, ChevronRight, FileText, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 export type EditType = 'overview' | 'volume' | 'chapter';
 export interface VolumeEditData {
@@ -31,6 +31,8 @@ interface OutlineStructureSidebarProps {
   onSelectItem: (type: EditType, title: string, data: EditData) => void;
   expandedVolumes: Set<string>;
   onToggleVolume: (volumeId: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export default function OutlineStructureSidebar({
@@ -40,6 +42,8 @@ export default function OutlineStructureSidebar({
   onSelectItem,
   expandedVolumes,
   onToggleVolume,
+  isOpen,
+  onToggle,
 }: OutlineStructureSidebarProps) {
   if (!outlineData) {
     return (
@@ -76,9 +80,40 @@ export default function OutlineStructureSidebar({
   };
 
   return (
-    <Card className="overflow-y-auto p-4">
-      <h3 className="mb-4 font-semibold">{mode === 'edit' ? '编辑结构' : '大纲结构'}</h3>
-      <div className="space-y-2">
+    <Card
+      className={cn(
+        'relative overflow-hidden p-4 transition-all duration-300', // 添加 relative
+        isOpen ? 'w-full lg:w-72' : 'w-full p-2 lg:w-16'
+      )}
+    >
+      <Button
+        variant="ghost"
+        onClick={onToggle}
+        className={cn(
+          'absolute top-3 h-8 w-8 flex-shrink-0 p-0',
+          isOpen ? 'right-2' : 'right-1/2 translate-x-1/2 transform'
+        )}
+      >
+        {isOpen ? <PanelLeftClose className="!h-5 !w-5" /> : <PanelLeft className="!h-5 !w-5" />}
+      </Button>
+
+      <h3
+        className={cn(
+          'pb-4 font-semibold transition-opacity duration-200',
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        )}
+      >
+        {mode === 'edit' ? '编辑结构' : '大纲结构'}
+      </h3>
+
+      <div
+        className={cn(
+          'space-y-2 transition-opacity',
+          isOpen
+            ? 'opacity-100 delay-100 duration-200'
+            : 'pointer-events-none opacity-0 duration-100'
+        )}
+      >
         {/* 大纲总览 */}
         <Button
           variant="ghost"

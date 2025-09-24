@@ -35,6 +35,7 @@ export default function OutlineEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
+  const [isStructureSidebarOpen, setStructureSidebarOpen] = useState(true);
 
   // 编辑状态管理
   const [editState, setEditState] = useState<EditState>({
@@ -201,7 +202,7 @@ export default function OutlineEditPage() {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="grid flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-4">
+      <div className="flex flex-1 flex-col gap-6 overflow-hidden lg:flex-row">
         {/* 左侧导航栏 */}
         <OutlineStructureSidebar
           mode="edit"
@@ -210,10 +211,12 @@ export default function OutlineEditPage() {
           onSelectItem={handleSelectEdit}
           expandedVolumes={expandedVolumes}
           onToggleVolume={toggleVolumeExpansion}
+          isOpen={isStructureSidebarOpen}
+          onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
         />
 
         {/* 右侧编辑区域 */}
-        <Card className="overflow-y-auto p-6 lg:col-span-3">
+        <Card className="flex-1 overflow-y-auto p-6">
           <div className="mb-4">
             <h2 className="text-xl font-semibold">编辑：{editState.title}</h2>
           </div>

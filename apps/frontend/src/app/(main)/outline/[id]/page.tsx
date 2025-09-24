@@ -29,6 +29,7 @@ export default function OutlineViewPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
+  const [isStructureSidebarOpen, setStructureSidebarOpen] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -327,7 +328,7 @@ export default function OutlineViewPage() {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="grid flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-4">
+      <div className="flex flex-1 flex-col gap-6 overflow-hidden lg:flex-row">
         {/* 左侧导航栏 */}
         <OutlineStructureSidebar
           mode="view"
@@ -342,10 +343,12 @@ export default function OutlineViewPage() {
           }}
           expandedVolumes={expandedVolumes}
           onToggleVolume={toggleVolumeExpansion}
+          isOpen={isStructureSidebarOpen}
+          onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
         />
 
         {/* 右侧内容展示区域 */}
-        <Card className="overflow-y-auto p-6 lg:col-span-3">
+        <Card className="flex-1 overflow-y-auto p-6">
           <div className="mb-4">
             <h2 className="text-xl font-semibold">{selectedTitle || '选择内容查看'}</h2>
           </div>
