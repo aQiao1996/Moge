@@ -10,6 +10,12 @@ interface FilterValue {
   pass?: boolean;
 }
 
+interface SensitiveCheckResult {
+  hasSensitive: boolean;
+  sensitiveWords: string[];
+  filteredText?: string;
+}
+
 @Injectable()
 export class SensitiveFilterService implements OnModuleInit {
   private filter: Mint;
@@ -61,5 +67,27 @@ export class SensitiveFilterService implements OnModuleInit {
   async checkAsync(text: string): Promise<boolean> {
     const res = await this.filter.every(text);
     return !res;
+  }
+
+  /** 详细检测：返回具体的违规词汇 */
+  checkDetailed(text: string): SensitiveCheckResult {
+    const filterResult = this.filter.filterSync(text);
+
+    return {
+      hasSensitive: !filterResult.pass,
+      sensitiveWords: filterResult.filter || [],
+      filteredText: typeof filterResult.text === 'string' ? filterResult.text : undefined,
+    };
+  }
+
+  /** 异步详细检测：返回具体的违规词汇 */
+  async checkDetailedAsync(text: string): Promise<SensitiveCheckResult> {
+    const filterResult = await this.filter.filter(text);
+
+    return {
+      hasSensitive: !filterResult.pass,
+      sensitiveWords: filterResult.filter || [],
+      filteredText: typeof filterResult.text === 'string' ? filterResult.text : undefined,
+    };
   }
 }

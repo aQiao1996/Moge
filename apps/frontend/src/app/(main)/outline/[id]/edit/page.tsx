@@ -70,7 +70,6 @@ export default function OutlineEditPage() {
       setExpandedVolumes(volumeIds);
     } catch (error) {
       console.error('Load outline data error:', error);
-      toast.error('加载大纲数据失败');
     } finally {
       setLoading(false);
     }
@@ -207,8 +206,6 @@ export default function OutlineEditPage() {
 
       toast.success('保存成功！');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '保存失败，请重试';
-      toast.error(errorMessage);
       console.error('Save error:', error);
     } finally {
       setSaving(false);

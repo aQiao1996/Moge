@@ -252,7 +252,7 @@ export class OutlineService extends BaseService {
     );
 
     try {
-      // 1. 保存内容到 outline_content 表
+      // 保存内容到 outline_content 表
       const existingContent = await this.prisma.outline_content.findUnique({
         where: { outlineId },
       });
@@ -275,7 +275,7 @@ export class OutlineService extends BaseService {
         });
       }
 
-      // 2. 解析并存储结构化数据
+      // 解析并存储结构化数据
       const parsedStructure = await this.markdownParser.parseOutlineMarkdown(content);
       if (this.markdownParser.validateParsedStructure(parsedStructure)) {
         await this.saveStructuredOutline(outlineId, parsedStructure);
@@ -294,8 +294,11 @@ export class OutlineService extends BaseService {
 
     // 用户输入敏感词检查 - 直接拒绝
     const inputText = `${name} ${type} ${era} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
-    if (this.sensitiveFilter.check(inputText)) {
-      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
     }
 
     const outline = await this.prisma.outline.create({
@@ -588,8 +591,11 @@ export class OutlineService extends BaseService {
     // 用户输入敏感词检查 - 直接拒绝
     const { name, type, era, conflict, tags, remark } = data;
     const inputText = `${name || ''} ${type || ''} ${era || ''} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
-    if (this.sensitiveFilter.check(inputText)) {
-      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
     }
 
     const updatedOutline = await this.prisma.outline.update({
@@ -630,8 +636,11 @@ export class OutlineService extends BaseService {
 
     // 敏感词检查
     const inputText = `${data.title} ${data.description || ''}`;
-    if (this.sensitiveFilter.check(inputText)) {
-      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
     }
 
     const updatedVolume = await this.prisma.outline_volume.update({
@@ -682,8 +691,11 @@ export class OutlineService extends BaseService {
 
     // 敏感词检查
     const inputText = `${data.title} ${data.content || ''}`;
-    if (this.sensitiveFilter.check(inputText)) {
-      throw new BadRequestException('输入内容不符合法律法规，请修改后重试');
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
     }
 
     // 更新章节标题
