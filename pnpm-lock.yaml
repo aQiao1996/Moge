@@ -416,6 +416,9 @@ importers:
       '@prisma/client':
         specifier: 'catalog:'
         version: 6.15.0(prisma@6.15.0(typescript@5.7.2))(typescript@5.7.2)
+      '@types/unist':
+        specifier: ^3.0.3
+        version: 3.0.3
       bcryptjs:
         specifier: 'catalog:'
         version: 2.4.3
@@ -434,12 +437,27 @@ importers:
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
+      remark:
+        specifier: ^15.0.1
+        version: 15.0.1
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
       swagger-ui-express:
         specifier: 'catalog:'
         version: 4.6.3(express@4.21.2)
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
+      unist-util-is:
+        specifier: ^6.0.0
+        version: 6.0.0
+      unist-util-visit-parents:
+        specifier: ^6.0.1
+        version: 6.0.1
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -6294,6 +6312,9 @@ packages:
 
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
+
+  remark@15.0.1:
+    resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
   repeat-string@1.6.1:
     resolution: {integrity: sha512-PV0dzCYDNfRi1jCDbJzpW7jNNDRuCOG/jI5ctQcGKt/clZD+YcPS3yIlWuTJMmESC8aevCFmWJy5wjAFgNqN6w==}
@@ -13432,6 +13453,15 @@ snapshots:
       '@types/mdast': 4.0.4
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
+
+  remark@15.0.1:
+    dependencies:
+      '@types/mdast': 4.0.4
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   repeat-string@1.6.1: {}
 

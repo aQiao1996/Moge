@@ -276,7 +276,7 @@ export class OutlineService extends BaseService {
       }
 
       // 2. 解析并存储结构化数据
-      const parsedStructure = this.markdownParser.parseOutlineMarkdown(content);
+      const parsedStructure = await this.markdownParser.parseOutlineMarkdown(content);
       if (this.markdownParser.validateParsedStructure(parsedStructure)) {
         await this.saveStructuredOutline(outlineId, parsedStructure);
         this.logger.debug(`[自动保存完成] 大纲ID: ${outlineId}, 已存储结构化数据`);
@@ -562,7 +562,7 @@ export class OutlineService extends BaseService {
 
     // 尝试解析并存储结构化数据
     try {
-      const parsedStructure = this.markdownParser.parseOutlineMarkdown(content);
+      const parsedStructure = await this.markdownParser.parseOutlineMarkdown(content);
       if (this.markdownParser.validateParsedStructure(parsedStructure)) {
         await this.saveStructuredOutline(id, parsedStructure);
         this.logger.debug(`[解析成功] 大纲ID: ${id}, 已存储结构化数据`);
