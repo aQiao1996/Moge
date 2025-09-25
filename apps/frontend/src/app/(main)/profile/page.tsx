@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const handlePasswordSubmit = (): void => {
     toast.dismiss();
     try {
-      // ❯ Password change API not implemented yet
+      // todo 密码更改接口尚未实现
       toast.success('密码修改成功');
       passwordForm.reset();
     } catch {

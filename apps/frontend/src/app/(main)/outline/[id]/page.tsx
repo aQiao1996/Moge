@@ -31,35 +31,31 @@ export default function OutlineViewPage() {
   const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
   const [isStructureSidebarOpen, setStructureSidebarOpen] = useState(true);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!id) return;
+  const loadData = async () => {
+    if (!id) return;
 
-      try {
-        setLoading(true);
-        const data = await getOutlineDetailApi(id);
-        setOutlineData(data);
+    try {
+      setLoading(true);
+      const data = await getOutlineDetailApi(id);
+      setOutlineData(data);
 
-        // 默认显示大纲总体内容
-        if (data.content?.content) {
-          setSelectedContent(data.content.content);
-          setSelectedTitle('大纲总览');
-        }
-
-        // 默认展开所有卷
-        const volumeIds = new Set(
-          data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
-        );
-        setExpandedVolumes(volumeIds);
-      } catch (error) {
-        console.error('Load outline data error:', error);
-      } finally {
-        setLoading(false);
+      // 默认显示大纲总体内容
+      if (data.content?.content) {
+        setSelectedContent(data.content.content);
+        setSelectedTitle('大纲总览');
       }
-    };
 
-    void loadData();
-  }, [id]);
+      // 默认展开所有卷
+      const volumeIds = new Set(
+        data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
+      );
+      setExpandedVolumes(volumeIds);
+    } catch (error) {
+      console.error('Load outline data error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 重新加载最新数据（用于生成完成后刷新）
   const loadLatestData = async () => {
@@ -90,7 +86,7 @@ export default function OutlineViewPage() {
     setIsGenerating(true);
     setSelectedContent('');
 
-    // 清空旧的大纲结构数据，给用户明确的反馈
+    // 清空旧的大纲结构数据，给出明确反馈
     if (outlineData) {
       setOutlineData({
         ...outlineData,
@@ -234,6 +230,10 @@ export default function OutlineViewPage() {
     setSelectedContent(content);
     setSelectedTitle(title);
   };
+
+  useEffect(() => {
+    void loadData();
+  }, [id]);
 
   if (loading) {
     return (

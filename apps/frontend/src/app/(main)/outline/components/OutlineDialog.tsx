@@ -71,14 +71,7 @@ export default function OutlineDialog({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: '',
-      type: '',
-      era: '',
-      conflict: '',
-      tags: [],
-      remark: '',
-    },
+    defaultValues: { name: '', type: '', era: '', conflict: '', tags: [], remark: '' },
   });
 
   useEffect(() => {
@@ -98,17 +91,29 @@ export default function OutlineDialog({
         });
       } else if (!isEditMode) {
         // 创建模式时重置为空
-        form.reset({
-          name: '',
-          type: '',
-          era: '',
-          conflict: '',
-          tags: [],
-          remark: '',
-        });
+        form.reset({ name: '', type: '', era: '', conflict: '', tags: [], remark: '' });
       }
     }
   }, [open, isEditMode, outline?.id, fetchNovelTypes]);
+
+  const onSubmit = async (values: FormValues) => {
+    toast.dismiss();
+    resetError();
+    try {
+      if (isEditMode && outline) {
+        if (!outline.id) return;
+        await updateOutline(outline.id, values as UpdateOutlineValues);
+        toast.success('大纲更新成功');
+        setOpen(false);
+      } else {
+        await createOutline(values as CreateOutlineValues);
+        toast.success('大纲创建成功');
+        setOpen(false);
+      }
+    } catch {
+      toast.error(isEditMode ? '更新大纲失败' : '创建大纲失败');
+    }
+  };
 
   const renderControl: RenderControl = useCallback(
     (field, name) => {
@@ -150,25 +155,6 @@ export default function OutlineDialog({
     },
     [novelTypes]
   );
-
-  const onSubmit = async (values: FormValues) => {
-    toast.dismiss();
-    resetError();
-    try {
-      if (isEditMode && outline) {
-        if (!outline.id) return;
-        await updateOutline(outline.id, values as UpdateOutlineValues);
-        toast.success('大纲更新成功');
-        setOpen(false);
-      } else {
-        await createOutline(values as CreateOutlineValues);
-        toast.success('大纲创建成功');
-        setOpen(false);
-      }
-    } catch {
-      toast.error(isEditMode ? '更新大纲失败' : '创建大纲失败');
-    }
-  };
 
   const defaultTrigger = isEditMode ? (
     <Button size="sm" variant="ghost" title="编辑基本信息">

@@ -17,7 +17,7 @@ export default function Home() {
     viewMode: 'list',
   });
 
-  // 这些数据应该从实际的大纲数据中提取，这里先用示例数据
+  // todo 这些数据应该从实际的大纲数据中提取，这里先用示例数据
   const availableTypes = ['玄幻', '都市', '历史', '科幻', '武侠'];
   const availableEras = ['现代', '古代', '未来', '民国', '架空'];
   const availableTags = ['热血', '爽文', '系统', '重生', '穿越', '修仙', '商战'];

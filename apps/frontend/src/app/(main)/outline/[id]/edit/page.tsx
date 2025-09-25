@@ -44,39 +44,35 @@ export default function OutlineEditPage() {
     data: '',
   });
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!id) return;
+  const loadData = async () => {
+    if (!id) return;
 
-      try {
-        setLoading(true);
-        const data = await getOutlineDetailApi(id);
-        setOutlineData(data);
+    try {
+      setLoading(true);
+      const data = await getOutlineDetailApi(id);
+      setOutlineData(data);
 
-        // 默认编辑大纲总览
-        if (data.content?.content) {
-          setEditState({
-            type: 'overview',
-            title: '大纲总览',
-            data: data.content.content,
-          });
-        }
-
-        // 默认展开所有卷
-        const volumeIds = new Set(
-          data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
-        );
-        setExpandedVolumes(volumeIds);
-      } catch (error) {
-        console.error('Load outline data error:', error);
-        toast.error('加载大纲数据失败');
-      } finally {
-        setLoading(false);
+      // 默认编辑大纲总览
+      if (data.content?.content) {
+        setEditState({
+          type: 'overview',
+          title: '大纲总览',
+          data: data.content.content,
+        });
       }
-    };
 
-    void loadData();
-  }, [id]);
+      // 默认展开所有卷
+      const volumeIds = new Set(
+        data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
+      );
+      setExpandedVolumes(volumeIds);
+    } catch (error) {
+      console.error('Load outline data error:', error);
+      toast.error('加载大纲数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const isGenerating = outlineData?.status === 'GENERATING';
 
@@ -135,6 +131,10 @@ export default function OutlineEditPage() {
   const handleEditChange = (newData: EditData) => {
     setEditState((prev) => ({ ...prev, data: newData }));
   };
+
+  useEffect(() => {
+    void loadData();
+  }, [id]);
 
   if (loading) {
     return (
