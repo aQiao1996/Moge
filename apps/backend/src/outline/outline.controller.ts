@@ -174,6 +174,64 @@ export class OutlineController {
     return this.outlineService.updateContent(id, userId, data.content);
   }
 
+  @Put(':id/volume/:volumeId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新卷信息' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiParam({ name: 'volumeId', description: '卷ID' })
+  @ApiBody({
+    description: '卷信息',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: '卷标题' },
+        description: { type: 'string', description: '卷描述' },
+      },
+      required: ['title'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateVolume(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('volumeId', ParseIntPipe) volumeId: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { title: string; description?: string }
+  ): Promise<unknown> {
+    const userId = req.user.id;
+    return this.outlineService.updateVolume(id, volumeId, userId, data);
+  }
+
+  @Put(':id/chapter/:chapterId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新章节信息' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiParam({ name: 'chapterId', description: '章节ID' })
+  @ApiBody({
+    description: '章节信息',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: '章节标题' },
+        content: { type: 'string', description: '章节内容' },
+      },
+      required: ['title'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { title: string; content?: string }
+  ): Promise<unknown> {
+    const userId = req.user.id;
+    return this.outlineService.updateChapter(id, chapterId, userId, data);
+  }
+
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '更新大纲' })

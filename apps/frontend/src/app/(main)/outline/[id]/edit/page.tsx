@@ -10,7 +10,13 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
-import { getOutlineDetailApi, updateOutlineContentApi, updateOutlineApi } from '@/api/outline.api';
+import {
+  getOutlineDetailApi,
+  updateOutlineContentApi,
+  updateOutlineApi,
+  updateVolumeApi,
+  updateChapterApi,
+} from '@/api/outline.api';
 import type { OutlineWithStructure } from '@moge/types';
 import { statusConfig } from '../../components/constants';
 import OutlineStructureSidebar, {
@@ -54,11 +60,7 @@ export default function OutlineEditPage() {
 
       // 默认编辑大纲总览
       if (data.content?.content) {
-        setEditState({
-          type: 'overview',
-          title: '大纲总览',
-          data: data.content.content,
-        });
+        setEditState({ type: 'overview', title: '大纲总览', data: data.content.content });
       }
 
       // 默认展开所有卷
@@ -76,32 +78,137 @@ export default function OutlineEditPage() {
 
   const isGenerating = outlineData?.status === 'GENERATING';
 
+  // 保存策略接口
+  interface SaveStrategy {
+    save(id: string, editState: EditState): Promise<void>;
+    updateLocalData?(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure;
+  }
+
+  // 大纲总览保存策略
+  const overviewSaveStrategy: SaveStrategy = {
+    async save(id: string, editState: EditState) {
+      await updateOutlineContentApi(id, { content: editState.data as string });
+
+      // 如果当前状态是草稿且有内容，自动变更为已完成状态
+      if (outlineData?.status === 'DRAFT' && (editState.data as string).trim()) {
+        await updateOutlineApi(id, { status: 'PUBLISHED' });
+        setOutlineData((prev) => (prev ? { ...prev, status: 'PUBLISHED' } : null));
+      }
+    },
+  };
+
+  // 卷信息保存策略
+  const volumeSaveStrategy: SaveStrategy = {
+    async save(id: string, editState: EditState) {
+      const volumeData = editState.data as VolumeEditData;
+      if (!volumeData.id) {
+        throw new Error('卷ID缺失，无法保存');
+      }
+
+      await updateVolumeApi(id, volumeData.id, {
+        title: volumeData.title,
+        description: volumeData.description || undefined,
+      });
+    },
+
+    updateLocalData(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure {
+      const volumeData = editState.data as VolumeEditData;
+      const updatedVolumes = outlineData.volumes?.map((vol) =>
+        vol.id === volumeData.id
+          ? { ...vol, title: volumeData.title, description: volumeData.description }
+          : vol
+      );
+      return { ...outlineData, volumes: updatedVolumes };
+    },
+  };
+
+  // 章节信息保存策略
+  const chapterSaveStrategy: SaveStrategy = {
+    async save(id: string, editState: EditState) {
+      const chapterData = editState.data as ChapterEditData;
+      if (!chapterData.id) {
+        throw new Error('章节ID缺失，无法保存');
+      }
+
+      await updateChapterApi(id, chapterData.id, {
+        title: chapterData.title,
+        content: chapterData.content || undefined,
+      });
+    },
+
+    updateLocalData(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure {
+      const chapterData = editState.data as ChapterEditData;
+
+      // 更新卷内章节
+      const updatedVolumes = outlineData.volumes?.map((vol) => ({
+        ...vol,
+        chapters: vol.chapters?.map((chapter) =>
+          chapter.id === chapterData.id
+            ? {
+                ...chapter,
+                title: chapterData.title,
+                content: chapterData.content
+                  ? { ...chapter.content, content: chapterData.content }
+                  : chapter.content,
+              }
+            : chapter
+        ),
+      }));
+
+      // 更新直接章节
+      const updatedChapters = outlineData.chapters?.map((chapter) =>
+        chapter.id === chapterData.id
+          ? {
+              ...chapter,
+              title: chapterData.title,
+              content: chapterData.content
+                ? { ...chapter.content, content: chapterData.content }
+                : chapter.content,
+            }
+          : chapter
+      );
+
+      return {
+        ...outlineData,
+        volumes: updatedVolumes,
+        chapters: updatedChapters,
+      };
+    },
+  };
+
+  // 策略映射
+  const saveStrategies: Record<EditType, SaveStrategy> = {
+    overview: overviewSaveStrategy,
+    volume: volumeSaveStrategy,
+    chapter: chapterSaveStrategy,
+  };
+
   const handleSave = async () => {
     if (!id || !outlineData || saving) return;
 
     try {
       setSaving(true);
 
-      if (editState.type === 'overview') {
-        // 保存大纲总览内容
-        await updateOutlineContentApi(id, { content: editState.data as string });
+      const strategy = saveStrategies[editState.type];
+      if (!strategy) {
+        throw new Error(`未支持的编辑类型: ${editState.type}`);
+      }
 
-        // 如果当前状态是草稿且有内容，自动变更为已完成状态
-        if (outlineData.status === 'DRAFT' && (editState.data as string).trim()) {
-          await updateOutlineApi(id, { status: 'PUBLISHED' });
-          setOutlineData((prev) => (prev ? { ...prev, status: 'PUBLISHED' } : null));
-        }
-      } else if (editState.type === 'volume') {
-        // TODO: 保存卷信息
-        toast.info('卷信息保存功能开发中...');
-      } else if (editState.type === 'chapter') {
-        // TODO: 保存章节信息/内容
-        toast.info('章节保存功能开发中...');
+      // 执行保存
+      await strategy.save(id, editState);
+
+      // 更新本地数据
+      if (strategy.updateLocalData) {
+        setOutlineData((prev) => {
+          if (!prev) return null;
+          return strategy.updateLocalData!(prev, editState);
+        });
       }
 
       toast.success('保存成功！');
     } catch (error) {
-      toast.error('保存失败，请重试');
+      const errorMessage = error instanceof Error ? error.message : '保存失败，请重试';
+      toast.error(errorMessage);
       console.error('Save error:', error);
     } finally {
       setSaving(false);
