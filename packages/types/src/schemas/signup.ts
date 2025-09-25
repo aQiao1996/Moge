@@ -1,10 +1,11 @@
 // src/schemas/signup.ts
 import { z } from 'zod';
+import { passwordValidation } from './login';
 
 export const signupSchema = z
   .object({
     username: z.string().min(2, '用户名至少需要 2 个字符'),
-    password: z.string().min(6, '密码至少需要 6 个字符'),
+    password: passwordValidation,
     confirm: z.string(),
     email: z.string().email('请输入有效的邮箱地址').optional(),
     name: z.string().optional(),
