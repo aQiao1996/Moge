@@ -15,10 +15,8 @@ export class ZodValidationPipe implements PipeTransform {
           field: err.path.join('.'),
           message: err.message,
         }));
-        throw new BadRequestException({
-          message: '验证失败',
-          errors,
-        });
+        const errorMessage = errors.map((err) => `${err.field}: ${err.message}`).join('; ');
+        throw new BadRequestException({ message: errorMessage || '验证失败', errors });
       }
       throw new BadRequestException('验证失败');
     }
