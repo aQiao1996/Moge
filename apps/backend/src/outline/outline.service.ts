@@ -13,7 +13,7 @@ import { Observable, Subject } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MessageEvent } from '@nestjs/common';
-import { SensitiveFilterService } from '../sensitive-filter/sensitive-filter.service';
+import { SensitiveFilterService, FilterLevel } from '../sensitive-filter/sensitive-filter.service';
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
 import { MarkdownParserService, ParsedOutlineStructure } from './markdown-parser.service';
 
@@ -292,12 +292,15 @@ export class OutlineService extends BaseService {
   async create(userId: string, data: CreateOutlineValues) {
     const { name, type, era, conflict, tags, remark } = data;
 
-    // 用户输入敏感词检查 - 直接拒绝
+    // 用户输入敏感词检查 - 使用创作模式，允许文学创作用词
     const inputText = `${name} ${type} ${era} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
-    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
     if (sensitiveCheckResult.hasSensitive) {
       throw new BadRequestException(
-        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
       );
     }
 
@@ -588,13 +591,16 @@ export class OutlineService extends BaseService {
   async update(id: number, userId: string, data: UpdateOutlineValues) {
     await this.findOne(id, userId);
 
-    // 用户输入敏感词检查 - 直接拒绝
+    // 用户输入敏感词检查 - 使用创作模式，允许文学创作用词
     const { name, type, era, conflict, tags, remark } = data;
     const inputText = `${name || ''} ${type || ''} ${era || ''} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
-    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
     if (sensitiveCheckResult.hasSensitive) {
       throw new BadRequestException(
-        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
       );
     }
 
@@ -634,12 +640,15 @@ export class OutlineService extends BaseService {
       throw new NotFoundException('卷不存在或不属于该大纲');
     }
 
-    // 敏感词检查
+    // 敏感词检查 - 使用创作模式，允许文学创作用词
     const inputText = `${data.title} ${data.description || ''}`;
-    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
     if (sensitiveCheckResult.hasSensitive) {
       throw new BadRequestException(
-        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
       );
     }
 
@@ -689,12 +698,15 @@ export class OutlineService extends BaseService {
       throw new NotFoundException('章节不存在或不属于该大纲');
     }
 
-    // 敏感词检查
+    // 敏感词检查 - 使用创作模式，允许文学创作用词
     const inputText = `${data.title} ${data.content || ''}`;
-    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(inputText);
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
     if (sensitiveCheckResult.hasSensitive) {
       throw new BadRequestException(
-        `输入内容包含敏感词：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
       );
     }
 
