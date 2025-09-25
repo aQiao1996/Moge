@@ -1,5 +1,5 @@
 'use client';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MogeInput } from '@/app/components/MogeInput';
@@ -16,7 +16,7 @@ import { passwordSchema, profileSchema, type PasswordData, type ProfileValues } 
 export default function ProfilePage() {
   const { update } = useSession();
   const user = useAuthStore((state) => state.user);
-  const { updateProfile, loading, resetError } = useUserStore();
+  const { updateProfile, changePassword, loading, resetError } = useUserStore();
 
   const profileForm = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -43,19 +43,20 @@ export default function ProfilePage() {
       await update({ ...values });
       toast.success('个人信息更新成功');
     } catch (error) {
-      toast.error('更新个人信息失败');
-      console.error('Failed to update profile:', error);
+      console.log('🚀 ~ page.tsx:46 ~ handleProfileSubmit ~ error:', error);
     }
   };
 
-  const handlePasswordSubmit = (): void => {
+  const handlePasswordSubmit = async (values: PasswordData) => {
     toast.dismiss();
+    resetError();
     try {
-      // todo 密码更改接口尚未实现
+      await changePassword(values);
       toast.success('密码修改成功');
       passwordForm.reset();
-    } catch {
-      toast.error('修改密码失败');
+      await signOut();
+    } catch (error) {
+      console.log('🚀 ~ page.tsx:57 ~ handlePasswordSubmit ~ error:', error);
     }
   };
 
