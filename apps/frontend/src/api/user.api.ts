@@ -1,5 +1,5 @@
 import httpRequest from '@/lib/request';
-import type { ProfileValues, PasswordData } from '@moge/types';
+import type { ProfileValues, ChangePasswordData } from '@moge/types';
 
 interface ProfileResponse {
   id: string;
@@ -14,6 +14,6 @@ export const updateProfileApi = async (data: ProfileValues): Promise<ProfileResp
   return response.data;
 };
 
-export const changePasswordApi = async (data: PasswordData): Promise<void> => {
+export const changePasswordApi = async (data: ChangePasswordData): Promise<void> => {
   await httpRequest.post('/auth/change-password', data);
 };

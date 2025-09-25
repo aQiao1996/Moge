@@ -11,7 +11,12 @@ import HookForm from '@/app/components/HookForm';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
-import { passwordSchema, profileSchema, type PasswordData, type ProfileValues } from '@moge/types';
+import {
+  changePasswordSchema,
+  profileSchema,
+  type ChangePasswordData,
+  type ProfileValues,
+} from '@moge/types';
 
 export default function ProfilePage() {
   const { update } = useSession();
@@ -26,8 +31,8 @@ export default function ProfilePage() {
     },
   });
 
-  const passwordForm = useForm<PasswordData>({
-    resolver: zodResolver(passwordSchema),
+  const passwordForm = useForm<ChangePasswordData>({
+    resolver: zodResolver(changePasswordSchema),
     defaultValues: {
       currentPassword: '',
       newPassword: '',
@@ -47,7 +52,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordSubmit = async (values: PasswordData) => {
+  const handlePasswordSubmit = async (values: ChangePasswordData) => {
     toast.dismiss();
     resetError();
     try {

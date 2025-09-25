@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { updateProfileApi, changePasswordApi } from '@/api/user.api';
-import type { ProfileValues, PasswordData } from '@moge/types';
+import type { ProfileValues, ChangePasswordData } from '@moge/types';
 
 interface UserState {
   loading: boolean;
   error: string | null;
   updateProfile: (data: ProfileValues) => Promise<void>;
-  changePassword: (data: PasswordData) => Promise<void>;
+  changePassword: (data: ChangePasswordData) => Promise<void>;
   resetError: () => void;
 }
 
