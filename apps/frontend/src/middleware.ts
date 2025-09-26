@@ -11,9 +11,9 @@ export default withAuth(
     /* 公开页面直接过 */
     if (publicPaths.some((p) => pathname.startsWith(p))) return;
 
-    /* 已登录用户访问“/”时 → 重定向到 /outline */
+    /* 已登录用户访问“/”时 → 重定向到 /workspace */
     if (pathname === '/' && token) {
-      return NextResponse.redirect(new URL('/outline', req.url));
+      return NextResponse.redirect(new URL('/workspace', req.url));
     }
 
     /* 其余情况由 withAuth 自带的 authorized 回调处理 */
