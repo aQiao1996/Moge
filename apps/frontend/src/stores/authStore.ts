@@ -15,7 +15,7 @@ interface AuthState {
   resetError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   loading: false,
@@ -25,8 +25,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       const result = await loginApi(data);
-      set({ user: result.user, token: result.token, loading: false });
-      localStorage.setItem('token', result.token);
+      set({ user: result.user, loading: false });
+      get().setToken(result.token);
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Login failed', loading: false });
       throw error;
@@ -37,8 +37,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       const result = await registerApi(data);
-      set({ user: result.user, token: result.token, loading: false });
-      localStorage.setItem('token', result.token);
+      set({ user: result.user, loading: false });
+      get().setToken(result.token);
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Register failed', loading: false });
       throw error;
@@ -49,8 +49,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       await logoutApi();
-      set({ user: null, token: null, loading: false });
-      localStorage.removeItem('token');
+      set({ user: null, loading: false });
+      get().setToken(null);
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Logout failed', loading: false });
     }
@@ -61,6 +61,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   setToken: (token) => {
     set({ token });
+    if (token) {
+      localStorage.setItem('auth-token', token);
+    } else {
+      localStorage.removeItem('auth-token');
+    }
   },
   resetError: () => {
     set({ error: null });
