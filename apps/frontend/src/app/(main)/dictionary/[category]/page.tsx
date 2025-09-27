@@ -84,6 +84,127 @@ const mockDictItems = [
     updatedAt: '2024-01-12',
     description: '以科学技术为背景的小说类型',
   },
+  {
+    id: '5',
+    code: 'wuxia',
+    label: '武侠',
+    value: 'wuxia',
+    sortOrder: 5,
+    isEnabled: true,
+    createdAt: '2024-01-05',
+    updatedAt: '2024-01-10',
+    description: '以武术、江湖为背景的小说类型',
+  },
+  {
+    id: '6',
+    code: 'romance',
+    label: '言情',
+    value: 'romance',
+    sortOrder: 6,
+    isEnabled: true,
+    createdAt: '2024-01-03',
+    updatedAt: '2024-01-08',
+    description: '以爱情故事为主线的小说类型',
+  },
+  {
+    id: '7',
+    code: 'military',
+    label: '军事',
+    value: 'military',
+    sortOrder: 7,
+    isEnabled: true,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-05',
+    description: '以军事题材为背景的小说类型',
+  },
+  {
+    id: '8',
+    code: 'sports',
+    label: '体育',
+    value: 'sports',
+    sortOrder: 8,
+    isEnabled: false,
+    createdAt: '2023-12-28',
+    updatedAt: '2024-01-01',
+    description: '以体育运动为主题的小说类型',
+  },
+  {
+    id: '9',
+    code: 'game',
+    label: '游戏',
+    value: 'game',
+    sortOrder: 9,
+    isEnabled: true,
+    createdAt: '2023-12-25',
+    updatedAt: '2023-12-30',
+    description: '以游戏世界为背景的小说类型',
+  },
+  {
+    id: '10',
+    code: 'mystery',
+    label: '悬疑',
+    value: 'mystery',
+    sortOrder: 10,
+    isEnabled: true,
+    createdAt: '2023-12-20',
+    updatedAt: '2023-12-25',
+    description: '以悬疑推理为主线的小说类型',
+  },
+  {
+    id: '11',
+    code: 'horror',
+    label: '恐怖',
+    value: 'horror',
+    sortOrder: 11,
+    isEnabled: false,
+    createdAt: '2023-12-15',
+    updatedAt: '2023-12-20',
+    description: '以恐怖元素为主的小说类型',
+  },
+  {
+    id: '12',
+    code: 'light_novel',
+    label: '轻小说',
+    value: 'light_novel',
+    sortOrder: 12,
+    isEnabled: true,
+    createdAt: '2023-12-10',
+    updatedAt: '2023-12-15',
+    description: '轻松幽默的小说类型',
+  },
+  {
+    id: '13',
+    code: 'apocalypse',
+    label: '末世',
+    value: 'apocalypse',
+    sortOrder: 13,
+    isEnabled: true,
+    createdAt: '2023-12-05',
+    updatedAt: '2023-12-10',
+    description: '以末世背景为主的小说类型',
+  },
+  {
+    id: '14',
+    code: 'cultivation',
+    label: '修仙',
+    value: 'cultivation',
+    sortOrder: 14,
+    isEnabled: true,
+    createdAt: '2023-12-01',
+    updatedAt: '2023-12-05',
+    description: '以修仙修真为主题的小说类型',
+  },
+  {
+    id: '15',
+    code: 'business',
+    label: '商战',
+    value: 'business',
+    sortOrder: 15,
+    isEnabled: true,
+    createdAt: '2023-11-25',
+    updatedAt: '2023-11-30',
+    description: '以商业竞争为背景的小说类型',
+  },
 ];
 
 // 筛选配置
@@ -110,7 +231,7 @@ export default function DictionaryCategoryPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [loading] = useState(false);
-  const pageSize = 20;
+  const pageSize = 8;
 
   // 获取当前分类信息
   const currentCategory = dictionaryCategories[categoryKey as keyof typeof dictionaryCategories];
@@ -219,7 +340,7 @@ export default function DictionaryCategoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="flex h-full flex-col">
       {/* 面包屑导航 */}
       <div className="mb-6 flex items-center gap-2">
         <Link href="/dictionary">
@@ -261,30 +382,34 @@ export default function DictionaryCategoryPage() {
         />
       </div>
 
-      {/* 词条列表 */}
-      <MogeList
-        items={paginatedItems}
-        total={filteredItems.length}
-        loading={loading}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        viewMode={filters.viewMode}
-        onPageChange={setCurrentPage}
-        renderItem={renderItemCard}
-        emptyIcon={<Search className="mx-auto h-16 w-16 text-[var(--moge-text-muted)]" />}
-        emptyTitle={
-          hasActiveFilters
-            ? `没有找到符合条件的${currentCategory.title}`
-            : `还没有${currentCategory.title}`
-        }
-        emptyDescription={
-          hasActiveFilters ? undefined : `创建您的第一个${currentCategory.title}词条`
-        }
-        hasFilters={hasActiveFilters}
-        showPagination={filteredItems.length > pageSize}
-        gridClassName="grid grid-cols-1 gap-4"
-        listClassName="grid gap-4"
-      />
+      {/* 词条列表 - 可滚动区域 */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-1">
+        <div className="mx-auto max-w-6xl">
+          <MogeList
+            items={paginatedItems}
+            total={filteredItems.length}
+            loading={loading}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            viewMode={filters.viewMode}
+            onPageChange={setCurrentPage}
+            renderItem={renderItemCard}
+            emptyIcon={<Search className="mx-auto h-16 w-16 text-[var(--moge-text-muted)]" />}
+            emptyTitle={
+              hasActiveFilters
+                ? `没有找到符合条件的${currentCategory.title}`
+                : `还没有${currentCategory.title}`
+            }
+            emptyDescription={
+              hasActiveFilters ? undefined : `创建您的第一个${currentCategory.title}词条`
+            }
+            hasFilters={hasActiveFilters}
+            showPagination={filteredItems.length > pageSize}
+            gridClassName="auto-fit-grid grid gap-4"
+            listClassName="grid gap-4"
+          />
+        </div>
+      </div>
     </div>
   );
 }
