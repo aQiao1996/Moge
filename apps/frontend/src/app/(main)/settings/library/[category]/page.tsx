@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
+import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 
 // 设定分类配置
 const settingCategories = [
@@ -222,10 +223,14 @@ export default function CategorySettingsPage() {
             </p>
           </div>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          新建{currentCategory.label}
-        </Button>
+        {category === 'characters' ? (
+          <CharacterDialog mode="create" />
+        ) : (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            新建{currentCategory.label}
+          </Button>
+        )}
       </div>
 
       {/* 筛选组件 */}

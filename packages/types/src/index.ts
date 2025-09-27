@@ -18,3 +18,4 @@ export * from './schemas/signup';
 export * from './schemas/user';
 export * from './schemas/outline';
 export * from './schemas/outline-content';
+export * from './schemas/character';
