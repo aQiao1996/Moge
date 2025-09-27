@@ -1,6 +1,6 @@
 'use client';
-import { useCallback } from 'react';
-import { Users, Edit } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { Users, Edit, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
 
 import {
@@ -9,8 +9,10 @@ import {
   type CreateCharacterValues,
   type UpdateCharacterValues,
   type Character,
+  type Relationship,
   characterTypes,
   genderOptions,
+  relationshipTypes,
 } from '@moge/types';
 
 import MogeFormDialog, {
@@ -27,6 +29,8 @@ import {
   MogeSelectValue,
 } from '@/app/components/MogeSelect';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 interface CharacterDialogProps {
   mode: 'create' | 'edit';
@@ -47,8 +51,13 @@ export default function CharacterDialog({
 }: CharacterDialogProps) {
   const isEditMode = mode === 'edit';
 
+  // 关系状态管理
+  const [relationships, setRelationships] = useState<Relationship[]>(
+    character?.relationships || []
+  );
+
   // 字段配置
-  const fields: FieldConfig[] = [
+  const fields: FieldConfig<FormValues>[] = [
     { name: 'name', label: '角色名称', required: true },
     { name: 'type', label: '角色类型', required: true },
     { name: 'gender', label: '性别', required: true },
@@ -146,13 +155,167 @@ export default function CharacterDialog({
     []
   );
 
-  const onSubmit = async (values: FormValues) => {
-    // TODO: 调用API创建/更新角色
-    console.log('Character data:', values);
+  // 关系管理函数
+  const addRelationship = () => {
+    setRelationships([
+      ...relationships,
+      {
+        relatedCharacter: '',
+        customRelatedCharacter: '',
+        relationshipType: '',
+        customRelationshipType: '',
+        relationshipDesc: '',
+      },
+    ]);
+  };
 
-    // 模拟API调用
+  const updateRelationship = (index: number, field: keyof Relationship, value: string) => {
+    const newRelationships = [...relationships];
+    newRelationships[index] = { ...newRelationships[index], [field]: value };
+    setRelationships(newRelationships);
+  };
+
+  const removeRelationship = (index: number) => {
+    setRelationships(relationships.filter((_, i) => i !== index));
+  };
+
+  const onSubmit = async (values: FormValues) => {
+    const submitData = {
+      ...values,
+      relationships,
+    };
+
+    console.log('Character data:', submitData);
+    // TODO: 调用API创建/更新角色
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
+
+  // 渲染关系管理区域
+  const renderRelationshipSection = () => (
+    <Card
+      className="p-4"
+      style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <Label className="text-sm font-medium text-[var(--moge-text-main)]">角色关系</Label>
+        <Button type="button" variant="outline" size="sm" onClick={addRelationship}>
+          <Plus className="mr-1 h-3 w-3" />
+          添加关系
+        </Button>
+      </div>
+      <div className="space-y-3">
+        {relationships.map((relationship, index) => (
+          <Card
+            key={index}
+            className="p-3"
+            style={{ backgroundColor: 'var(--moge-bg)', borderColor: 'var(--moge-border)' }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <Label className="text-xs text-[var(--moge-text-sub)]">关系 {index + 1}</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeRelationship(index)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="grid gap-3">
+              {/* 关联角色选择 */}
+              <div>
+                <Label className="mb-1 block text-xs text-[var(--moge-text-sub)]">关联角色</Label>
+                <MogeSelect
+                  value={relationship.relatedCharacter || ''}
+                  onValueChange={(value) => {
+                    updateRelationship(index, 'relatedCharacter', value);
+                    if (value !== 'custom') {
+                      updateRelationship(index, 'customRelatedCharacter', '');
+                    }
+                  }}
+                >
+                  <MogeSelectTrigger>
+                    <MogeSelectValue placeholder="选择角色或自定义" />
+                  </MogeSelectTrigger>
+                  <MogeSelectContent>
+                    <MogeSelectItem value="张三">张三</MogeSelectItem>
+                    <MogeSelectItem value="李四">李四</MogeSelectItem>
+                    <MogeSelectItem value="王五">王五</MogeSelectItem>
+                    <MogeSelectItem value="custom">自定义角色...</MogeSelectItem>
+                  </MogeSelectContent>
+                </MogeSelect>
+                {relationship.relatedCharacter === 'custom' && (
+                  <MogeInput
+                    placeholder="输入角色名称"
+                    value={relationship.customRelatedCharacter || ''}
+                    onChange={(e) =>
+                      updateRelationship(index, 'customRelatedCharacter', e.target.value)
+                    }
+                    className="mt-2"
+                  />
+                )}
+              </div>
+
+              {/* 关系类型选择 */}
+              <div>
+                <Label className="mb-1 block text-xs text-[var(--moge-text-sub)]">关系类型</Label>
+                <MogeSelect
+                  value={relationship.relationshipType || ''}
+                  onValueChange={(value) => {
+                    updateRelationship(index, 'relationshipType', value);
+                    if (value !== 'custom') {
+                      updateRelationship(index, 'customRelationshipType', '');
+                    }
+                  }}
+                >
+                  <MogeSelectTrigger>
+                    <MogeSelectValue placeholder="选择关系类型" />
+                  </MogeSelectTrigger>
+                  <MogeSelectContent>
+                    {relationshipTypes.map((category) => (
+                      <div key={category.category}>
+                        {category.options.map((option) => (
+                          <MogeSelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MogeSelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </MogeSelectContent>
+                </MogeSelect>
+                {relationship.relationshipType === 'custom' && (
+                  <MogeInput
+                    placeholder="输入关系类型"
+                    value={relationship.customRelationshipType || ''}
+                    onChange={(e) =>
+                      updateRelationship(index, 'customRelationshipType', e.target.value)
+                    }
+                    className="mt-2"
+                  />
+                )}
+              </div>
+
+              {/* 关系描述 */}
+              <div>
+                <Label className="mb-1 block text-xs text-[var(--moge-text-sub)]">关系描述</Label>
+                <MogeTextarea
+                  placeholder="描述两人之间的具体关系..."
+                  value={relationship.relationshipDesc || ''}
+                  onChange={(e) => updateRelationship(index, 'relationshipDesc', e.target.value)}
+                  className="min-h-[60px]"
+                />
+              </div>
+            </div>
+          </Card>
+        ))}
+        {relationships.length === 0 && (
+          <div className="py-4 text-center text-sm text-[var(--moge-text-muted)]">
+            暂无角色关系，点击"添加关系"开始创建
+          </div>
+        )}
+      </div>
+    </Card>
+  );
 
   const defaultTrigger = isEditMode ? (
     <Button size="sm" variant="ghost" title="编辑角色信息">
@@ -198,7 +361,7 @@ export default function CharacterDialog({
       customSections={[
         {
           title: '角色关系',
-          content: <RelationshipSection />,
+          content: renderRelationshipSection(),
         },
       ]}
       defaultTrigger={defaultTrigger}
@@ -206,11 +369,4 @@ export default function CharacterDialog({
       item={character}
     />
   );
-}
-
-// 角色关系组件
-function RelationshipSection() {
-  // 这里需要重新实现关系部分，因为它需要访问form context
-  // 这是一个挑战，我们需要想办法传递form实例或使用其他方案
-  return <div className="text-center text-[var(--moge-text-sub)]">角色关系功能正在重构中...</div>;
 }

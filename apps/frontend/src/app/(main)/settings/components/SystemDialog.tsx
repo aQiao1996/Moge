@@ -118,7 +118,7 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
   );
 
   // 处理提交
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     const submitData = {
       ...values,
       modules,
@@ -126,7 +126,7 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
       items,
       parameters,
     };
-
+    await Promise.resolve(1);
     console.log('提交系统设定:', submitData);
     // TODO: 实际的API调用
   };
