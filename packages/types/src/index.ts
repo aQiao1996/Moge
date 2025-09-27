@@ -20,3 +20,4 @@ export * from './schemas/outline';
 export * from './schemas/outline-content';
 export * from './schemas/character';
 export * from './schemas/system';
+export * from './schemas/world';

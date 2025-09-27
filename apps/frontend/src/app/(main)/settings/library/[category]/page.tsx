@@ -11,6 +11,7 @@ import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/com
 import MogeList from '@/app/components/MogeList';
 import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
+import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
 
 // 设定分类配置
 const settingCategories = [
@@ -228,6 +229,8 @@ export default function CategorySettingsPage() {
           <CharacterDialog mode="create" />
         ) : category === 'systems' ? (
           <SystemDialog mode="create" />
+        ) : category === 'worlds' ? (
+          <WorldDialog mode="create" />
         ) : (
           <Button>
             <Plus className="mr-2 h-4 w-4" />
