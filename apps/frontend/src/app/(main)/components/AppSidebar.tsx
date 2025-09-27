@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useSidebar } from '@/components/ui/sidebar';
+import { usePathname } from 'next/navigation';
 
 const nav = [
   { icon: LayoutDashboard, label: '工作台', href: '/workspace' },
@@ -24,6 +25,15 @@ const nav = [
 
 export default function AppSidebar() {
   const { open } = useSidebar();
+  const pathname = usePathname();
+
+  // 检查当前路径是否匹配菜单项
+  const isActive = (href: string) => {
+    if (href === '/workspace') {
+      return pathname === '/workspace' || pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <UISidebar collapsible="icon">
@@ -46,7 +56,7 @@ export default function AppSidebar() {
             <SidebarMenu>
               {nav.map((n) => (
                 <SidebarMenuItem key={n.href}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={isActive(n.href)}>
                     <Link href={n.href}>
                       <n.icon className="mr-2 h-4 w-4" />
                       <span>{n.label}</span>
