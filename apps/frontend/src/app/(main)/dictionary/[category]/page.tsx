@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,9 @@ import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/com
 import MogeList from '@/app/components/MogeList';
 import DictItemDialog from '../components/DictItemDialog';
 import { toast } from 'sonner';
-import type { CreateDictItemValues, UpdateDictItemValues } from '@moge/types';
+import type { CreateDictItemValues, UpdateDictItemValues, Dict } from '@moge/types';
+import { useDictStore } from '@/stores/dictStore';
+import dayjs from 'dayjs';
 
 // 字典分类配置
 const dictionaryCategories = {
@@ -20,195 +22,30 @@ const dictionaryCategories = {
     description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
     color: 'text-blue-500',
     icon: 'Book',
+    apiType: 'novel_types', // 对应后端 API 的类型参数
   },
   'novel-tags': {
     title: '小说标签',
     description: '管理小说标签库，按题材、风格、情节、角色等维度分类',
     color: 'text-green-500',
     icon: 'Tags',
+    apiType: 'novel_tags',
   },
   terminology: {
     title: '专业术语',
     description: '管理各行业专业词汇、技术名词、古风用语等',
     color: 'text-purple-500',
     icon: 'Terminal',
+    apiType: 'terminology',
   },
   templates: {
     title: '模板库',
     description: '管理常用的剧情桥段、对话模板、场景描述等',
     color: 'text-orange-500',
     icon: 'FileText',
+    apiType: 'templates',
   },
 };
-
-// 模拟字典数据
-const mockDictItems = [
-  {
-    id: '1',
-    code: 'fantasy',
-    label: '玄幻',
-    value: 'fantasy',
-    sortOrder: 1,
-    isEnabled: true,
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-20',
-    description: '以修炼、异世界为背景的小说类型',
-  },
-  {
-    id: '2',
-    code: 'urban',
-    label: '都市',
-    value: 'urban',
-    sortOrder: 2,
-    isEnabled: true,
-    createdAt: '2024-01-12',
-    updatedAt: '2024-01-18',
-    description: '以现代都市生活为背景的小说类型',
-  },
-  {
-    id: '3',
-    code: 'historical',
-    label: '历史',
-    value: 'historical',
-    sortOrder: 3,
-    isEnabled: true,
-    createdAt: '2024-01-10',
-    updatedAt: '2024-01-15',
-    description: '以历史背景为主的小说类型',
-  },
-  {
-    id: '4',
-    code: 'sci_fi',
-    label: '科幻',
-    value: 'sci_fi',
-    sortOrder: 4,
-    isEnabled: false,
-    createdAt: '2024-01-08',
-    updatedAt: '2024-01-12',
-    description: '以科学技术为背景的小说类型',
-  },
-  {
-    id: '5',
-    code: 'wuxia',
-    label: '武侠',
-    value: 'wuxia',
-    sortOrder: 5,
-    isEnabled: true,
-    createdAt: '2024-01-05',
-    updatedAt: '2024-01-10',
-    description: '以武术、江湖为背景的小说类型',
-  },
-  {
-    id: '6',
-    code: 'romance',
-    label: '言情',
-    value: 'romance',
-    sortOrder: 6,
-    isEnabled: true,
-    createdAt: '2024-01-03',
-    updatedAt: '2024-01-08',
-    description: '以爱情故事为主线的小说类型',
-  },
-  {
-    id: '7',
-    code: 'military',
-    label: '军事',
-    value: 'military',
-    sortOrder: 7,
-    isEnabled: true,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-05',
-    description: '以军事题材为背景的小说类型',
-  },
-  {
-    id: '8',
-    code: 'sports',
-    label: '体育',
-    value: 'sports',
-    sortOrder: 8,
-    isEnabled: false,
-    createdAt: '2023-12-28',
-    updatedAt: '2024-01-01',
-    description: '以体育运动为主题的小说类型',
-  },
-  {
-    id: '9',
-    code: 'game',
-    label: '游戏',
-    value: 'game',
-    sortOrder: 9,
-    isEnabled: true,
-    createdAt: '2023-12-25',
-    updatedAt: '2023-12-30',
-    description: '以游戏世界为背景的小说类型',
-  },
-  {
-    id: '10',
-    code: 'mystery',
-    label: '悬疑',
-    value: 'mystery',
-    sortOrder: 10,
-    isEnabled: true,
-    createdAt: '2023-12-20',
-    updatedAt: '2023-12-25',
-    description: '以悬疑推理为主线的小说类型',
-  },
-  {
-    id: '11',
-    code: 'horror',
-    label: '恐怖',
-    value: 'horror',
-    sortOrder: 11,
-    isEnabled: false,
-    createdAt: '2023-12-15',
-    updatedAt: '2023-12-20',
-    description: '以恐怖元素为主的小说类型',
-  },
-  {
-    id: '12',
-    code: 'light_novel',
-    label: '轻小说',
-    value: 'light_novel',
-    sortOrder: 12,
-    isEnabled: true,
-    createdAt: '2023-12-10',
-    updatedAt: '2023-12-15',
-    description: '轻松幽默的小说类型',
-  },
-  {
-    id: '13',
-    code: 'apocalypse',
-    label: '末世',
-    value: 'apocalypse',
-    sortOrder: 13,
-    isEnabled: true,
-    createdAt: '2023-12-05',
-    updatedAt: '2023-12-10',
-    description: '以末世背景为主的小说类型',
-  },
-  {
-    id: '14',
-    code: 'cultivation',
-    label: '修仙',
-    value: 'cultivation',
-    sortOrder: 14,
-    isEnabled: true,
-    createdAt: '2023-12-01',
-    updatedAt: '2023-12-05',
-    description: '以修仙修真为主题的小说类型',
-  },
-  {
-    id: '15',
-    code: 'business',
-    label: '商战',
-    value: 'business',
-    sortOrder: 15,
-    isEnabled: true,
-    createdAt: '2023-11-25',
-    updatedAt: '2023-11-30',
-    description: '以商业竞争为背景的小说类型',
-  },
-];
 
 // 筛选配置
 const filterOptions: FilterOption[] = [
@@ -231,17 +68,40 @@ const sortOptions: SortOption[] = [
 export default function DictionaryCategoryPage() {
   const params = useParams();
   const categoryKey = params.category as string;
+  const { fetchDictByType, createDictItem, updateDictItem, deleteDictItem, toggleDictItem } =
+    useDictStore();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [dictItems, setDictItems] = useState<Dict[]>([]);
   const pageSize = 8;
 
   // 编辑对话框状态
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<(typeof mockDictItems)[0] | null>(null);
+  const [editingItem, setEditingItem] = useState<Dict | null>(null);
 
   // 获取当前分类信息
   const currentCategory = dictionaryCategories[categoryKey as keyof typeof dictionaryCategories];
+
+  // 获取字典数据
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentCategory) return;
+
+      setLoading(true);
+      try {
+        const data = await fetchDictByType(currentCategory.apiType);
+        setDictItems(data);
+      } catch (error) {
+        console.error('Failed to fetch dict data:', error);
+        toast.error('获取数据失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+  }, [currentCategory, fetchDictByType]);
 
   // 筛选状态
   const [filters, setFilters] = useState<MogeFilterState>({
@@ -254,7 +114,7 @@ export default function DictionaryCategoryPage() {
 
   // 根据筛选条件过滤字典项
   const getFilteredItems = () => {
-    let filtered = mockDictItems;
+    let filtered = dictItems;
 
     // 搜索筛选
     if (filters.search) {
@@ -262,6 +122,7 @@ export default function DictionaryCategoryPage() {
         (item) =>
           item.label.toLowerCase().includes(filters.search.toLowerCase()) ||
           item.code.toLowerCase().includes(filters.search.toLowerCase()) ||
+          (item.value && item.value.toLowerCase().includes(filters.search.toLowerCase())) ||
           (item.description &&
             item.description.toLowerCase().includes(filters.search.toLowerCase()))
       );
@@ -292,40 +153,72 @@ export default function DictionaryCategoryPage() {
   const paginatedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 处理创建词条
-  const handleCreateItem = (values: CreateDictItemValues) => {
+  const handleCreateItem = async (values: CreateDictItemValues) => {
     try {
-      // TODO: 调用API创建词条
-      console.log('Creating dict item:', values);
+      await createDictItem(values);
       toast.success('词条创建成功');
-      // TODO: 刷新列表数据
+      // 刷新列表数据
+      const data = await fetchDictByType(currentCategory.apiType);
+      setDictItems(data);
     } catch (error) {
-      toast.error('词条创建失败');
       console.error('Create dict item error:', error);
     }
   };
 
   // 处理编辑词条
-  const handleEditItem = (values: UpdateDictItemValues) => {
+  const handleEditItem = async (values: UpdateDictItemValues) => {
+    if (!editingItem) return;
+
     try {
-      // TODO: 调用API更新词条
-      console.log('Updating dict item:', values);
+      await updateDictItem(editingItem.id, values);
       toast.success('词条更新成功');
       setEditDialogOpen(false);
       setEditingItem(null);
-      // TODO: 刷新列表数据
+      // 刷新列表数据
+      const data = await fetchDictByType(currentCategory.apiType);
+      setDictItems(data);
     } catch (error) {
-      toast.error('词条更新失败');
       console.error('Update dict item error:', error);
     }
   };
 
   // 处理编辑按钮点击
-  const handleEdit = (item: (typeof mockDictItems)[0]) => {
+  const handleEdit = (item: Dict) => {
     setEditingItem(item);
     setEditDialogOpen(true);
   };
 
-  const renderItemCard = (item: (typeof mockDictItems)[0]) => {
+  // 处理删除词条
+  const handleDelete = async (item: Dict) => {
+    if (!confirm(`确定要删除词条"${item.label}"吗？`)) {
+      return;
+    }
+
+    try {
+      await deleteDictItem(item.id);
+      toast.success('词条删除成功');
+      // 刷新列表数据
+      const data = await fetchDictByType(currentCategory.apiType);
+      setDictItems(data);
+    } catch (error) {
+      console.error('Delete dict item error:', error);
+    }
+  };
+
+  // 处理启用/禁用切换
+  const handleToggle = async (item: Dict) => {
+    try {
+      await toggleDictItem(item.id, !item.isEnabled);
+      toast.success(`词条已${!item.isEnabled ? '启用' : '禁用'}`);
+      // 刷新列表数据
+      const data = await fetchDictByType(currentCategory.apiType);
+      setDictItems(data);
+    } catch (error) {
+      console.error('Toggle dict item error:', error);
+    }
+  };
+
+  const renderItemCard = (item: Dict) => {
     return (
       <Card
         key={item.id}
@@ -346,20 +239,27 @@ export default function DictionaryCategoryPage() {
             {item.description && (
               <p className="mb-3 text-sm text-[var(--moge-text-sub)]">{item.description}</p>
             )}
+            {item.value && item.value !== item.code && (
+              <p className="mb-3 text-sm text-[var(--moge-text-sub)]">值: {item.value}</p>
+            )}
             <div className="flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
-              <span>排序: {item.sortOrder}</span>
-              <span>更新于 {item.updatedAt}</span>
+              <span>更新于 {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm')}</span>
             </div>
           </div>
 
           <div className="ml-4 flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+            <Button variant="ghost" size="sm" onClick={() => void handleEdit(item)}>
               <Edit2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => void handleToggle(item)}>
               {item.isEnabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-500 hover:text-red-600"
+              onClick={() => void handleDelete(item)}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -405,7 +305,7 @@ export default function DictionaryCategoryPage() {
         <div>
           <DictItemDialog
             mode="create"
-            categoryCode={categoryKey}
+            categoryCode={currentCategory?.apiType || categoryKey}
             categoryTitle={currentCategory.title}
             onSubmit={handleCreateItem}
           />
@@ -429,14 +329,14 @@ export default function DictionaryCategoryPage() {
       <div className="min-h-0 flex-1 overflow-y-auto px-1">
         <div className="mx-auto max-w-6xl">
           <MogeList
-            items={paginatedItems}
+            items={paginatedItems.map((item) => ({ ...item, id: item.id.toString() }))}
             total={filteredItems.length}
             loading={loading}
             currentPage={currentPage}
             pageSize={pageSize}
             viewMode={filters.viewMode}
             onPageChange={setCurrentPage}
-            renderItem={renderItemCard}
+            renderItem={(item) => renderItemCard({ ...item, id: parseInt(item.id) } as Dict)}
             emptyIcon={<Search className="mx-auto h-16 w-16 text-[var(--moge-text-muted)]" />}
             emptyTitle={
               hasActiveFilters
@@ -457,21 +357,21 @@ export default function DictionaryCategoryPage() {
       {/* 编辑对话框 */}
       <DictItemDialog
         mode="edit"
-        categoryCode={categoryKey}
+        categoryCode={currentCategory?.apiType || categoryKey}
         categoryTitle={currentCategory.title}
         item={
           editingItem
             ? {
-                id: parseInt(editingItem.id),
-                categoryCode: categoryKey,
+                id: editingItem.id,
+                categoryCode: editingItem.categoryCode,
                 code: editingItem.code,
                 label: editingItem.label,
-                value: editingItem.value,
+                value: editingItem.value || '',
                 sortOrder: editingItem.sortOrder,
                 isEnabled: editingItem.isEnabled,
-                description: editingItem.description,
-                createdAt: editingItem.createdAt,
-                updatedAt: editingItem.updatedAt,
+                description: editingItem.description || '',
+                createdAt: dayjs(editingItem.createdAt).toISOString(),
+                updatedAt: dayjs(editingItem.updatedAt).toISOString(),
               }
             : undefined
         }

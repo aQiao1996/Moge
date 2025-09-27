@@ -28,7 +28,7 @@ interface DictItemDialogProps {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSubmit?: (values: CreateDictItemValues | UpdateDictItemValues) => void;
+  onSubmit?: (values: CreateDictItemValues | UpdateDictItemValues) => Promise<void>;
 }
 
 type FormValues = CreateDictItemValues | UpdateDictItemValues;
@@ -162,14 +162,14 @@ export default function DictItemDialog({
     []
   );
 
-  const handleSubmit = (values: FormValues) => {
+  const handleSubmit = async (values: FormValues) => {
     const submissionValues = {
       ...values,
       categoryCode,
     };
 
     if (onSubmit) {
-      onSubmit(submissionValues as CreateDictItemValues | UpdateDictItemValues);
+      await onSubmit(submissionValues as CreateDictItemValues | UpdateDictItemValues);
     }
   };
 

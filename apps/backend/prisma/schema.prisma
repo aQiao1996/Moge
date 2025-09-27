@@ -91,6 +91,8 @@ model dict_items {
   label        String
   /// 存储值
   value        String?
+  /// 描述信息
+  description  String?
   /// 排序
   sortOrder    Int             @default(0) @map("sort_order")
   /// 是否启用
