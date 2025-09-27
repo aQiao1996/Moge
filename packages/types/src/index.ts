@@ -22,3 +22,4 @@ export * from './schemas/character';
 export * from './schemas/system';
 export * from './schemas/world';
 export * from './schemas/misc';
+export * from './schemas/dictionary';

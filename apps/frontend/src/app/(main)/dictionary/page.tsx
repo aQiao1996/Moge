@@ -1,0 +1,141 @@
+'use client';
+
+import { Card } from '@/components/ui/card';
+import { ArrowRight, Database, Tags, Book, Terminal, FileText } from 'lucide-react';
+import Link from 'next/link';
+
+// 字典分类配置
+const dictionaryCategories = [
+  {
+    key: 'novel-types',
+    title: '小说类型',
+    description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
+    icon: Book,
+    color: 'text-blue-500',
+    count: 12,
+  },
+  {
+    key: 'novel-tags',
+    title: '小说标签',
+    description: '管理小说标签库，按题材、风格、情节、角色等维度分类',
+    icon: Tags,
+    color: 'text-green-500',
+    count: 156,
+  },
+  {
+    key: 'terminology',
+    title: '专业术语',
+    description: '管理各行业专业词汇、技术名词、古风用语等',
+    icon: Terminal,
+    color: 'text-purple-500',
+    count: 89,
+  },
+  {
+    key: 'templates',
+    title: '模板库',
+    description: '管理常用的剧情桥段、对话模板、场景描述等',
+    icon: FileText,
+    color: 'text-orange-500',
+    count: 45,
+  },
+];
+
+export default function DictionaryPage() {
+  return (
+    <div className="mx-auto max-w-6xl">
+      {/* 页面标题 */}
+      <div className="mb-8">
+        <div className="mb-4 flex items-center gap-3">
+          <Database className="h-8 w-8 text-[var(--moge-primary)]" />
+          <div>
+            <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">字典管理</h1>
+            <p className="mt-2 text-[var(--moge-text-sub)]">
+              管理全局数据字典和基础配置，为创作提供标准化数据支撑
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 统计概览 */}
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card
+          className="p-4"
+          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[var(--moge-text-muted)]">分类总数</p>
+              <p className="text-2xl font-bold text-[var(--moge-text-main)]">4</p>
+            </div>
+            <Database className="h-8 w-8 text-[var(--moge-primary)]" />
+          </div>
+        </Card>
+        <Card
+          className="p-4"
+          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[var(--moge-text-muted)]">词条总数</p>
+              <p className="text-2xl font-bold text-[var(--moge-text-main)]">302</p>
+            </div>
+            <Tags className="h-8 w-8 text-blue-500" />
+          </div>
+        </Card>
+        <Card
+          className="p-4"
+          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[var(--moge-text-muted)]">使用频次</p>
+              <p className="text-2xl font-bold text-[var(--moge-text-main)]">1.2k</p>
+            </div>
+            <FileText className="h-8 w-8 text-orange-500" />
+          </div>
+        </Card>
+      </div>
+
+      {/* 分类卡片 */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {dictionaryCategories.map((category) => {
+          const Icon = category.icon;
+
+          return (
+            <Link key={category.key} href={`/dictionary/${category.key}`}>
+              <Card
+                className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
+                style={{
+                  backgroundColor: 'var(--moge-card-bg)',
+                  borderColor: 'var(--moge-card-border)',
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="mb-3 flex items-center gap-3">
+                      <Icon className={`h-6 w-6 ${category.color}`} />
+                      <h3 className="font-semibold text-[var(--moge-text-main)]">
+                        {category.title}
+                      </h3>
+                    </div>
+                    <p className="mb-4 text-sm leading-relaxed text-[var(--moge-text-sub)]">
+                      {category.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-[var(--moge-text-muted)]">
+                          {category.count} 个词条
+                        </span>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-[var(--moge-text-muted)]" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

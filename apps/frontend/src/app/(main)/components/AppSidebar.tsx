@@ -1,5 +1,5 @@
 'use client';
-import { Sparkles, BookText, Settings, BarChart, LayoutDashboard } from 'lucide-react';
+import { Sparkles, BookText, Settings, BarChart, LayoutDashboard, Database } from 'lucide-react';
 import {
   Sidebar as UISidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ const nav = [
   { icon: Sparkles, label: '大纲', href: '/outline' },
   { icon: BookText, label: '文稿', href: '/manuscripts' },
   { icon: Settings, label: '设定集', href: '/settings' },
+  { icon: Database, label: '字典管理', href: '/dictionary' },
   { icon: BarChart, label: '统计', href: '/stats' },
 ];
 
