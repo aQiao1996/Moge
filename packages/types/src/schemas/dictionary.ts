@@ -19,6 +19,7 @@ export const dictItemSchema = z.object({
   value: z.string().optional(),
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
+  description: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -41,6 +42,7 @@ export const createDictItemSchema = z.object({
   value: z.string().optional(),
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
+  description: z.string().optional(),
 });
 
 // 更新字典项的schema

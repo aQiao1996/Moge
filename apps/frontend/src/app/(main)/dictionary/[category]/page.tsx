@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
+import DictItemDialog from '../components/DictItemDialog';
+import { toast } from 'sonner';
+import type { CreateDictItemValues, UpdateDictItemValues } from '@moge/types';
 
 // 字典分类配置
 const dictionaryCategories = {
@@ -233,6 +236,10 @@ export default function DictionaryCategoryPage() {
   const [loading] = useState(false);
   const pageSize = 8;
 
+  // 编辑对话框状态
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<(typeof mockDictItems)[0] | null>(null);
+
   // 获取当前分类信息
   const currentCategory = dictionaryCategories[categoryKey as keyof typeof dictionaryCategories];
 
@@ -284,6 +291,40 @@ export default function DictionaryCategoryPage() {
   const filteredItems = getFilteredItems();
   const paginatedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // 处理创建词条
+  const handleCreateItem = (values: CreateDictItemValues) => {
+    try {
+      // TODO: 调用API创建词条
+      console.log('Creating dict item:', values);
+      toast.success('词条创建成功');
+      // TODO: 刷新列表数据
+    } catch (error) {
+      toast.error('词条创建失败');
+      console.error('Create dict item error:', error);
+    }
+  };
+
+  // 处理编辑词条
+  const handleEditItem = (values: UpdateDictItemValues) => {
+    try {
+      // TODO: 调用API更新词条
+      console.log('Updating dict item:', values);
+      toast.success('词条更新成功');
+      setEditDialogOpen(false);
+      setEditingItem(null);
+      // TODO: 刷新列表数据
+    } catch (error) {
+      toast.error('词条更新失败');
+      console.error('Update dict item error:', error);
+    }
+  };
+
+  // 处理编辑按钮点击
+  const handleEdit = (item: (typeof mockDictItems)[0]) => {
+    setEditingItem(item);
+    setEditDialogOpen(true);
+  };
+
   const renderItemCard = (item: (typeof mockDictItems)[0]) => {
     return (
       <Card
@@ -312,7 +353,7 @@ export default function DictionaryCategoryPage() {
           </div>
 
           <div className="ml-4 flex gap-2">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
               <Edit2 className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm">
@@ -362,10 +403,12 @@ export default function DictionaryCategoryPage() {
           <p className="mt-1 text-[var(--moge-text-sub)]">{currentCategory.description}</p>
         </div>
         <div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            新建词条
-          </Button>
+          <DictItemDialog
+            mode="create"
+            categoryCode={categoryKey}
+            categoryTitle={currentCategory.title}
+            onSubmit={handleCreateItem}
+          />
         </div>
       </div>
 
@@ -410,6 +453,32 @@ export default function DictionaryCategoryPage() {
           />
         </div>
       </div>
+
+      {/* 编辑对话框 */}
+      <DictItemDialog
+        mode="edit"
+        categoryCode={categoryKey}
+        categoryTitle={currentCategory.title}
+        item={
+          editingItem
+            ? {
+                id: parseInt(editingItem.id),
+                categoryCode: categoryKey,
+                code: editingItem.code,
+                label: editingItem.label,
+                value: editingItem.value,
+                sortOrder: editingItem.sortOrder,
+                isEnabled: editingItem.isEnabled,
+                description: editingItem.description,
+                createdAt: editingItem.createdAt,
+                updatedAt: editingItem.updatedAt,
+              }
+            : undefined
+        }
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={handleEditItem}
+      />
     </div>
   );
 }
