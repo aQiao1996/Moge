@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Plus, Calendar, Users, Zap, Globe, Folder } from 'lucide-react';
+import { BookOpen, Plus, Calendar, Users, Zap, Globe, Folder, Settings } from 'lucide-react';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Project {
   id: string;
@@ -85,6 +87,7 @@ export default function SettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading] = useState(false);
   const pageSize = 6;
+  const router = useRouter();
 
   // 筛选状态
   const [filters, setFilters] = useState<MogeFilterState>({
@@ -96,8 +99,7 @@ export default function SettingsPage() {
   });
 
   const handleProjectClick = (projectId: string) => {
-    // 这里将来跳转到 /settings/[projectId] 页面
-    console.log('Navigate to project:', projectId);
+    router.push(`/settings/${projectId}`);
   };
 
   // 根据筛选条件过滤项目
@@ -194,18 +196,26 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* 标题和创建按钮 */}
+      {/* 标题和功能入口 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">设定集</h1>
           <p className="mt-1 text-[var(--moge-text-sub)]">管理您的小说设定，构建完整的创作世界</p>
         </div>
-        {mockProjects.length > 0 && (
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            创建小说项目
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <Link href="/settings/library">
+            <Button variant="outline">
+              <Settings className="mr-2 h-4 w-4" />
+              设定库
+            </Button>
+          </Link>
+          {mockProjects.length > 0 && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              创建小说项目
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 筛选组件 */}
