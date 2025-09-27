@@ -15,26 +15,36 @@ import { useRouter } from 'next/navigation';
  *    包括 token 获取、通知和 401 错误处理。
  */
 export function AuthStoreSyncer() {
-  const { data: session } = useSession();
-  const setUser = useAuthStore((state) => state.setUser);
-  const setToken = useAuthStore((state) => state.setToken);
+  const { data: session, status } = useSession();
+  const { setUser, setToken, initializeFromStorage } = useAuthStore();
   const router = useRouter();
 
   const sessionUser = session?.user;
   const backendToken = session?.backendToken;
 
+  // 初始化：从localStorage恢复token状态
+  useEffect(() => {
+    initializeFromStorage();
+  }, [initializeFromStorage]);
+
   // 负责将服务端的 session 同步到客户端的 Zustand store
   useEffect(() => {
-    if (sessionUser) {
+    if (status === 'loading') {
+      // session还在加载中，不做任何操作
+      return;
+    }
+
+    if (sessionUser && backendToken) {
+      // 有session和token，同步到store
       setUser(sessionUser as User);
-      if (backendToken) {
-        setToken(backendToken);
-      }
-    } else {
+      setToken(backendToken);
+    } else if (status === 'unauthenticated') {
+      // 明确未认证状态，清除store
       setUser(null);
       setToken(null);
     }
-  }, [sessionUser, backendToken, setUser, setToken]);
+    // 如果status是authenticated但没有backendToken，保持当前store状态不变
+  }, [sessionUser, backendToken, status, setUser, setToken]);
 
   // 负责为请求客户端注入 handlers
   useEffect(() => {
@@ -46,6 +56,7 @@ export function AuthStoreSyncer() {
       onAuthError: () => {
         // 清除本地状态和 next-auth session
         useAuthStore.getState().setToken(null);
+        useAuthStore.getState().setUser(null);
         void (async () => {
           await signOut({ redirect: false });
           // 重定向到登录页
@@ -63,7 +74,7 @@ export function AuthStoreSyncer() {
         }
       },
     });
-  }, [router]); // 依赖 router
+  }, [router, setUser, setToken]); // 添加更多依赖
 
   // 这个组件不渲染任何 UI
   return null;

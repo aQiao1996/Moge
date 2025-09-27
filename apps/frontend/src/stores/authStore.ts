@@ -13,11 +13,20 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   resetError: () => void;
+  initializeFromStorage: () => void;
 }
+
+// 获取初始token（仅在客户端）
+const getInitialToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth-token');
+  }
+  return null;
+};
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  token: null,
+  token: getInitialToken(),
   loading: false,
   error: null,
 
@@ -61,13 +70,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   setToken: (token) => {
     set({ token });
-    if (token) {
-      localStorage.setItem('auth-token', token);
-    } else {
-      localStorage.removeItem('auth-token');
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('auth-token', token);
+      } else {
+        localStorage.removeItem('auth-token');
+      }
     }
   },
   resetError: () => {
     set({ error: null });
+  },
+  initializeFromStorage: () => {
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('auth-token');
+      if (storedToken && !get().token) {
+        set({ token: storedToken });
+      }
+    }
   },
 }));

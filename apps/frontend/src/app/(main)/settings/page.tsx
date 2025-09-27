@@ -92,7 +92,7 @@ export default function SettingsPage() {
     type: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
-    viewMode: 'grid',
+    viewMode: 'list',
   });
 
   const handleProjectClick = (projectId: string) => {
@@ -140,7 +140,7 @@ export default function SettingsPage() {
     return (
       <Card
         key={project.id}
-        className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-lg hover:shadow-[var(--moge-glow-card)]"
+        className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
         style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
         onClick={() => handleProjectClick(project.id)}
       >
@@ -150,7 +150,7 @@ export default function SettingsPage() {
               <BookOpen className="h-5 w-5 text-[var(--moge-primary-400)]" />
               <h3 className="font-semibold text-[var(--moge-text-main)]">{project.name}</h3>
             </div>
-            <div className="mb-4 flex items-center gap-2">
+            <div className="mb-3 flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 {project.type}
               </Badge>
@@ -159,34 +159,31 @@ export default function SettingsPage() {
                 {project.createdAt}
               </span>
             </div>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3 text-[var(--moge-text-muted)]" />
+                <span className="text-[var(--moge-text-sub)]">
+                  角色 {project.settings.characters}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Zap className="h-3 w-3 text-[var(--moge-text-muted)]" />
+                <span className="text-[var(--moge-text-sub)]">系统 {project.settings.systems}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Globe className="h-3 w-3 text-[var(--moge-text-muted)]" />
+                <span className="text-[var(--moge-text-sub)]">世界 {project.settings.worlds}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Folder className="h-3 w-3 text-[var(--moge-text-muted)]" />
+                <span className="text-[var(--moge-text-sub)]">辅助 {project.settings.misc}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2 text-sm">
             <span className="text-[var(--moge-text-sub)]">设定总数</span>
             <span className="font-medium text-[var(--moge-text-main)]">{totalSettings}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex items-center gap-1">
-              <Users className="h-3 w-3 text-[var(--moge-text-muted)]" />
-              <span className="text-[var(--moge-text-sub)]">
-                角色 {project.settings.characters}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Zap className="h-3 w-3 text-[var(--moge-text-muted)]" />
-              <span className="text-[var(--moge-text-sub)]">系统 {project.settings.systems}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Globe className="h-3 w-3 text-[var(--moge-text-muted)]" />
-              <span className="text-[var(--moge-text-sub)]">世界 {project.settings.worlds}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Folder className="h-3 w-3 text-[var(--moge-text-muted)]" />
-              <span className="text-[var(--moge-text-sub)]">辅助 {project.settings.misc}</span>
-            </div>
           </div>
         </div>
       </Card>
@@ -241,7 +238,7 @@ export default function SettingsPage() {
         emptyDescription={hasActiveFilters ? undefined : '创建您的第一个小说项目，开始构建设定集'}
         hasFilters={hasActiveFilters}
         showPagination={filteredProjects.length > pageSize}
-        gridClassName="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        gridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
         listClassName="grid gap-4"
       />
 
