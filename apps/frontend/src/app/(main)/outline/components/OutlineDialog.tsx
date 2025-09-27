@@ -1,10 +1,8 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import type { ControllerRenderProps, FieldPath } from 'react-hook-form';
 
-import { toast } from 'sonner';
 import { FilePlus, Edit } from 'lucide-react';
-import { useForm, type ControllerRenderProps, type FieldPath } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
   createOutlineSchema,
@@ -16,17 +14,12 @@ import {
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useDictStore } from '@/stores/dictStore';
 
-import HookForm from '@/app/components/HookForm';
+import MogeFormDialog, {
+  type FieldConfig,
+  type FormFieldConfig,
+} from '@/app/components/MogeFormDialog';
 import { MogeInput } from '@/app/components/MogeInput';
 import { MogeTextarea } from '@/app/components/MogeTextarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   MogeSelect,
   MogeSelectContent,
@@ -46,77 +39,35 @@ interface OutlineDialogProps {
 
 type FormValues = CreateOutlineValues | UpdateOutlineValues;
 
-type RenderControl = (
-  field: ControllerRenderProps<FormValues, FieldPath<FormValues>>,
-  name: FieldPath<FormValues>
-) => React.ReactNode;
-
 export default function OutlineDialog({
   mode,
   outline,
   trigger,
-  open: controlledOpen,
-  onOpenChange: controlledOnOpenChange,
+  open,
+  onOpenChange,
 }: OutlineDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const { createOutline, updateOutline, submitting, resetError } = useOutlineStore();
+  const { createOutline, updateOutline } = useOutlineStore();
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
-
   const isEditMode = mode === 'edit';
-  const schema = isEditMode ? updateOutlineSchema : createOutlineSchema;
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: '', type: '', era: '', conflict: '', tags: [], remark: '' },
-  });
+  // 字段配置
+  const fields: FieldConfig[] = [
+    { name: 'name', label: '小说名称', required: !isEditMode },
+    { name: 'type', label: '小说类型', required: !isEditMode },
+    { name: 'era', label: '故事时代' },
+    { name: 'conflict', label: '核心冲突' },
+    { name: 'remark', label: '备注' },
+  ];
 
-  useEffect(() => {
-    if (open) {
-      void fetchNovelTypes();
-
-      // 在对话框打开时设置表单值
-      if (isEditMode && outline) {
-        form.reset({
-          name: outline.name,
-          type: outline.type,
-          era: outline.era ?? '',
-          conflict: outline.conflict ?? '',
-          tags: outline.tags ?? [],
-          remark: outline.remark ?? '',
-          status: outline.status,
-        });
-      } else if (!isEditMode) {
-        // 创建模式时重置为空
-        form.reset({ name: '', type: '', era: '', conflict: '', tags: [], remark: '' });
-      }
-    }
-  }, [open, isEditMode, outline?.id, fetchNovelTypes]);
-
-  const onSubmit = async (values: FormValues) => {
-    toast.dismiss();
-    resetError();
-    try {
-      if (isEditMode && outline) {
-        if (!outline.id) return;
-        await updateOutline(outline.id, values as UpdateOutlineValues);
-        toast.success('大纲更新成功');
-        setOpen(false);
-      } else {
-        await createOutline(values as CreateOutlineValues);
-        toast.success('大纲创建成功');
-        setOpen(false);
-      }
-    } catch {
-      toast.error(isEditMode ? '更新大纲失败' : '创建大纲失败');
-    }
-  };
-
-  const renderControl: RenderControl = useCallback(
-    (field, name) => {
+  const renderControl = useCallback(
+    (
+      field: ControllerRenderProps<
+        CreateOutlineValues | UpdateOutlineValues,
+        FieldPath<CreateOutlineValues | UpdateOutlineValues>
+      >,
+      name: FieldPath<CreateOutlineValues | UpdateOutlineValues>
+    ) => {
       if (name === 'type') {
         return (
           <MogeSelect onValueChange={field.onChange} value={field.value as string}>
@@ -156,6 +107,15 @@ export default function OutlineDialog({
     [novelTypes]
   );
 
+  const onSubmit = async (values: FormValues) => {
+    if (isEditMode && outline) {
+      if (!outline.id) return;
+      await updateOutline(outline.id, values as UpdateOutlineValues);
+    } else {
+      await createOutline(values as CreateOutlineValues);
+    }
+  };
+
   const defaultTrigger = isEditMode ? (
     <Button size="sm" variant="ghost" title="编辑基本信息">
       <Edit className="h-4 w-4" />
@@ -167,47 +127,23 @@ export default function OutlineDialog({
     </Button>
   );
 
-  const dialogContent = (
-    <DialogContent
-      className="home-area w-full max-w-2xl border backdrop-blur-xl"
-      style={{
-        backgroundColor: 'var(--moge-dialog-bg)',
-        borderColor: 'var(--moge-dialog-border)',
-        color: 'var(--moge-text-main)',
-      }}
-    >
-      <DialogHeader>
-        <DialogTitle>{isEditMode ? '编辑大纲' : '新建大纲'}</DialogTitle>
-        <DialogDescription style={{ color: 'var(--moge-text-sub)' }}>
-          {isEditMode ? '修改大纲信息' : '填写信息后点击创建即可生成大纲'}
-        </DialogDescription>
-      </DialogHeader>
-
-      <HookForm
-        form={form}
-        fields={[
-          { name: 'name', label: '小说名称', required: !isEditMode },
-          { name: 'type', label: '小说类型', required: !isEditMode },
-          { name: 'era', label: '故事时代' },
-          { name: 'conflict', label: '核心冲突' },
-          { name: 'remark', label: '备注' },
-        ]}
-        loading={submitting}
-        submitText={isEditMode ? '保存' : '确认'}
-        cancelText="取消"
-        onCancel={() => {
-          setOpen(false);
-        }}
-        renderControl={renderControl}
-        onSubmit={onSubmit}
-      />
-    </DialogContent>
-  );
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {!isControlled && <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>}
-      {dialogContent}
-    </Dialog>
+    <MogeFormDialog
+      mode={mode}
+      title={isEditMode ? '编辑大纲' : '新建大纲'}
+      description={isEditMode ? '修改大纲信息' : '填写信息后点击创建即可生成大纲'}
+      open={open}
+      onOpenChange={onOpenChange}
+      trigger={trigger}
+      createSchema={createOutlineSchema}
+      updateSchema={updateOutlineSchema}
+      defaultValues={{ name: '', type: '', era: '', conflict: '', tags: [], remark: '' }}
+      onSubmit={onSubmit}
+      fields={fields as FormFieldConfig<CreateOutlineValues | UpdateOutlineValues>[]}
+      renderControl={renderControl}
+      defaultTrigger={defaultTrigger}
+      item={outline}
+      onOpen={() => void fetchNovelTypes()}
+    />
   );
 }
