@@ -12,6 +12,7 @@ import MogeList from '@/app/components/MogeList';
 import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
 import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
+import MiscDialog from '@/app/(main)/settings/components/MiscDialog';
 
 // 设定分类配置
 const settingCategories = [
@@ -231,6 +232,8 @@ export default function CategorySettingsPage() {
           <SystemDialog mode="create" />
         ) : category === 'worlds' ? (
           <WorldDialog mode="create" />
+        ) : category === 'misc' ? (
+          <MiscDialog mode="create" />
         ) : (
           <Button>
             <Plus className="mr-2 h-4 w-4" />
