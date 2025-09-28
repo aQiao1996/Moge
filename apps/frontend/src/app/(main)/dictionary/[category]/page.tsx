@@ -94,7 +94,6 @@ export default function DictionaryCategoryPage() {
         setDictItems(data);
       } catch (error) {
         console.error('Failed to fetch dict data:', error);
-        toast.error('获取数据失败');
       } finally {
         setLoading(false);
       }
