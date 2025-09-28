@@ -26,7 +26,7 @@ export interface FilterOption {
   key: string;
   label: string;
   type: 'select' | 'tags';
-  options: string[];
+  options: string[] | { value: string | boolean; label: string }[];
   placeholder?: string;
 }
 
@@ -214,30 +214,38 @@ export default function MogeFilter({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">全部{option.label}</SelectItem>
-                          {option.options.map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))}
+                          {option.options.map((opt) => {
+                            const optValue = typeof opt === 'string' ? opt : String(opt.value);
+                            const optLabel = typeof opt === 'string' ? opt : opt.label;
+                            return (
+                              <SelectItem key={optValue} value={optValue}>
+                                {optLabel}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {option.options.map((tag) => (
-                          <Button
-                            key={tag}
-                            variant={
-                              (filters[option.key] as string[])?.includes(tag)
-                                ? 'default'
-                                : 'outline'
-                            }
-                            size="sm"
-                            onClick={() => toggleTag(option.key, tag)}
-                            className="h-7 text-xs"
-                          >
-                            {tag}
-                          </Button>
-                        ))}
+                        {option.options.map((tag) => {
+                          const tagValue = typeof tag === 'string' ? tag : String(tag.value);
+                          const tagLabel = typeof tag === 'string' ? tag : tag.label;
+                          return (
+                            <Button
+                              key={tagValue}
+                              variant={
+                                (filters[option.key] as string[])?.includes(tagValue)
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              size="sm"
+                              onClick={() => toggleTag(option.key, tagValue)}
+                              className="h-7 text-xs"
+                            >
+                              {tagLabel}
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

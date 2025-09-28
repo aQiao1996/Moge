@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import type { CreateDictItemValues, UpdateDictItemValues, Dict } from '@moge/types';
 import { useDictStore } from '@/stores/dictStore';
 import dayjs from 'dayjs';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
 // 字典分类配置
 const dictionaryCategories = {
@@ -53,7 +54,10 @@ const filterOptions: FilterOption[] = [
     key: 'isEnabled',
     label: '状态',
     type: 'select',
-    options: ['true', 'false'],
+    options: [
+      { value: true, label: '启用' },
+      { value: false, label: '禁用' },
+    ],
   },
 ];
 
@@ -238,8 +242,13 @@ export default function DictionaryCategoryPage() {
             {item.description && (
               <p className="mb-3 text-sm text-[var(--moge-text-sub)]">{item.description}</p>
             )}
-            {item.value && item.value !== item.code && (
-              <p className="mb-3 text-sm text-[var(--moge-text-sub)]">值: {item.value}</p>
+            {item.value && item.value !== item.code && item.value !== item.label && (
+              <p className="mb-3 text-sm text-[var(--moge-text-sub)]">
+                <span className="text-[var(--moge-text-muted)]">存储值: </span>
+                <code className="rounded bg-[var(--moge-bg)] px-1 py-0.5 text-xs">
+                  {item.value}
+                </code>
+              </p>
             )}
             <div className="flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
               <span>更新于 {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm')}</span>
@@ -253,14 +262,25 @@ export default function DictionaryCategoryPage() {
             <Button variant="ghost" size="sm" onClick={() => void handleToggle(item)}>
               {item.isEnabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-red-500 hover:text-red-600"
-              onClick={() => void handleDelete(item)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <MogeConfirmPopover
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="删除"
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+              title="确认删除"
+              description={`此操作无法撤销，确定要删除词条「${item.label}」吗？`}
+              confirmText="确认删除"
+              cancelText="取消"
+              loadingText="删除中..."
+              confirmVariant="destructive"
+              onConfirm={() => handleDelete(item)}
+            />
           </div>
         </div>
       </Card>
