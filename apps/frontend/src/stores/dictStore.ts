@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Dict, CreateDictItemValues, UpdateDictItemValues } from '@moge/types';
 import {
   getDictApi,
+  getDictStatisticsApi,
   createDictItemApi,
   updateDictItemApi,
   deleteDictItemApi,
@@ -13,10 +14,12 @@ interface DictState {
   novelTags: Dict[];
   terminology: Dict[];
   templates: Dict[];
+  statistics: Record<string, number>;
   loading: boolean;
   error: string | null;
   fetchNovelTypes: () => Promise<void>;
   fetchDictByType: (type: string) => Promise<Dict[]>;
+  fetchStatistics: () => Promise<Record<string, number>>;
   createDictItem: (data: CreateDictItemValues) => Promise<Dict>;
   updateDictItem: (id: number, data: UpdateDictItemValues) => Promise<Dict>;
   deleteDictItem: (id: number) => Promise<void>;
@@ -28,6 +31,7 @@ export const useDictStore = create<DictState>((set, get) => ({
   novelTags: [],
   terminology: [],
   templates: [],
+  statistics: {},
   loading: false,
   error: null,
 
@@ -45,6 +49,28 @@ export const useDictStore = create<DictState>((set, get) => ({
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch novel types';
       set({ error: errorMessage, loading: false });
       console.error(errorMessage);
+    }
+  },
+
+  fetchStatistics: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await getDictStatisticsApi();
+      const statisticsMap = response.data.reduce(
+        (acc, item) => {
+          acc[item.categoryCode] = item.count;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+
+      set({ statistics: statisticsMap, loading: false });
+      return statisticsMap;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch statistics';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
     }
   },
 

@@ -93,6 +93,14 @@ export class DictController {
     return this.dictService.deleteCategory(id);
   }
 
+  // ==================== 统计接口 ====================
+  @Get('statistics')
+  @ApiOperation({ summary: '获取字典统计数据' })
+  @ApiResponse({ status: 200, description: '成功返回统计数据', type: [Object] })
+  async getStatistics(): Promise<{ categoryCode: string; count: number }[]> {
+    return this.dictService.getStatistics();
+  }
+
   // ==================== 字典项接口 ====================
   @Get()
   @ApiOperation({ summary: '根据类型查询字典数据', description: '例如: type=novel_type' })

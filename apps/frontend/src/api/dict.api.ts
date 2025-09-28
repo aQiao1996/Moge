@@ -5,6 +5,10 @@ export const getDictApi = (type: string) => {
   return httpRequest.get<Dict[]>('/dict', { params: { type } });
 };
 
+export const getDictStatisticsApi = () => {
+  return httpRequest.get<{ categoryCode: string; count: number }[]>('/dict/statistics');
+};
+
 export const createDictItemApi = (data: CreateDictItemValues) => {
   return httpRequest.post<Dict>('/dict', data);
 };

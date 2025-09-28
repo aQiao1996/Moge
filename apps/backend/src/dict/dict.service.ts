@@ -71,6 +71,24 @@ export class DictService {
     });
   }
 
+  // ==================== 统计方法 ====================
+  async getStatistics(): Promise<{ categoryCode: string; count: number }[]> {
+    const results = await this.prisma.dict_items.groupBy({
+      by: ['categoryCode'],
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        categoryCode: 'asc',
+      },
+    });
+
+    return results.map((result) => ({
+      categoryCode: result.categoryCode,
+      count: result._count.id,
+    }));
+  }
+
   // ==================== 字典项方法 ====================
   async findByType(type: string): Promise<dict_items[]> {
     return this.prisma.dict_items.findMany({
