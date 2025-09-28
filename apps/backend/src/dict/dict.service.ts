@@ -1,6 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { dict_items } from '../../generated/prisma';
+import type { dict_items, dict_categories } from '../../generated/prisma';
+
+interface CreateDictCategoryData {
+  code: string;
+  name: string;
+  description?: string;
+}
+
+interface UpdateDictCategoryData {
+  code?: string;
+  name?: string;
+  description?: string;
+}
 
 interface CreateDictItemData {
   categoryCode: string;
@@ -26,6 +38,40 @@ interface UpdateDictItemData {
 export class DictService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ==================== 字典分类方法 ====================
+  async findAllCategories(): Promise<dict_categories[]> {
+    return this.prisma.dict_categories.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createCategory(data: CreateDictCategoryData): Promise<dict_categories> {
+    return this.prisma.dict_categories.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+      },
+    });
+  }
+
+  async updateCategory(id: number, data: UpdateDictCategoryData): Promise<dict_categories> {
+    return this.prisma.dict_categories.update({
+      where: { id },
+      data: {
+        ...data,
+        description: data.description || null,
+      },
+    });
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await this.prisma.dict_categories.delete({
+      where: { id },
+    });
+  }
+
+  // ==================== 字典项方法 ====================
   async findByType(type: string): Promise<dict_items[]> {
     return this.prisma.dict_items.findMany({
       where: { categoryCode: type },
