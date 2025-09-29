@@ -19,7 +19,7 @@ export default function LoginPage() {
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
-    defaultValues: { username: '', password: '' },
+    defaultValues: { username: '1424883981@qq.com', password: '0jdt001ar' },
   });
 
   const onSubmit = async (values: LoginData) => {
