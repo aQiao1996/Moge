@@ -52,12 +52,21 @@ interface ToggleDictItemDto {
   isEnabled: boolean;
 }
 
+/**
+ * 字典管理控制器
+ * 提供字典分类和字典项的REST API接口
+ */
 @ApiTags('Dictionary')
 @Controller('dict')
 export class DictController {
   constructor(private readonly dictService: DictService) {}
 
   // ==================== 字典分类接口 ====================
+
+  /**
+   * 获取所有字典分类
+   * @returns 字典分类数组
+   */
   @Get('categories')
   @ApiOperation({ summary: '获取所有字典分类' })
   @ApiResponse({ status: 200, description: '成功返回字典分类数组', type: [Object] })
@@ -65,6 +74,11 @@ export class DictController {
     return this.dictService.findAllCategories();
   }
 
+  /**
+   * 创建字典分类
+   * @param data 字典分类数据
+   * @returns 创建的字典分类对象
+   */
   @Post('categories')
   @ApiOperation({ summary: '创建字典分类' })
   @ApiBody({ description: '字典分类数据' })
@@ -73,6 +87,12 @@ export class DictController {
     return this.dictService.createCategory(data);
   }
 
+  /**
+   * 更新字典分类
+   * @param id 字典分类ID
+   * @param data 更新数据
+   * @returns 更新后的字典分类对象
+   */
   @Put('categories/:id')
   @ApiOperation({ summary: '更新字典分类' })
   @ApiParam({ name: 'id', description: '字典分类ID' })
@@ -85,6 +105,10 @@ export class DictController {
     return this.dictService.updateCategory(id, data);
   }
 
+  /**
+   * 删除字典分类
+   * @param id 字典分类ID
+   */
   @Delete('categories/:id')
   @ApiOperation({ summary: '删除字典分类' })
   @ApiParam({ name: 'id', description: '字典分类ID' })
@@ -94,6 +118,12 @@ export class DictController {
   }
 
   // ==================== 统计接口 ====================
+
+  /**
+   * 获取字典统计数据
+   * 返回各分类下的字典项数量统计
+   * @returns 包含分类代码和数量的统计数组
+   */
   @Get('statistics')
   @ApiOperation({ summary: '获取字典统计数据' })
   @ApiResponse({ status: 200, description: '成功返回统计数据', type: [Object] })
@@ -102,6 +132,12 @@ export class DictController {
   }
 
   // ==================== 字典项接口 ====================
+
+  /**
+   * 根据类型查询字典数据
+   * @param type 字典类型代码
+   * @returns 该类型下的字典项数组
+   */
   @Get()
   @ApiOperation({ summary: '根据类型查询字典数据', description: '例如: type=novel_type' })
   @ApiQuery({ name: 'type', required: true, description: '字典类型' })
@@ -110,6 +146,11 @@ export class DictController {
     return this.dictService.findByType(type);
   }
 
+  /**
+   * 创建字典项
+   * @param data 字典项数据
+   * @returns 创建的字典项对象
+   */
   @Post()
   @ApiOperation({ summary: '创建字典项' })
   @ApiBody({ description: '字典项数据' })
@@ -118,6 +159,12 @@ export class DictController {
     return this.dictService.create(data);
   }
 
+  /**
+   * 更新字典项
+   * @param id 字典项ID
+   * @param data 更新数据
+   * @returns 更新后的字典项对象
+   */
   @Put(':id')
   @ApiOperation({ summary: '更新字典项' })
   @ApiParam({ name: 'id', description: '字典项ID' })
@@ -130,6 +177,10 @@ export class DictController {
     return this.dictService.update(id, data);
   }
 
+  /**
+   * 删除字典项
+   * @param id 字典项ID
+   */
   @Delete(':id')
   @ApiOperation({ summary: '删除字典项' })
   @ApiParam({ name: 'id', description: '字典项ID' })
@@ -138,6 +189,12 @@ export class DictController {
     return this.dictService.delete(id);
   }
 
+  /**
+   * 切换字典项启用状态
+   * @param id 字典项ID
+   * @param data 包含启用状态的数据
+   * @returns 更新后的字典项对象
+   */
   @Patch(':id/toggle')
   @ApiOperation({ summary: '切换字典项启用状态' })
   @ApiParam({ name: 'id', description: '字典项ID' })

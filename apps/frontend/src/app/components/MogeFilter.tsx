@@ -14,6 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, Filter, RotateCcw, SortAsc, SortDesc, Grid3X3, List } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 
+/**
+ * 筛选器状态接口
+ */
 export interface MogeFilterState {
   search: string;
   sortBy: string;
@@ -22,6 +25,9 @@ export interface MogeFilterState {
   [key: string]: string | string[];
 }
 
+/**
+ * 筛选选项配置接口
+ */
 export interface FilterOption {
   key: string;
   label: string;
@@ -30,11 +36,17 @@ export interface FilterOption {
   placeholder?: string;
 }
 
+/**
+ * 排序选项配置接口
+ */
 export interface SortOption {
   value: string;
   label: string;
 }
 
+/**
+ * 筛选器组件属性接口
+ */
 export interface MogeFilterProps {
   filters: MogeFilterState;
   onFiltersChange: (filters: MogeFilterState) => void;
@@ -45,6 +57,11 @@ export interface MogeFilterProps {
   showSort?: boolean;
 }
 
+/**
+ * 通用筛选器组件
+ * 提供搜索、筛选、排序、视图切换等功能
+ * @param props 组件属性
+ */
 export default function MogeFilter({
   filters,
   onFiltersChange,

@@ -6,23 +6,21 @@ import { ArrowRight, Database, Tags, Book, Terminal, FileText } from 'lucide-rea
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
 
-// 字典分类配置
+// 字典分类配置 - 简化版，直接使用API类型
 const dictionaryCategories = [
   {
-    key: 'novel-types',
+    key: 'novel_types',
     title: '小说类型',
     description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
     icon: Book,
     color: 'text-blue-500',
-    apiType: 'novel_types',
   },
   {
-    key: 'novel-tags',
+    key: 'novel_tags',
     title: '小说标签',
     description: '管理小说标签库，按题材、风格、情节、角色等维度分类',
     icon: Tags,
     color: 'text-green-500',
-    apiType: 'novel_tags',
   },
   {
     key: 'terminology',
@@ -30,7 +28,6 @@ const dictionaryCategories = [
     description: '管理各行业专业词汇、技术名词、古风用语等',
     icon: Terminal,
     color: 'text-purple-500',
-    apiType: 'terminology',
   },
   {
     key: 'templates',
@@ -38,7 +35,6 @@ const dictionaryCategories = [
     description: '管理常用的剧情桥段、对话模板、场景描述等',
     icon: FileText,
     color: 'text-orange-500',
-    apiType: 'templates',
   },
 ];
 
@@ -52,26 +48,17 @@ export default function DictionaryPage() {
     const fetchCounts = async () => {
       setLoading(true);
       try {
-        console.log('正在获取字典统计数据...');
         const statistics = await fetchStatistics();
-        console.log('获取到统计数据:', statistics);
 
-        // 将API类型映射到页面key
+        // 直接使用API返回的数据，无需映射转换
         const mappedCounts: Record<string, number> = {};
         dictionaryCategories.forEach((category) => {
-          mappedCounts[category.key] = statistics[category.apiType] || 0;
+          mappedCounts[category.key] = statistics[category.key] || 0;
         });
 
-        console.log('映射后的统计数据:', mappedCounts);
         setCategoryCounts(mappedCounts);
       } catch (error) {
         console.error('获取字典统计数据失败:', error);
-        // 失败时设置默认值
-        const defaultCounts: Record<string, number> = {};
-        dictionaryCategories.forEach((category) => {
-          defaultCounts[category.key] = 0;
-        });
-        setCategoryCounts(defaultCounts);
       } finally {
         setLoading(false);
       }

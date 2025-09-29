@@ -9,6 +9,9 @@ import {
   toggleDictItemApi,
 } from '@/api/dict.api';
 
+/**
+ * 字典数据状态管理接口定义
+ */
 interface DictState {
   novelTypes: Dict[];
   novelTags: Dict[];
@@ -26,6 +29,10 @@ interface DictState {
   toggleDictItem: (id: number, isEnabled: boolean) => Promise<Dict>;
 }
 
+/**
+ * 字典数据状态管理Store
+ * 提供字典分类数据的获取、创建、更新、删除操作
+ */
 export const useDictStore = create<DictState>((set, get) => ({
   novelTypes: [],
   novelTags: [],
@@ -35,6 +42,10 @@ export const useDictStore = create<DictState>((set, get) => ({
   loading: false,
   error: null,
 
+  /**
+   * 获取小说类型数据
+   * 如果已有数据则不重复请求，实现缓存机制
+   */
   fetchNovelTypes: async () => {
     // 如果已经有数据了,就不再重复请求
     if (get().novelTypes.length > 0) {
@@ -52,6 +63,11 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 获取字典统计数据
+   * 返回各分类的词条数量统计
+   * @returns 包含分类代码和数量的映射对象
+   */
   fetchStatistics: async () => {
     set({ loading: true, error: null });
     try {
@@ -74,6 +90,11 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 根据类型获取字典数据
+   * @param type 字典类型代码
+   * @returns 该类型下的字典项数组
+   */
   fetchDictByType: async (type: string) => {
     set({ loading: true, error: null });
     try {
@@ -89,6 +110,11 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 创建新的字典项
+   * @param data 字典项数据
+   * @returns 创建的字典项对象
+   */
   createDictItem: async (data: CreateDictItemValues) => {
     set({ loading: true, error: null });
     try {
@@ -103,6 +129,12 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 更新字典项信息
+   * @param id 字典项ID
+   * @param data 更新数据
+   * @returns 更新后的字典项对象
+   */
   updateDictItem: async (id: number, data: UpdateDictItemValues) => {
     set({ loading: true, error: null });
     try {
@@ -117,6 +149,10 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 删除字典项
+   * @param id 字典项ID
+   */
   deleteDictItem: async (id: number) => {
     set({ loading: true, error: null });
     try {
@@ -130,6 +166,12 @@ export const useDictStore = create<DictState>((set, get) => ({
     }
   },
 
+  /**
+   * 切换字典项启用状态
+   * @param id 字典项ID
+   * @param isEnabled 是否启用
+   * @returns 更新后的字典项对象
+   */
   toggleDictItem: async (id: number, isEnabled: boolean) => {
     set({ loading: true, error: null });
     try {

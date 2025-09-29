@@ -5,11 +5,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import MogePagination from '@/app/components/MogePagination';
 import { ReactNode } from 'react';
 
+/**
+ * 列表项数据接口
+ */
 export interface MogeListItem {
   id: string;
   [key: string]: string | number | boolean | string[] | null | undefined | object;
 }
 
+/**
+ * 列表组件属性接口
+ */
 export interface MogeListProps<T extends MogeListItem> {
   items: T[];
   total: number;
@@ -28,6 +34,11 @@ export interface MogeListProps<T extends MogeListItem> {
   listClassName?: string;
 }
 
+/**
+ * 通用列表组件
+ * 支持列表和网格两种视图模式，提供加载状态、空状态、分页等功能
+ * @param props 组件属性
+ */
 export default function MogeList<T extends MogeListItem>({
   items,
   total,

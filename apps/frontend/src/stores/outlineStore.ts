@@ -7,6 +7,9 @@ import {
 } from '@/api/outline.api';
 import type { CreateOutlineValues, Outline, UpdateOutlineValues } from '@moge/types';
 
+/**
+ * 大纲数据状态管理接口定义
+ */
 interface OutlineState {
   outlines: Outline[];
   total: number;
@@ -29,6 +32,10 @@ interface OutlineState {
   resetError: () => void;
 }
 
+/**
+ * 大纲数据状态管理Store
+ * 提供大纲的创建、查询、更新、删除等操作
+ */
 export const useOutlineStore = create<OutlineState>((set) => ({
   outlines: [],
   total: 0,
@@ -36,10 +43,16 @@ export const useOutlineStore = create<OutlineState>((set) => ({
   submitting: false,
   error: null,
 
+  /**
+   * 创建新的大纲
+   * @param data 大纲创建数据
+   * @returns 创建的大纲对象
+   */
   createOutline: async (data) => {
     set({ submitting: true, error: null });
     try {
       const newOutline = await createOutlineApi(data);
+      // 将新大纲添加到列表顶部
       set((state) => ({
         outlines: [newOutline, ...state.outlines],
         total: state.total + 1,
@@ -55,6 +68,11 @@ export const useOutlineStore = create<OutlineState>((set) => ({
     }
   },
 
+  /**
+   * 获取大纲列表
+   * 支持分页、搜索、筛选和排序
+   * @param params 查询参数
+   */
   getOutlines: async (params) => {
     set({ loading: true, error: null });
     try {
@@ -68,14 +86,24 @@ export const useOutlineStore = create<OutlineState>((set) => ({
     }
   },
 
+  /**
+   * 重置错误状态
+   */
   resetError: () => {
     set({ error: null });
   },
 
+  /**
+   * 更新大纲信息
+   * @param id 大纲ID
+   * @param data 更新数据
+   * @returns 更新后的大纲对象
+   */
   updateOutline: async (id, data) => {
     set({ submitting: true, error: null });
     try {
       const updatedOutline = await updateOutlineApi(id, data);
+      // 更新列表中对应的大纲
       set((state) => ({
         outlines: state.outlines.map((outline) => (outline.id === id ? updatedOutline : outline)),
         submitting: false,
@@ -90,6 +118,10 @@ export const useOutlineStore = create<OutlineState>((set) => ({
     }
   },
 
+  /**
+   * 删除大纲
+   * @param id 大纲ID
+   */
   deleteOutline: async (id) => {
     set({ loading: true, error: null });
     try {

@@ -18,33 +18,29 @@ import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
 // 字典分类配置
 const dictionaryCategories = {
-  'novel-types': {
+  novel_types: {
     title: '小说类型',
     description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
     color: 'text-blue-500',
     icon: 'Book',
-    apiType: 'novel_types', // 对应后端 API 的类型参数
   },
-  'novel-tags': {
+  novel_tags: {
     title: '小说标签',
     description: '管理小说标签库，按题材、风格、情节、角色等维度分类',
     color: 'text-green-500',
     icon: 'Tags',
-    apiType: 'novel_tags',
   },
   terminology: {
     title: '专业术语',
     description: '管理各行业专业词汇、技术名词、古风用语等',
     color: 'text-purple-500',
     icon: 'Terminal',
-    apiType: 'terminology',
   },
   templates: {
     title: '模板库',
     description: '管理常用的剧情桥段、对话模板、场景描述等',
     color: 'text-orange-500',
     icon: 'FileText',
-    apiType: 'templates',
   },
 };
 
@@ -94,7 +90,7 @@ export default function DictionaryCategoryPage() {
 
       setLoading(true);
       try {
-        const data = await fetchDictByType(currentCategory.apiType);
+        const data = await fetchDictByType(categoryKey);
         setDictItems(data);
       } catch (error) {
         console.error('Failed to fetch dict data:', error);
@@ -161,7 +157,7 @@ export default function DictionaryCategoryPage() {
       await createDictItem(values);
       toast.success('词条创建成功');
       // 刷新列表数据
-      const data = await fetchDictByType(currentCategory.apiType);
+      const data = await fetchDictByType(categoryKey);
       setDictItems(data);
     } catch (error) {
       console.error('Create dict item error:', error);
@@ -178,7 +174,7 @@ export default function DictionaryCategoryPage() {
       setEditDialogOpen(false);
       setEditingItem(null);
       // 刷新列表数据
-      const data = await fetchDictByType(currentCategory.apiType);
+      const data = await fetchDictByType(categoryKey);
       setDictItems(data);
     } catch (error) {
       console.error('Update dict item error:', error);
@@ -201,7 +197,7 @@ export default function DictionaryCategoryPage() {
       await deleteDictItem(item.id);
       toast.success('词条删除成功');
       // 刷新列表数据
-      const data = await fetchDictByType(currentCategory.apiType);
+      const data = await fetchDictByType(categoryKey);
       setDictItems(data);
     } catch (error) {
       console.error('Delete dict item error:', error);
@@ -214,7 +210,7 @@ export default function DictionaryCategoryPage() {
       await toggleDictItem(item.id, !item.isEnabled);
       toast.success(`词条已${!item.isEnabled ? '启用' : '禁用'}`);
       // 刷新列表数据
-      const data = await fetchDictByType(currentCategory.apiType);
+      const data = await fetchDictByType(categoryKey);
       setDictItems(data);
     } catch (error) {
       console.error('Toggle dict item error:', error);
@@ -324,7 +320,7 @@ export default function DictionaryCategoryPage() {
         <div>
           <DictItemDialog
             mode="create"
-            categoryCode={currentCategory?.apiType || categoryKey}
+            categoryCode={categoryKey}
             categoryTitle={currentCategory.title}
             onSubmit={handleCreateItem}
           />
@@ -376,7 +372,7 @@ export default function DictionaryCategoryPage() {
       {/* 编辑对话框 */}
       <DictItemDialog
         mode="edit"
-        categoryCode={currentCategory?.apiType || categoryKey}
+        categoryCode={categoryKey}
         categoryTitle={currentCategory.title}
         item={
           editingItem

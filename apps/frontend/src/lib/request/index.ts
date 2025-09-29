@@ -1,3 +1,7 @@
+/**
+ * 客户端处理器接口
+ * 定义客户端通知、认证等回调函数
+ */
 export interface ClientHandlers {
   notify?: (message: string, level?: 'info' | 'error' | 'success') => void;
   onAuthError?: () => void;
@@ -8,12 +12,19 @@ export interface ClientHandlers {
 
 let globalHandlers: ClientHandlers = {};
 
+/**
+ * 设置全局客户端处理器
+ * @param h 客户端处理器配置
+ */
 export function setClientHandlers(h: ClientHandlers) {
   globalHandlers = h;
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
+/**
+ * 网络请求选项接口
+ */
 export interface FetchOptions {
   method?: HttpMethod;
   headers?: Record<string, string>;
@@ -25,12 +36,18 @@ export interface FetchOptions {
   silent?: boolean; // 是否静默模式，不显示Toast
 }
 
+/**
+ * API响应数据接口
+ */
 export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
 }
 
+/**
+ * API错误接口
+ */
 export interface ApiError extends Error {
   response?: {
     code: number;
