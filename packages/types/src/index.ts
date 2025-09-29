@@ -8,6 +8,7 @@ export * from './auth';
 // 导出用户相关类型
 export * from './user';
 export * from './dict';
+export * from './project';
 
 // 导出 API 相关类型
 export * from './api';
@@ -23,3 +24,4 @@ export * from './schemas/system';
 export * from './schemas/world';
 export * from './schemas/misc';
 export * from './schemas/dictionary';
+export * from './schemas/project';

@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Plus, Calendar, Users, Zap, Globe, Folder, Settings } from 'lucide-react';
+import { BookOpen, Calendar, Users, Zap, Globe, Folder, Settings } from 'lucide-react';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ProjectDialog from './components/ProjectDialog';
+import type { CreateProjectValues } from '@moge/types';
 
 interface Project {
   id: string;
@@ -82,8 +84,11 @@ const sortOptions: SortOption[] = [
   { value: 'type', label: '类型' },
 ];
 
+/**
+ * 设定集首页组件
+ * 显示所有小说项目的管理界面，支持项目筛选、搜索和创建
+ */
 export default function SettingsPage() {
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading] = useState(false);
   const pageSize = 6;
@@ -98,11 +103,27 @@ export default function SettingsPage() {
     viewMode: 'list',
   });
 
+  /**
+   * 处理项目卡片点击事件
+   * @param projectId 项目ID
+   */
   const handleProjectClick = (projectId: string) => {
     router.push(`/settings/${projectId}`);
   };
 
-  // 根据筛选条件过滤项目
+  /**
+   * 处理创建项目表单提交
+   * @param values 项目创建表单数据
+   */
+  const handleCreateProject = (values: CreateProjectValues) => {
+    console.log('Creating project:', values);
+    // TODO: 实现创建项目的API调用
+  };
+
+  /**
+   * 根据筛选条件过滤项目列表
+   * @returns 过滤后的项目数组
+   */
   const getFilteredProjects = () => {
     let filtered = [...mockProjects];
 
@@ -136,6 +157,11 @@ export default function SettingsPage() {
     currentPage * pageSize
   );
 
+  /**
+   * 渲染项目卡片组件
+   * @param project 项目数据
+   * @returns 项目卡片JSX元素
+   */
   const renderProjectCard = (project: Project) => {
     const totalSettings = Object.values(project.settings).reduce((sum, count) => sum + count, 0);
 
@@ -210,10 +236,7 @@ export default function SettingsPage() {
             </Button>
           </Link>
           {mockProjects.length > 0 && (
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              创建小说项目
-            </Button>
+            <ProjectDialog mode="create" onSubmit={handleCreateProject} />
           )}
         </div>
       </div>
@@ -255,25 +278,7 @@ export default function SettingsPage() {
       {/* 空状态时的创建按钮 */}
       {mockProjects.length === 0 && (
         <div className="mt-6 text-center">
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            创建小说项目
-          </Button>
-        </div>
-      )}
-
-      {/* 创建项目对话框占位 */}
-      {showCreateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-96 p-6" style={{ backgroundColor: 'var(--moge-card-bg)' }}>
-            <h3 className="mb-4 text-lg font-semibold text-[var(--moge-text-main)]">
-              创建小说项目
-            </h3>
-            <p className="mb-4 text-[var(--moge-text-sub)]">该功能正在开发中...</p>
-            <Button onClick={() => setShowCreateDialog(false)} variant="outline" className="w-full">
-              关闭
-            </Button>
-          </Card>
+          <ProjectDialog mode="create" onSubmit={handleCreateProject} />
         </div>
       )}
     </div>

@@ -23,6 +23,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+// 静态默认值，避免每次渲染创建新对象
+const EMPTY_DEFAULT_VALUES = {};
+
 // 类型帮助器
 export type FormFieldConfig<T extends FieldValues> = {
   name: FieldPath<T>;
@@ -100,7 +103,7 @@ export default function MogeFormDialog<T extends FieldValues>({
   trigger,
   createSchema,
   updateSchema,
-  defaultValues = {},
+  defaultValues = EMPTY_DEFAULT_VALUES,
   onSubmit,
   fields,
   renderControl,
