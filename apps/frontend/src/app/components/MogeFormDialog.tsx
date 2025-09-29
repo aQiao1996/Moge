@@ -31,6 +31,7 @@ export type FormFieldConfig<T extends FieldValues> = {
   name: FieldPath<T>;
   label: string;
   required?: boolean;
+  section?: string; // 分组标题
 };
 
 // 字段配置接口 - 使用与 HookForm 相同的定义
@@ -38,6 +39,7 @@ export interface FieldConfig<T extends FieldValues = FieldValues> {
   name: FieldPath<T>;
   label: string;
   required?: boolean;
+  section?: string; // 分组标题
 }
 
 // 自定义内容节接口

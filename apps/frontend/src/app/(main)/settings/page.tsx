@@ -115,9 +115,10 @@ export default function SettingsPage() {
    * 处理创建项目表单提交
    * @param values 项目创建表单数据
    */
-  const handleCreateProject = (values: CreateProjectValues) => {
+  const handleCreateProject = async (values: CreateProjectValues) => {
     console.log('Creating project:', values);
     // TODO: 实现创建项目的API调用
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
   /**

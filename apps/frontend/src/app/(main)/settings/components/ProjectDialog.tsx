@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import type { ControllerRenderProps, FieldPath } from 'react-hook-form';
 
 import { Plus } from 'lucide-react';
@@ -16,7 +16,9 @@ import MogeFormDialog, { type FieldConfig } from '@/app/components/MogeFormDialo
 import { MogeInput } from '@/app/components/MogeInput';
 import { MogeTextarea } from '@/app/components/MogeTextarea';
 import { MogeFormSelect } from '@/app/components/MogeFormSelect';
+import { MogeMultiSelect } from '@/app/components/MogeMultiSelect';
 import { Button } from '@/components/ui/button';
+import { getSettingsLibrary, type SettingItem } from '@/api/settings.api';
 
 interface ProjectDialogProps {
   mode: 'create' | 'edit';
@@ -26,8 +28,6 @@ interface ProjectDialogProps {
   onOpenChange?: (open: boolean) => void;
   onSubmit?: (values: CreateProjectValues | UpdateProjectValues) => Promise<void>;
 }
-
-type FormValues = CreateProjectValues | UpdateProjectValues;
 
 // 项目类型选项
 const projectTypeOptions = [
@@ -46,9 +46,17 @@ const projectTypeOptions = [
   { value: '其他', label: '其他' },
 ];
 
+// 设定库数据
+interface SettingsLibraryData {
+  characters: SettingItem[];
+  systems: SettingItem[];
+  worlds: SettingItem[];
+  misc: SettingItem[];
+}
+
 /**
  * 小说项目创建/编辑对话框组件
- * 提供项目的基本信息编辑功能，包括名称、类型和描述
+ * 提供项目的基本信息编辑功能，包括名称、类型、描述和设定库关联
  *
  * @param mode 对话框模式，'create' 创建模式或 'edit' 编辑模式
  * @param item 编辑模式下的项目数据
@@ -67,12 +75,63 @@ export default function ProjectDialog({
 }: ProjectDialogProps) {
   const isEditMode = mode === 'edit';
 
+  // 设定库数据状态
+  const [settingsLibrary, setSettingsLibrary] = useState<SettingsLibraryData>({
+    characters: [],
+    systems: [],
+    worlds: [],
+    misc: [],
+  });
+  const [loadingSettings, setLoadingSettings] = useState(false);
+
+  // 加载设定库数据
+  useEffect(() => {
+    if (open) {
+      setLoadingSettings(true);
+      getSettingsLibrary()
+        .then(setSettingsLibrary)
+        .catch(console.error)
+        .finally(() => setLoadingSettings(false));
+    }
+  }, [open]);
+
+  // 转换设定数据为选项格式
+  const settingsOptions = useMemo(
+    () => ({
+      characters: settingsLibrary.characters.map((item) => ({
+        value: item.id,
+        label: item.name,
+        description: item.description,
+      })),
+      systems: settingsLibrary.systems.map((item) => ({
+        value: item.id,
+        label: item.name,
+        description: item.description,
+      })),
+      worlds: settingsLibrary.worlds.map((item) => ({
+        value: item.id,
+        label: item.name,
+        description: item.description,
+      })),
+      misc: settingsLibrary.misc.map((item) => ({
+        value: item.id,
+        label: item.name,
+        description: item.description,
+      })),
+    }),
+    [settingsLibrary]
+  );
+
   // 字段配置
-  const fields = useMemo<FieldConfig<FormValues>[]>(
+  const fields = useMemo<FieldConfig<CreateProjectValues>[]>(
     () => [
       { name: 'name', label: '项目名称', required: true },
       { name: 'type', label: '项目类型', required: true },
       { name: 'description', label: '项目描述' },
+      { name: 'characters', label: '角色设定', section: '设定库关联' },
+      { name: 'systems', label: '系统设定', section: '设定库关联' },
+      { name: 'worlds', label: '世界设定', section: '设定库关联' },
+      { name: 'misc', label: '辅助设定', section: '设定库关联' },
     ],
     []
   );
@@ -87,8 +146,8 @@ export default function ProjectDialog({
    */
   const renderControl = useCallback(
     (
-      field: ControllerRenderProps<FormValues, FieldPath<FormValues>>,
-      name: FieldPath<FormValues>
+      field: ControllerRenderProps<CreateProjectValues, FieldPath<CreateProjectValues>>,
+      name: FieldPath<CreateProjectValues>
     ) => {
       if (name === 'type') {
         return (
@@ -117,6 +176,71 @@ export default function ProjectDialog({
         );
       }
 
+      // 设定库关联字段
+      if (name === 'characters') {
+        return (
+          <MogeMultiSelect
+            options={settingsOptions.characters}
+            value={(field.value as string[]) || []}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="选择角色设定（可选）"
+            disabled={field.disabled}
+            loading={loadingSettings}
+            emptyMessage="暂无角色设定，请先在设定库中创建"
+            maxDisplay={3}
+          />
+        );
+      }
+
+      if (name === 'systems') {
+        return (
+          <MogeMultiSelect
+            options={settingsOptions.systems}
+            value={(field.value as string[]) || []}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="选择系统设定（可选）"
+            disabled={field.disabled}
+            loading={loadingSettings}
+            emptyMessage="暂无系统设定，请先在设定库中创建"
+            maxDisplay={3}
+          />
+        );
+      }
+
+      if (name === 'worlds') {
+        return (
+          <MogeMultiSelect
+            options={settingsOptions.worlds}
+            value={(field.value as string[]) || []}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="选择世界设定（可选）"
+            disabled={field.disabled}
+            loading={loadingSettings}
+            emptyMessage="暂无世界设定，请先在设定库中创建"
+            maxDisplay={3}
+          />
+        );
+      }
+
+      if (name === 'misc') {
+        return (
+          <MogeMultiSelect
+            options={settingsOptions.misc}
+            value={(field.value as string[]) || []}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="选择辅助设定（可选）"
+            disabled={field.disabled}
+            loading={loadingSettings}
+            emptyMessage="暂无辅助设定，请先在设定库中创建"
+            maxDisplay={3}
+          />
+        );
+      }
+
       return (
         <MogeInput
           placeholder={name === 'name' ? '输入项目名称，如"仙侠传说"' : ''}
@@ -128,7 +252,7 @@ export default function ProjectDialog({
         />
       );
     },
-    []
+    [settingsOptions, loadingSettings]
   );
 
   /**
@@ -136,7 +260,7 @@ export default function ProjectDialog({
    * @param values 表单数据
    */
   const handleSubmit = useCallback(
-    async (values: FormValues) => {
+    async (values: CreateProjectValues) => {
       if (onSubmit) {
         await onSubmit(values);
       }
@@ -145,7 +269,7 @@ export default function ProjectDialog({
   );
 
   return (
-    <MogeFormDialog<FormValues>
+    <MogeFormDialog<CreateProjectValues>
       mode={mode}
       title={isEditMode ? '编辑小说项目' : '创建小说项目'}
       description={isEditMode ? '修改项目信息' : '创建一个新的小说项目，开始构建您的设定集'}
@@ -154,7 +278,7 @@ export default function ProjectDialog({
       fields={fields}
       renderControl={renderControl}
       onSubmit={handleSubmit}
-      item={item as FormValues}
+      item={item as CreateProjectValues}
       trigger={trigger}
       open={open}
       onOpenChange={onOpenChange}
