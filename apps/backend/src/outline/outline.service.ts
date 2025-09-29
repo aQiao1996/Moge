@@ -415,7 +415,6 @@ export class OutlineService extends BaseService {
       where.status = status;
     }
     // 如果没有指定状态，默认过滤掉已删除的大纲
-    // (上面已经设置了默认的 not: 'DISCARDED')
 
     if (tags && tags.length > 0) {
       where.tags = { hasSome: tags };
@@ -730,7 +729,7 @@ export class OutlineService extends BaseService {
 
     let chapterContentResult: ChapterContentType | null = null;
     if (data.content !== undefined) {
-      // 查找现有内容（最新版本）
+      // 查找现有内容
       const existingContent = await this.prisma.outline_chapter_content.findFirst({
         where: { chapterId: chapterId },
         orderBy: { version: 'desc' },

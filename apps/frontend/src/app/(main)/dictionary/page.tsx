@@ -6,7 +6,7 @@ import { ArrowRight, Database, Tags, Book, Terminal, FileText } from 'lucide-rea
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
 
-// 字典分类配置 - 简化版，直接使用API类型
+// 字典分类配置
 const dictionaryCategories = [
   {
     key: 'novel_types',
@@ -50,7 +50,6 @@ export default function DictionaryPage() {
       try {
         const statistics = await fetchStatistics();
 
-        // 直接使用API返回的数据，无需映射转换
         const mappedCounts: Record<string, number> = {};
         dictionaryCategories.forEach((category) => {
           mappedCounts[category.key] = statistics[category.key] || 0;

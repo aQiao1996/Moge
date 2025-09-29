@@ -195,7 +195,6 @@ export default function OutlineViewPage() {
 
       toast.success('保存成功！');
 
-      // 重新加载数据以更新版本号等信息
       const data = await getOutlineDetailApi(id);
       setOutlineData(data);
     } catch (error) {
