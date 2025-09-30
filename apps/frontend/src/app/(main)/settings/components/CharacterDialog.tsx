@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { Users, Edit, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import {
   createCharacterSchema,
@@ -31,10 +32,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { createCharacter, updateCharacter, type CharacterSetting } from '@/api/settings.api';
 
 interface CharacterDialogProps {
   mode: 'create' | 'edit';
-  character?: Character;
+  character?: Character & { id?: string | number };
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -180,14 +182,32 @@ export default function CharacterDialog({
   };
 
   const onSubmit = async (values: FormValues) => {
-    const submitData = {
-      ...values,
-      relationships,
-    };
+    try {
+      const submitData = {
+        ...values,
+        relationships,
+      };
 
-    console.log('Character data:', submitData);
-    // TODO: 调用API创建/更新角色
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (isEditMode && character?.id) {
+        // 编辑模式 - 将 string id 转换为 number
+        const characterId =
+          typeof character.id === 'string' ? parseInt(character.id) : character.id;
+        await updateCharacter(characterId, submitData as Partial<CharacterSetting>);
+        toast.success('角色设定更新成功');
+      } else {
+        // 创建模式
+        await createCharacter(submitData as Partial<CharacterSetting>);
+        toast.success('角色设定创建成功');
+      }
+
+      // 关闭对话框会触发列表刷新
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('保存角色设定失败:', error);
+      // 错误由全局错误处理机制处理
+    }
   };
 
   // 渲染关系管理区域

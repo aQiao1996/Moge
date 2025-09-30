@@ -9,7 +9,7 @@ import { ReactNode } from 'react';
  * 列表项数据接口
  */
 export interface MogeListItem {
-  id: string;
+  id: string | number;
   [key: string]: string | number | boolean | string[] | null | undefined | object;
 }
 

@@ -1,18 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, Zap, Globe, Folder, Plus } from 'lucide-react';
+import {
+  ArrowLeft,
+  Users,
+  Zap,
+  Globe,
+  Folder,
+  Plus,
+  Edit,
+  Trash2,
+  Link as LinkIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
 import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
 import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
 import MiscDialog from '@/app/(main)/settings/components/MiscDialog';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import { getSettingsByCategory, deleteCharacter, type CharacterSetting } from '@/api/settings.api';
+import { type Character } from '@moge/types';
 
 // 设定分类配置
 const settingCategories = [
@@ -22,73 +36,16 @@ const settingCategories = [
   { key: 'misc', label: '辅助设定', icon: Folder, color: 'text-purple-500' },
 ];
 
-// 模拟设定数据
-const mockSettings = [
-  {
-    id: '1',
-    name: '主角-张三',
-    type: 'characters',
-    tags: ['主角', '修仙', '热血'],
-    description: '出身平凡，机缘巧合下踏上修仙之路的少年',
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-20',
-    projects: ['仙侠传说', '都市修仙'],
-  },
-  {
-    id: '2',
-    name: '反派-李四',
-    type: 'characters',
-    tags: ['反派', '修仙', '权谋'],
-    description: '老牌修仙者，为达目的不择手段的反派角色',
-    createdAt: '2024-01-12',
-    updatedAt: '2024-01-18',
-    projects: ['仙侠传说'],
-  },
-  {
-    id: '3',
-    name: '升级系统',
-    type: 'systems',
-    tags: ['系统', '升级', '经验'],
-    description: '通过击杀怪物和完成任务获得经验值的升级系统',
-    createdAt: '2024-01-18',
-    updatedAt: '2024-01-25',
-    projects: ['仙侠传说'],
-  },
-  {
-    id: '4',
-    name: '修仙世界观',
-    type: 'worlds',
-    tags: ['修仙', '世界观', '宗门'],
-    description: '以修仙为核心的世界观设定，包含各大宗门势力',
-    createdAt: '2024-01-10',
-    updatedAt: '2024-01-22',
-    projects: ['仙侠传说'],
-  },
-];
-
-// 筛选配置
-const filterOptions: FilterOption[] = [
-  {
-    key: 'tags',
-    label: '标签',
-    type: 'tags',
-    options: ['主角', '配角', '反派', '系统', '升级', '修仙', '都市', '世界观', '宗门'],
-  },
-];
-
-// 排序配置
-const sortOptions: SortOption[] = [
-  { value: 'updatedAt', label: '更新时间' },
-  { value: 'createdAt', label: '创建时间' },
-  { value: 'name', label: '名称' },
-];
-
 export default function CategorySettingsPage() {
   const params = useParams();
   const category = params.category as string;
 
+  const [settings, setSettings] = useState<CharacterSetting[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+  const [editingSetting, setEditingSetting] = useState<CharacterSetting | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const pageSize = 10;
 
   // 获取当前分类信息
@@ -104,23 +61,59 @@ export default function CategorySettingsPage() {
     viewMode: 'list',
   });
 
+  // 加载设定列表
+  useEffect(() => {
+    void loadSettings();
+  }, [category]);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const data = await getSettingsByCategory(
+        category as 'characters' | 'systems' | 'worlds' | 'misc'
+      );
+      setSettings(data as CharacterSetting[]);
+    } catch (error) {
+      console.error('加载设定列表失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 筛选配置
+  const filterOptions: FilterOption[] = [
+    {
+      key: 'tags',
+      label: '标签',
+      type: 'tags',
+      options: Array.from(new Set(settings.flatMap((s) => s.tags || []))),
+    },
+  ];
+
+  // 排序配置
+  const sortOptions: SortOption[] = [
+    { value: 'updatedAt', label: '更新时间' },
+    { value: 'createdAt', label: '创建时间' },
+    { value: 'name', label: '名称' },
+  ];
+
   // 根据筛选条件过滤设定
   const getFilteredSettings = () => {
-    let filtered = mockSettings.filter((setting) => setting.type === category);
+    let filtered = [...settings];
 
     // 搜索筛选
     if (filters.search) {
       filtered = filtered.filter(
         (setting) =>
           setting.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          setting.description.toLowerCase().includes(filters.search.toLowerCase())
+          (setting.background || '').toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
     // 标签筛选
     if ((filters.tags as string[]).length > 0) {
       filtered = filtered.filter((setting) =>
-        (filters.tags as string[]).some((tag) => setting.tags.includes(tag))
+        (filters.tags as string[]).some((tag) => (setting.tags || []).includes(tag))
       );
     }
 
@@ -142,39 +135,118 @@ export default function CategorySettingsPage() {
     currentPage * pageSize
   );
 
-  const renderSettingCard = (setting: (typeof mockSettings)[0]) => {
-    const settingCategory = settingCategories.find((cat) => cat.key === setting.type);
+  // 处理编辑操作
+  const handleEdit = (setting: CharacterSetting) => {
+    setEditingSetting(setting);
+    setEditDialogOpen(true);
+  };
+
+  // 处理编辑对话框关闭
+  const handleEditDialogChange = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      // 对话框关闭时刷新列表
+      void loadSettings();
+      setEditingSetting(null);
+    }
+  };
+
+  // 处理创建对话框关闭
+  const handleCreateDialogChange = (open: boolean) => {
+    setCreateDialogOpen(open);
+    if (!open) {
+      // 对话框关闭时刷新列表
+      void loadSettings();
+    }
+  };
+
+  // 处理删除操作
+  const handleDelete = async (setting: CharacterSetting) => {
+    try {
+      await deleteCharacter(setting.id);
+      toast.success('删除成功');
+      void loadSettings();
+    } catch (error) {
+      console.error('删除失败:', error);
+    }
+  };
+
+  // 查看关联项目
+  const handleViewProjects = (setting: CharacterSetting) => {
+    // TODO: 打开关联项目弹框
+    console.log('查看关联项目:', setting);
+  };
+
+  const renderSettingCard = (setting: CharacterSetting) => {
+    const settingCategory = settingCategories.find((cat) => cat.key === category);
     const Icon = settingCategory?.icon || Folder;
+
+    // 格式化日期
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('zh-CN');
+    };
 
     return (
       <Card
         key={setting.id}
-        className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
+        className="border p-6 transition-all duration-200"
         style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
               <Icon className={`h-5 w-5 ${settingCategory?.color || 'text-gray-500'}`} />
               <h3 className="font-semibold text-[var(--moge-text-main)]">{setting.name}</h3>
             </div>
             <p className="mb-3 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-              {setting.description}
+              {setting.background || setting.type || '暂无描述'}
             </p>
             <div className="mb-2 flex flex-wrap gap-1">
-              {setting.tags.map((tag, index) => (
+              {(setting.tags || []).map((tag, index) => (
                 <Badge key={index} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
               ))}
             </div>
-            <div className="text-xs text-[var(--moge-text-muted)]">更新于 {setting.updatedAt}</div>
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-[var(--moge-text-muted)]">
+                更新于 {formatDate(setting.updatedAt)}
+              </div>
+              <div className="text-xs text-[var(--moge-text-muted)]">关联项目: 0</div>
+            </div>
           </div>
 
-          <div className="ml-4 text-right">
-            <p className="text-xs text-[var(--moge-text-muted)]">
-              关联项目: {setting.projects.length}
-            </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleViewProjects(setting)}
+              title="查看关联项目"
+            >
+              <LinkIcon className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => handleEdit(setting)} title="编辑">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <MogeConfirmPopover
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="删除"
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+              title="确认删除"
+              description={`此操作无法撤销，确定要删除「${setting.name}」吗？`}
+              confirmText="确认删除"
+              cancelText="取消"
+              loadingText="删除中..."
+              confirmVariant="destructive"
+              onConfirm={() => handleDelete(setting)}
+            />
           </div>
         </div>
       </Card>
@@ -227,7 +299,11 @@ export default function CategorySettingsPage() {
           </div>
         </div>
         {category === 'characters' ? (
-          <CharacterDialog mode="create" />
+          <CharacterDialog
+            mode="create"
+            open={createDialogOpen}
+            onOpenChange={handleCreateDialogChange}
+          />
         ) : category === 'systems' ? (
           <SystemDialog mode="create" />
         ) : category === 'worlds' ? (
@@ -279,6 +355,16 @@ export default function CategorySettingsPage() {
         gridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
         listClassName="grid gap-4"
       />
+
+      {/* 编辑对话框 */}
+      {category === 'characters' && editingSetting && (
+        <CharacterDialog
+          mode="edit"
+          character={editingSetting as Character & { id?: string | number }}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogChange}
+        />
+      )}
     </div>
   );
 }
