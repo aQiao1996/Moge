@@ -44,18 +44,21 @@ interface MogeMultiSelectProps {
  * @param emptyMessage 无数据提示
  */
 const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps>(
-  ({
-    options,
-    value = [],
-    onChange,
-    onBlur,
-    placeholder = '请选择',
-    disabled = false,
-    className = '',
-    maxDisplay = 2,
-    loading = false,
-    emptyMessage = '暂无数据',
-  }) => {
+  (
+    {
+      options,
+      value = [],
+      onChange,
+      onBlur,
+      placeholder = '请选择',
+      disabled = false,
+      className = '',
+      maxDisplay = 2,
+      loading = false,
+      emptyMessage = '暂无数据',
+    },
+    ref
+  ) => {
     const [open, setOpen] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState('');
 
@@ -125,6 +128,7 @@ const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            ref={ref}
             variant="outline"
             role="combobox"
             aria-expanded={open}

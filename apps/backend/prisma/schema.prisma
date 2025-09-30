@@ -38,6 +38,16 @@ model users {
   accounts        accounts[]
   /// 所属的所有大纲
   outlines        outline[]
+  /// 所属的所有项目
+  projects        projects[]
+  /// 所属的所有角色设定
+  characterSettings character_settings[]
+  /// 所属的所有系统设定
+  systemSettings  system_settings[]
+  /// 所属的所有世界设定
+  worldSettings   world_settings[]
+  /// 所属的所有辅助设定
+  miscSettings    misc_settings[]
 }
 
 // * ==================== 第三方账号关联表 ====================
@@ -277,4 +287,198 @@ enum OutlineStatus {
   GENERATED   // 已生成 - AI生成完成但未保存
   PUBLISHED   // 已发布 - 用户确认保存
   DISCARDED   // 已放弃 - 软删除
+}
+
+// * ==================== 设定集系统 ====================
+
+/// 小说项目表
+model projects {
+  id          Int      @id @default(autoincrement())
+  /// 项目名称
+  name        String
+  /// 项目类型（小说类型）
+  type        String
+  /// 项目描述
+  description String?  @db.Text
+  /// 项目标签
+  tags        String[] @default([])
+  /// 关联的角色设定ID列表
+  characters  String[] @default([])
+  /// 关联的系统设定ID列表
+  systems     String[] @default([])
+  /// 关联的世界设定ID列表
+  worlds      String[] @default([])
+  /// 关联的辅助设定ID列表
+  misc        String[] @default([])
+  /// 所属用户ID
+  userId      Int      @map("user_id")
+  /// 创建时间
+  createdAt   DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/// 角色设定表
+model character_settings {
+  id                Int      @id @default(autoincrement())
+  /// 角色名称
+  name              String
+  /// 角色类型
+  type              String?
+  /// 性别
+  gender            String?
+  /// 年龄
+  age               String?
+  /// 身高
+  height            String?
+  /// 外貌描述
+  appearance        String?  @db.Text
+  /// 性格特点
+  personality       String?  @db.Text
+  /// 出身背景
+  background        String?  @db.Text
+  /// 职业身份
+  occupation        String?
+  /// 实力等级
+  powerLevel        String?
+  /// 特殊能力
+  abilities         String?  @db.Text
+  /// 角色关系（JSON数组）
+  relationships     Json?
+  /// 标签
+  tags              String[] @default([])
+  /// 备注
+  remarks           String?  @db.Text
+  /// 所属用户ID
+  userId            Int      @map("user_id")
+  /// 创建时间
+  createdAt         DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([name])
+}
+
+/// 系统设定表
+model system_settings {
+  id              Int      @id @default(autoincrement())
+  /// 系统名称
+  name            String
+  /// 系统类型
+  type            String?
+  /// 系统描述
+  description     String?  @db.Text
+  /// 功能模块（JSON数组）
+  modules         Json?
+  /// 等级体系（JSON数组）
+  levels          Json?
+  /// 道具装备（JSON数组）
+  items           Json?
+  /// 数值参数（JSON数组）
+  parameters      Json?
+  /// 运作规则
+  rules           String?  @db.Text
+  /// 触发条件
+  triggers        String?  @db.Text
+  /// 限制约束
+  constraints     String?  @db.Text
+  /// 标签
+  tags            String[] @default([])
+  /// 备注
+  remarks         String?  @db.Text
+  /// 所属用户ID
+  userId          Int      @map("user_id")
+  /// 创建时间
+  createdAt       DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([name])
+}
+
+/// 世界设定表
+model world_settings {
+  id                Int      @id @default(autoincrement())
+  /// 世界名称
+  name              String
+  /// 世界类型
+  type              String?
+  /// 时代背景
+  era               String?
+  /// 世界描述
+  description       String?  @db.Text
+  /// 地理环境（JSON数组）
+  geography         Json?
+  /// 政治势力（JSON数组）
+  politics          Json?
+  /// 文化体系（JSON数组）
+  culture           Json?
+  /// 修炼/力量体系（JSON数组）
+  powerSystem       Json?    @map("power_system")
+  /// 历史脉络（JSON对象）
+  history           Json?
+  /// 标签
+  tags              String[] @default([])
+  /// 备注
+  remarks           String?  @db.Text
+  /// 所属用户ID
+  userId            Int      @map("user_id")
+  /// 创建时间
+  createdAt         DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([name])
+}
+
+/// 辅助设定表
+model misc_settings {
+  id              Int      @id @default(autoincrement())
+  /// 设定名称
+  name            String
+  /// 设定类型
+  type            String?
+  /// 设定描述
+  description     String?  @db.Text
+  /// 灵感记录（JSON数组）
+  inspirations    Json?
+  /// 参考资料（JSON数组）
+  references      Json?
+  /// 创作笔记（JSON数组）
+  notes           Json?
+  /// 专业术语（JSON数组）
+  terminology     Json?
+  /// 模板库（JSON数组）
+  templates       Json?
+  /// 项目标签（JSON数组）
+  projectTags     Json?    @map("project_tags")
+  /// 标签
+  tags            String[] @default([])
+  /// 备注
+  remarks         String?  @db.Text
+  /// 所属用户ID
+  userId          Int      @map("user_id")
+  /// 创建时间
+  createdAt       DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  /// 所属用户
+  user            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([name])
 }

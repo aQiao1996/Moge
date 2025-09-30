@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ControllerRenderProps, FieldPath } from 'react-hook-form';
 
 import { Plus } from 'lucide-react';
@@ -75,7 +75,6 @@ export default function ProjectDialog({
 }: ProjectDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 设定库数据状态
   const [settingsLibrary, setSettingsLibrary] = useState<SettingsLibraryData>({
     characters: [],
     systems: [],
@@ -84,37 +83,26 @@ export default function ProjectDialog({
   });
   const [loadingSettings, setLoadingSettings] = useState(false);
 
-  // 加载设定库数据
-  useEffect(() => {
-    if (open) {
-      setLoadingSettings(true);
-      getSettingsLibrary()
-        .then(setSettingsLibrary)
-        .catch(console.error)
-        .finally(() => setLoadingSettings(false));
-    }
-  }, [open]);
-
   // 转换设定数据为选项格式
   const settingsOptions = useMemo(
     () => ({
       characters: settingsLibrary.characters.map((item) => ({
-        value: item.id,
+        value: String(item.id),
         label: item.name,
         description: item.description,
       })),
       systems: settingsLibrary.systems.map((item) => ({
-        value: item.id,
+        value: String(item.id),
         label: item.name,
         description: item.description,
       })),
       worlds: settingsLibrary.worlds.map((item) => ({
-        value: item.id,
+        value: String(item.id),
         label: item.name,
-        description: item.description,
+        description: item.era ? `${item.description} (${item.era})` : item.description,
       })),
       misc: settingsLibrary.misc.map((item) => ({
-        value: item.id,
+        value: String(item.id),
         label: item.name,
         description: item.description,
       })),
@@ -268,6 +256,22 @@ export default function ProjectDialog({
     [onSubmit]
   );
 
+  /**
+   * 处理对话框打开事件
+   * 当对话框打开时加载设定库数据
+   */
+  const handleOpen = useCallback(() => {
+    setLoadingSettings(true);
+    getSettingsLibrary()
+      .then((data) => {
+        setSettingsLibrary(data);
+      })
+      .catch((error) => {
+        console.error('Failed to load settings library:', error);
+      })
+      .finally(() => setLoadingSettings(false));
+  }, []);
+
   return (
     <MogeFormDialog<CreateProjectValues>
       mode={mode}
@@ -278,6 +282,7 @@ export default function ProjectDialog({
       fields={fields}
       renderControl={renderControl}
       onSubmit={handleSubmit}
+      onOpen={handleOpen}
       item={item as CreateProjectValues}
       trigger={trigger}
       open={open}

@@ -6,12 +6,14 @@ import { get } from '@/lib/request';
 
 // 设定项接口
 export interface SettingItem {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
   type?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  description?: string;
+  era?: string; // 世界设定特有
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 设定库响应接口
