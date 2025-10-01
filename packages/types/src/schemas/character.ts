@@ -17,7 +17,6 @@ export const characterSchema = z.object({
   age: z.string().optional(),
   height: z.string().optional(),
   appearance: z.string().optional(),
-  specialMarks: z.string().optional(),
   personality: z.string().optional(),
   background: z.string().optional(),
   occupation: z.string().optional(),
@@ -25,7 +24,7 @@ export const characterSchema = z.object({
   abilities: z.string().optional(),
   relationships: z.array(relationshipSchema).optional(),
   tags: z.array(z.string()).optional(),
-  remark: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 // 创建角色设定的schema

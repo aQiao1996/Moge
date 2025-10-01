@@ -299,11 +299,17 @@ export default function CategorySettingsPage() {
           </div>
         </div>
         {category === 'characters' ? (
-          <CharacterDialog
-            mode="create"
-            open={createDialogOpen}
-            onOpenChange={handleCreateDialogChange}
-          />
+          <>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建{currentCategory.label}
+            </Button>
+            <CharacterDialog
+              mode="create"
+              open={createDialogOpen}
+              onOpenChange={handleCreateDialogChange}
+            />
+          </>
         ) : category === 'systems' ? (
           <SystemDialog mode="create" />
         ) : category === 'worlds' ? (

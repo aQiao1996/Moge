@@ -66,13 +66,12 @@ export default function CharacterDialog({
     { name: 'age', label: '年龄' },
     { name: 'height', label: '身高' },
     { name: 'appearance', label: '外貌描述' },
-    { name: 'specialMarks', label: '特殊标记' },
     { name: 'personality', label: '性格特点' },
     { name: 'background', label: '出身背景' },
     { name: 'occupation', label: '职业身份' },
     { name: 'powerLevel', label: '实力等级' },
     { name: 'abilities', label: '特殊能力' },
-    { name: 'remark', label: '备注' },
+    { name: 'remarks', label: '备注' },
   ];
 
   const renderControl = useCallback(
@@ -139,7 +138,6 @@ export default function CharacterDialog({
         name: '角色姓名',
         age: '例：25岁 或 青年',
         height: '例：175cm',
-        specialMarks: '例：左脸有疤痕',
         occupation: '例：剑客、学生、商人',
         powerLevel: '例：筑基期、A级异能者',
       };
@@ -365,7 +363,6 @@ export default function CharacterDialog({
         age: '',
         height: '',
         appearance: '',
-        specialMarks: '',
         personality: '',
         background: '',
         occupation: '',
@@ -373,7 +370,7 @@ export default function CharacterDialog({
         abilities: '',
         relationships: [],
         tags: [],
-        remark: '',
+        remarks: '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateCharacterValues | UpdateCharacterValues>[]}
