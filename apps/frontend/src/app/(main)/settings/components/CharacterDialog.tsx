@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Users, Edit, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -54,9 +54,16 @@ export default function CharacterDialog({
   const isEditMode = mode === 'edit';
 
   // 关系状态管理
-  const [relationships, setRelationships] = useState<Relationship[]>(
-    character?.relationships || []
-  );
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+
+  // 当对话框打开且有角色数据时，同步关系数据
+  useEffect(() => {
+    if (open && isEditMode && character?.relationships) {
+      setRelationships(character.relationships as Relationship[]);
+    } else if (open && !isEditMode) {
+      setRelationships([]);
+    }
+  }, [open, isEditMode, character]);
 
   // 字段配置
   const fields: FieldConfig<FormValues>[] = [
@@ -356,6 +363,7 @@ export default function CharacterDialog({
       trigger={trigger}
       createSchema={createCharacterSchema}
       updateSchema={updateCharacterSchema}
+      item={isEditMode ? character : undefined}
       defaultValues={{
         name: '',
         type: '',
@@ -383,7 +391,6 @@ export default function CharacterDialog({
       ]}
       defaultTrigger={defaultTrigger}
       maxWidth="4xl"
-      item={character}
     />
   );
 }
