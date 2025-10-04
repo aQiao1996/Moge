@@ -160,10 +160,9 @@ export default function MogeFormDialog<T extends FieldValues>({
     setSubmitting(true);
     try {
       await onSubmit(values);
-      toast.success(isEditMode ? '更新成功' : '创建成功');
       setOpen(false);
-    } catch {
-      toast.error(isEditMode ? '更新失败' : '创建失败');
+    } catch (error) {
+      console.log('🚀 ~ MogeFormDialog.tsx:165 ~ handleSubmit ~ error:', error);
     } finally {
       setSubmitting(false);
     }

@@ -32,7 +32,7 @@ export const createCharacterSchema = characterSchema;
 
 // 更新角色设定的schema
 export const updateCharacterSchema = characterSchema.partial().extend({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]),
 });
 
 // 导出类型
