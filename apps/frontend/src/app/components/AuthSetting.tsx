@@ -4,18 +4,30 @@ import { useSettings } from '@/stores/settingStore';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
+/**
+ * 主题和语言设置组件
+ * 提供明暗主题切换和中英文语言切换功能
+ * @param {Object} props - 组件属性
+ * @param {boolean} props.isAbsolute - 是否使用绝对定位,默认为true
+ */
 export default function AuthSetting({ isAbsolute = true }) {
   const { lang, setLang } = useSettings();
   const { theme, setTheme } = useTheme();
 
+  // 动画状态
   const [themeAnim, setThemeAnim] = useState('');
   const [langAnim, setLangAnim] = useState('');
 
+  // 组件挂载状态,用于防止主题切换时的水合错误
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  /**
+   * 处理主题切换
+   * 在light和dark主题之间切换,system主题视为light
+   */
   const handleTheme = () => {
     setThemeAnim('rotate-90');
     setTheme(theme === 'light' || theme === 'system' ? 'dark' : 'light');
@@ -24,6 +36,10 @@ export default function AuthSetting({ isAbsolute = true }) {
     }, 250);
   };
 
+  /**
+   * 处理语言切换
+   * 在中文和英文之间切换
+   */
   const handleLang = () => {
     const newLang = lang === 'zh' ? 'en' : 'zh';
     setLangAnim('scale-95');
@@ -45,7 +61,7 @@ export default function AuthSetting({ isAbsolute = true }) {
 
   return (
     <div className={`right-4 top-4 z-10 flex items-center gap-2 ${isAbsolute ? 'absolute' : ''}`}>
-      {/* 换肤 */}
+      {/* 主题切换按钮 */}
       <Button
         onClick={handleTheme}
         title="切换主题"
@@ -59,7 +75,7 @@ export default function AuthSetting({ isAbsolute = true }) {
         {theme === 'light' ? '☀️' : '🌙'}
       </Button>
 
-      {/* 换语言 */}
+      {/* 语言切换按钮 */}
       <Button
         onClick={handleLang}
         title="切换语言"
