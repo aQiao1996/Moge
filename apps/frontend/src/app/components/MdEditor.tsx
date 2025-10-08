@@ -12,24 +12,23 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
  * Markdown编辑器组件属性接口
  */
 interface MdEditorProps {
+  /** 编辑器内容 */
   value: string;
+  /** 内容变化回调 */
   onChange: (value: string) => void;
+  /** 占位符文本 */
   placeholder?: string;
+  /** 额外的样式类名 */
   className?: string;
+  /** 编辑器高度 */
   height?: number;
+  /** 预览模式: live-实时预览, edit-仅编辑, preview-仅预览 */
   preview?: 'live' | 'edit' | 'preview';
 }
 
 /**
  * Markdown编辑器组件
  * 基于@uiw/react-md-editor封装的Markdown编辑器,支持实时预览和主题切换
- * @param {MdEditorProps} props - 组件属性
- * @param {string} props.value - 编辑器内容
- * @param {Function} props.onChange - 内容变化回调
- * @param {string} props.placeholder - 占位符文本,默认"请输入 Markdown 内容..."
- * @param {string} props.className - 额外的样式类名
- * @param {number} props.height - 编辑器高度,默认400px
- * @param {'live' | 'edit' | 'preview'} props.preview - 预览模式,默认'live'
  */
 export default function MdEditor({
   value,
