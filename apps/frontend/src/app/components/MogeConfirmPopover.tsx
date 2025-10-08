@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertTriangle } from 'lucide-react';
 
+/**
+ * 确认气泡组件属性接口
+ */
 interface MogeConfirmPopoverProps {
   /** 触发器，可以自定义 */
   trigger: React.ReactNode;
@@ -32,6 +35,11 @@ interface MogeConfirmPopoverProps {
   iconTextColor?: string;
 }
 
+/**
+ * 确认气泡组件
+ * 提供危险操作的二次确认气泡提示,支持异步操作和自定义样式
+ * @param {MogeConfirmPopoverProps} props - 组件属性
+ */
 export default function MogeConfirmPopover({
   trigger,
   title,
@@ -49,13 +57,17 @@ export default function MogeConfirmPopover({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
+  /**
+   * 处理确认操作
+   * 执行异步确认操作,成功后关闭气泡
+   */
   const handleConfirm = async () => {
     try {
       setLoading(true);
       await onConfirm();
       setOpen(false);
     } catch (error) {
-      console.error('Confirm operation error:', error);
+      console.error('确认操作错误:', error);
       throw error; // 让调用者处理错误
     } finally {
       setLoading(false);
