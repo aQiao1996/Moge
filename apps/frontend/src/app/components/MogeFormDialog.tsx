@@ -23,28 +23,50 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-// 静态默认值，避免每次渲染创建新对象
+/**
+ * 静态默认值常量
+ * 避免每次渲染创建新对象导致不必要的重渲染
+ */
 const EMPTY_DEFAULT_VALUES = {};
 
-// 类型帮助器
+/**
+ * 表单字段配置类型
+ * 定义表单字段的基本属性
+ */
 export type FormFieldConfig<T extends FieldValues> = {
+  /** 字段名称 */
   name: FieldPath<T>;
+  /** 字段标签 */
   label: string;
+  /** 是否必填 */
   required?: boolean;
-  section?: string; // 分组标题
+  /** 分组标题 */
+  section?: string;
 };
 
-// 字段配置接口 - 使用与 HookForm 相同的定义
+/**
+ * 字段配置接口
+ * 使用与 HookForm 相同的定义确保类型一致性
+ */
 export interface FieldConfig<T extends FieldValues = FieldValues> {
+  /** 字段名称 */
   name: FieldPath<T>;
+  /** 字段标签 */
   label: string;
+  /** 是否必填 */
   required?: boolean;
-  section?: string; // 分组标题
+  /** 分组标题 */
+  section?: string;
 }
 
-// 自定义内容节接口
+/**
+ * 自定义内容节接口
+ * 用于在表单中插入自定义内容区域
+ */
 export interface CustomSection {
+  /** 节标题 */
   title?: string;
+  /** 节内容 */
   content: ReactNode;
 }
 
