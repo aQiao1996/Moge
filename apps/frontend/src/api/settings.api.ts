@@ -154,3 +154,196 @@ export const getCharacterProjects = async (id: number): Promise<ProjectInfo[]> =
   const response = await get<ProjectInfo[]>(`/settings/characters/${id}/projects`);
   return response.data || [];
 };
+
+// ==================== 系统设定 CRUD 接口 ====================
+
+// 系统设定完整接口
+export interface SystemSetting {
+  id: number;
+  name: string;
+  type?: string | null;
+  description?: string | null;
+  modules?: string | number | boolean | string[] | null | undefined | object;
+  levels?: string | number | boolean | string[] | null | undefined | object;
+  items?: string | number | boolean | string[] | null | undefined | object;
+  parameters?: string | number | boolean | string[] | null | undefined | object;
+  rules?: string | null;
+  triggers?: string | null;
+  constraints?: string | null;
+  tags: string[];
+  remarks?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  [key: string]: string | number | boolean | string[] | null | undefined | object;
+}
+
+/**
+ * 创建系统设定
+ * @param data 系统设定数据
+ * @returns 创建的系统设定
+ */
+export const createSystem = async (data: Partial<SystemSetting>): Promise<SystemSetting> => {
+  const response = await post<SystemSetting>('/settings/systems', data);
+  return response.data;
+};
+
+/**
+ * 更新系统设定
+ * @param id 系统设定ID
+ * @param data 更新的系统设定数据
+ * @returns 更新后的系统设定
+ */
+export const updateSystem = async (
+  id: number,
+  data: Partial<SystemSetting>
+): Promise<SystemSetting> => {
+  const response = await put<SystemSetting>(`/settings/systems/${id}`, data);
+  return response.data;
+};
+
+/**
+ * 删除系统设定
+ * @param id 系统设定ID
+ * @returns 删除结果
+ */
+export const deleteSystem = async (id: number): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(`/settings/systems/${id}`);
+  return response.data;
+};
+
+/**
+ * 获取系统设定的关联项目列表
+ * @param id 系统设定ID
+ * @returns 关联的项目列表
+ */
+export const getSystemProjects = async (id: number): Promise<ProjectInfo[]> => {
+  const response = await get<ProjectInfo[]>(`/settings/systems/${id}/projects`);
+  return response.data || [];
+};
+
+// ==================== 世界设定 CRUD 接口 ====================
+
+// 世界设定完整接口
+export interface WorldSetting {
+  id: number;
+  name: string;
+  type?: string | null;
+  era?: string | null;
+  description?: string | null;
+  geography?: string | number | boolean | string[] | null | undefined | object;
+  politics?: string | number | boolean | string[] | null | undefined | object;
+  culture?: string | number | boolean | string[] | null | undefined | object;
+  powerSystem?: string | number | boolean | string[] | null | undefined | object;
+  history?: string | number | boolean | string[] | null | undefined | object;
+  tags: string[];
+  remarks?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  [key: string]: string | number | boolean | string[] | null | undefined | object;
+}
+
+/**
+ * 创建世界设定
+ * @param data 世界设定数据
+ * @returns 创建的世界设定
+ */
+export const createWorld = async (data: Partial<WorldSetting>): Promise<WorldSetting> => {
+  const response = await post<WorldSetting>('/settings/worlds', data);
+  return response.data;
+};
+
+/**
+ * 更新世界设定
+ * @param id 世界设定ID
+ * @param data 更新的世界设定数据
+ * @returns 更新后的世界设定
+ */
+export const updateWorld = async (
+  id: number,
+  data: Partial<WorldSetting>
+): Promise<WorldSetting> => {
+  const response = await put<WorldSetting>(`/settings/worlds/${id}`, data);
+  return response.data;
+};
+
+/**
+ * 删除世界设定
+ * @param id 世界设定ID
+ * @returns 删除结果
+ */
+export const deleteWorld = async (id: number): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(`/settings/worlds/${id}`);
+  return response.data;
+};
+
+/**
+ * 获取世界设定的关联项目列表
+ * @param id 世界设定ID
+ * @returns 关联的项目列表
+ */
+export const getWorldProjects = async (id: number): Promise<ProjectInfo[]> => {
+  const response = await get<ProjectInfo[]>(`/settings/worlds/${id}/projects`);
+  return response.data || [];
+};
+
+// ==================== 辅助设定 CRUD 接口 ====================
+
+// 辅助设定完整接口
+export interface MiscSetting {
+  id: number;
+  name: string;
+  type?: string | null;
+  description?: string | null;
+  inspirations?: string | number | boolean | string[] | null | undefined | object;
+  references?: string | number | boolean | string[] | null | undefined | object;
+  notes?: string | number | boolean | string[] | null | undefined | object;
+  terminology?: string | number | boolean | string[] | null | undefined | object;
+  templates?: string | number | boolean | string[] | null | undefined | object;
+  projectTags?: string | number | boolean | string[] | null | undefined | object;
+  tags: string[];
+  remarks?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  [key: string]: string | number | boolean | string[] | null | undefined | object;
+}
+
+/**
+ * 创建辅助设定
+ * @param data 辅助设定数据
+ * @returns 创建的辅助设定
+ */
+export const createMisc = async (data: Partial<MiscSetting>): Promise<MiscSetting> => {
+  const response = await post<MiscSetting>('/settings/misc', data);
+  return response.data;
+};
+
+/**
+ * 更新辅助设定
+ * @param id 辅助设定ID
+ * @param data 更新的辅助设定数据
+ * @returns 更新后的辅助设定
+ */
+export const updateMisc = async (id: number, data: Partial<MiscSetting>): Promise<MiscSetting> => {
+  const response = await put<MiscSetting>(`/settings/misc/${id}`, data);
+  return response.data;
+};
+
+/**
+ * 删除辅助设定
+ * @param id 辅助设定ID
+ * @returns 删除结果
+ */
+export const deleteMisc = async (id: number): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(`/settings/misc/${id}`);
+  return response.data;
+};
+
+/**
+ * 获取辅助设定的关联项目列表
+ * @param id 辅助设定ID
+ * @returns 关联的项目列表
+ */
+export const getMiscProjects = async (id: number): Promise<ProjectInfo[]> => {
+  const response = await get<ProjectInfo[]>(`/settings/misc/${id}/projects`);
+  return response.data || [];
+};

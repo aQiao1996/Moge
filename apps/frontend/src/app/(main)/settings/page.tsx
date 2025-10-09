@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProjectDialog from './components/ProjectDialog';
 import type { CreateProjectValues } from '@moge/types';
+import { getProjects, createProject, type Project as ApiProject } from '@/api/projects.api';
 
 interface Project {
   id: string;
@@ -25,46 +26,6 @@ interface Project {
   };
   [key: string]: string | number | boolean | string[] | null | undefined | object;
 }
-
-// 模拟小说项目数据
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: '仙侠传说',
-    type: '仙侠',
-    createdAt: '2024-01-15',
-    settings: {
-      characters: 8,
-      systems: 3,
-      worlds: 5,
-      misc: 12,
-    },
-  },
-  {
-    id: '2',
-    name: '都市修仙',
-    type: '都市',
-    createdAt: '2024-02-20',
-    settings: {
-      characters: 12,
-      systems: 5,
-      worlds: 3,
-      misc: 8,
-    },
-  },
-  {
-    id: '3',
-    name: '末世求生',
-    type: '科幻',
-    createdAt: '2024-03-10',
-    settings: {
-      characters: 6,
-      systems: 2,
-      worlds: 4,
-      misc: 7,
-    },
-  },
-];
 
 // 筛选配置
 const filterOptions: FilterOption[] = [
@@ -90,7 +51,8 @@ const sortOptions: SortOption[] = [
  */
 export default function SettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
   const pageSize = 6;
   const router = useRouter();
 
@@ -102,6 +64,41 @@ export default function SettingsPage() {
     sortOrder: 'desc',
     viewMode: 'list',
   });
+
+  /**
+   * 从API加载项目数据
+   */
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      const data = await getProjects();
+
+      // 转换API数据格式为页面所需格式
+      const transformedProjects: Project[] = data.map((item: ApiProject) => ({
+        id: String(item.id),
+        name: item.name,
+        type: item.type,
+        createdAt: new Date(item.createdAt).toISOString().split('T')[0],
+        settings: {
+          characters: item.characters.length,
+          systems: item.systems.length,
+          worlds: item.worlds.length,
+          misc: item.misc.length,
+        },
+      }));
+
+      setProjects(transformedProjects);
+    } catch (error) {
+      console.error('加载项目列表失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 组件挂载时加载数据
+  useEffect(() => {
+    void loadProjects();
+  }, []);
 
   /**
    * 处理项目卡片点击事件
@@ -116,9 +113,24 @@ export default function SettingsPage() {
    * @param values 项目创建表单数据
    */
   const handleCreateProject = async (values: CreateProjectValues) => {
-    console.log('Creating project:', values);
-    // TODO: 实现创建项目的API调用
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      await createProject({
+        name: values.name,
+        type: values.type,
+        description: values.description,
+        tags: values.tags || [],
+        characters: values.characters?.map(String) || [],
+        systems: values.systems?.map(String) || [],
+        worlds: values.worlds?.map(String) || [],
+        misc: values.misc?.map(String) || [],
+      });
+
+      // 重新加载项目列表
+      await loadProjects();
+    } catch (error) {
+      console.error('创建项目失败:', error);
+      throw error;
+    }
   };
 
   /**
@@ -126,7 +138,7 @@ export default function SettingsPage() {
    * @returns 过滤后的项目数组
    */
   const getFilteredProjects = () => {
-    let filtered = [...mockProjects];
+    let filtered = [...projects];
 
     // 搜索筛选
     if (filters.search) {
@@ -236,14 +248,12 @@ export default function SettingsPage() {
               设定库
             </Button>
           </Link>
-          {mockProjects.length > 0 && (
-            <ProjectDialog mode="create" onSubmit={handleCreateProject} />
-          )}
+          <ProjectDialog mode="create" onSubmit={handleCreateProject} />
         </div>
       </div>
 
       {/* 筛选组件 */}
-      {mockProjects.length > 0 && (
+      {projects.length > 0 && (
         <div className="mb-6">
           <MogeFilter
             filters={filters}
@@ -275,13 +285,6 @@ export default function SettingsPage() {
         gridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
         listClassName="grid gap-4"
       />
-
-      {/* 空状态时的创建按钮 */}
-      {mockProjects.length === 0 && (
-        <div className="mt-6 text-center">
-          <ProjectDialog mode="create" onSubmit={handleCreateProject} />
-        </div>
-      )}
     </div>
   );
 }

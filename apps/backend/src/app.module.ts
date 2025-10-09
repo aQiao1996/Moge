@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { DictModule } from './dict/dict.module';
 import { OutlineModule } from './outline/outline.module';
 import { SettingsModule } from './settings/settings.module';
+import { ProjectsModule } from './projects/projects.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     DictModule,
     OutlineModule,
     SettingsModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [

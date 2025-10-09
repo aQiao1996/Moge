@@ -308,4 +308,245 @@ export class SettingsController {
   ) {
     return this.settingsService.getCharacterProjects(Number(req.user.id), id);
   }
+
+  // ==================== 系统设定相关接口 ====================
+
+  /**
+   * 创建系统设定
+   */
+  @Post('systems')
+  @ApiOperation({ summary: '创建系统设定', description: '创建新的系统设定' })
+  @ApiResponse({ status: 201, description: '系统设定创建成功' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', example: '修仙系统' },
+        type: { type: 'string', example: '修炼' },
+        description: { type: 'string', example: '提供修炼指导的系统' },
+        modules: { type: 'array', items: { type: 'object' } },
+        levels: { type: 'array', items: { type: 'object' } },
+        items: { type: 'array', items: { type: 'object' } },
+        parameters: { type: 'array', items: { type: 'object' } },
+        rules: { type: 'string', example: '系统运作规则' },
+        triggers: { type: 'string', example: '触发条件' },
+        constraints: { type: 'string', example: '限制约束' },
+        tags: { type: 'array', items: { type: 'string' }, example: ['修炼', '系统'] },
+        remarks: { type: 'string', example: '备注信息' },
+      },
+    },
+  })
+  async createSystem(
+    @Req() req: AuthenticatedRequest,
+    @Body() data: Omit<Prisma.system_settingsCreateInput, 'user'>
+  ) {
+    return this.settingsService.createSystem(Number(req.user.id), data);
+  }
+
+  /**
+   * 更新系统设定
+   */
+  @Put('systems/:id')
+  @ApiOperation({ summary: '更新系统设定', description: '更新指定ID的系统设定' })
+  @ApiParam({ name: 'id', description: '系统设定ID' })
+  @ApiResponse({ status: 200, description: '系统设定更新成功' })
+  async updateSystem(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: Prisma.system_settingsUpdateInput
+  ) {
+    return this.settingsService.updateSystem(Number(req.user.id), id, data);
+  }
+
+  /**
+   * 删除系统设定
+   * 如果系统设定被项目关联，则不允许删除
+   */
+  @Delete('systems/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '删除系统设定',
+    description: '删除指定ID的系统设定（有关联项目时不允许删除）',
+  })
+  @ApiParam({ name: 'id', description: '系统设定ID' })
+  @ApiResponse({ status: 200, description: '系统设定删除成功' })
+  @ApiResponse({ status: 400, description: '系统设定被项目关联，无法删除' })
+  async deleteSystem(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.deleteSystem(Number(req.user.id), id);
+  }
+
+  /**
+   * 获取系统设定的关联项目列表
+   */
+  @Get('systems/:id/projects')
+  @ApiOperation({
+    summary: '获取系统设定的关联项目',
+    description: '获取关联了该系统设定的所有项目',
+  })
+  @ApiParam({ name: 'id', description: '系统设定ID' })
+  @ApiResponse({ status: 200, description: '关联项目列表' })
+  async getSystemProjects(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.getSystemProjects(Number(req.user.id), id);
+  }
+
+  // ==================== 世界设定相关接口 ====================
+
+  /**
+   * 创建世界设定
+   */
+  @Post('worlds')
+  @ApiOperation({ summary: '创建世界设定', description: '创建新的世界设定' })
+  @ApiResponse({ status: 201, description: '世界设定创建成功' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', example: '修仙界' },
+        type: { type: 'string', example: '修仙世界' },
+        era: { type: 'string', example: '上古时期' },
+        description: { type: 'string', example: '修仙者的世界' },
+        geography: { type: 'array', items: { type: 'object' } },
+        politics: { type: 'array', items: { type: 'object' } },
+        culture: { type: 'array', items: { type: 'object' } },
+        powerSystem: { type: 'array', items: { type: 'object' } },
+        history: { type: 'object' },
+        tags: { type: 'array', items: { type: 'string' }, example: ['修仙', '上古'] },
+        remarks: { type: 'string', example: '备注信息' },
+      },
+    },
+  })
+  async createWorld(
+    @Req() req: AuthenticatedRequest,
+    @Body() data: Omit<Prisma.world_settingsCreateInput, 'user'>
+  ) {
+    return this.settingsService.createWorld(Number(req.user.id), data);
+  }
+
+  /**
+   * 更新世界设定
+   */
+  @Put('worlds/:id')
+  @ApiOperation({ summary: '更新世界设定', description: '更新指定ID的世界设定' })
+  @ApiParam({ name: 'id', description: '世界设定ID' })
+  @ApiResponse({ status: 200, description: '世界设定更新成功' })
+  async updateWorld(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: Prisma.world_settingsUpdateInput
+  ) {
+    return this.settingsService.updateWorld(Number(req.user.id), id, data);
+  }
+
+  /**
+   * 删除世界设定
+   * 如果世界设定被项目关联，则不允许删除
+   */
+  @Delete('worlds/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '删除世界设定',
+    description: '删除指定ID的世界设定（有关联项目时不允许删除）',
+  })
+  @ApiParam({ name: 'id', description: '世界设定ID' })
+  @ApiResponse({ status: 200, description: '世界设定删除成功' })
+  @ApiResponse({ status: 400, description: '世界设定被项目关联，无法删除' })
+  async deleteWorld(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.deleteWorld(Number(req.user.id), id);
+  }
+
+  /**
+   * 获取世界设定的关联项目列表
+   */
+  @Get('worlds/:id/projects')
+  @ApiOperation({
+    summary: '获取世界设定的关联项目',
+    description: '获取关联了该世界设定的所有项目',
+  })
+  @ApiParam({ name: 'id', description: '世界设定ID' })
+  @ApiResponse({ status: 200, description: '关联项目列表' })
+  async getWorldProjects(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.getWorldProjects(Number(req.user.id), id);
+  }
+
+  // ==================== 辅助设定相关接口 ====================
+
+  /**
+   * 创建辅助设定
+   */
+  @Post('misc')
+  @ApiOperation({ summary: '创建辅助设定', description: '创建新的辅助设定' })
+  @ApiResponse({ status: 201, description: '辅助设定创建成功' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', example: '修炼等级' },
+        type: { type: 'string', example: '创作工具集' },
+        description: { type: 'string', example: '境界划分设定' },
+        inspirations: { type: 'array', items: { type: 'object' } },
+        references: { type: 'array', items: { type: 'object' } },
+        notes: { type: 'array', items: { type: 'object' } },
+        terminology: { type: 'array', items: { type: 'object' } },
+        templates: { type: 'array', items: { type: 'object' } },
+        projectTags: { type: 'array', items: { type: 'object' } },
+        tags: { type: 'array', items: { type: 'string' }, example: ['修炼', '等级'] },
+        remarks: { type: 'string', example: '备注信息' },
+      },
+    },
+  })
+  async createMisc(
+    @Req() req: AuthenticatedRequest,
+    @Body() data: Omit<Prisma.misc_settingsCreateInput, 'user'>
+  ) {
+    return this.settingsService.createMisc(Number(req.user.id), data);
+  }
+
+  /**
+   * 更新辅助设定
+   */
+  @Put('misc/:id')
+  @ApiOperation({ summary: '更新辅助设定', description: '更新指定ID的辅助设定' })
+  @ApiParam({ name: 'id', description: '辅助设定ID' })
+  @ApiResponse({ status: 200, description: '辅助设定更新成功' })
+  async updateMisc(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: Prisma.misc_settingsUpdateInput
+  ) {
+    return this.settingsService.updateMisc(Number(req.user.id), id, data);
+  }
+
+  /**
+   * 删除辅助设定
+   * 如果辅助设定被项目关联，则不允许删除
+   */
+  @Delete('misc/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '删除辅助设定',
+    description: '删除指定ID的辅助设定（有关联项目时不允许删除）',
+  })
+  @ApiParam({ name: 'id', description: '辅助设定ID' })
+  @ApiResponse({ status: 200, description: '辅助设定删除成功' })
+  @ApiResponse({ status: 400, description: '辅助设定被项目关联，无法删除' })
+  async deleteMisc(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.deleteMisc(Number(req.user.id), id);
+  }
+
+  /**
+   * 获取辅助设定的关联项目列表
+   */
+  @Get('misc/:id/projects')
+  @ApiOperation({
+    summary: '获取辅助设定的关联项目',
+    description: '获取关联了该辅助设定的所有项目',
+  })
+  @ApiParam({ name: 'id', description: '辅助设定ID' })
+  @ApiResponse({ status: 200, description: '关联项目列表' })
+  async getMiscProjects(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.getMiscProjects(Number(req.user.id), id);
+  }
 }

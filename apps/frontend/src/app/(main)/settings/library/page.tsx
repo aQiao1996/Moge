@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, Zap, Globe, Folder, Plus, Eye } from 'lucide-react';
+import { ArrowLeft, Users, Zap, Globe, Folder, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getSettingsLibrary, type SettingsLibraryResponse } from '@/api/settings.api';
 
 // 设定分类配置
 const settingCategories = [
@@ -13,7 +15,6 @@ const settingCategories = [
     label: '角色设定',
     icon: Users,
     description: '管理所有角色设定，包括主角、配角、反派等',
-    count: 12,
     color: 'text-blue-500',
   },
   {
@@ -21,7 +22,6 @@ const settingCategories = [
     label: '系统/金手指',
     icon: Zap,
     description: '管理各种系统设定，如升级、签到、抽奖等',
-    count: 8,
     color: 'text-yellow-500',
   },
   {
@@ -29,7 +29,6 @@ const settingCategories = [
     label: '世界背景',
     icon: Globe,
     description: '管理世界观设定，包括势力组织、修炼体系等',
-    count: 15,
     color: 'text-green-500',
   },
   {
@@ -37,19 +36,65 @@ const settingCategories = [
     label: '辅助设定',
     icon: Folder,
     description: '管理其他辅助设定，如标签、分类、灵感等',
-    count: 6,
     color: 'text-purple-500',
   },
 ];
 
 export default function SettingsLibraryPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [settingsData, setSettingsData] = useState<SettingsLibraryResponse>({
+    characters: [],
+    systems: [],
+    worlds: [],
+    misc: [],
+  });
+
+  /**
+   * 从API加载设定库数据
+   */
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await getSettingsLibrary();
+      setSettingsData(data);
+    } catch (error) {
+      console.error('加载设定库数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 组件挂载时加载数据
+  useEffect(() => {
+    void loadSettings();
+  }, []);
 
   const handleCategoryClick = (categoryKey: string) => {
     router.push(`/settings/library/${categoryKey}`);
   };
 
-  const totalSettings = settingCategories.reduce((sum, category) => sum + category.count, 0);
+  // 计算各分类的数量
+  const getCategoryCount = (key: string) => {
+    switch (key) {
+      case 'characters':
+        return settingsData.characters.length;
+      case 'systems':
+        return settingsData.systems.length;
+      case 'worlds':
+        return settingsData.worlds.length;
+      case 'misc':
+        return settingsData.misc.length;
+      default:
+        return 0;
+    }
+  };
+
+  const totalSettings =
+    settingsData.characters.length +
+    settingsData.systems.length +
+    settingsData.worlds.length +
+    settingsData.misc.length;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -106,23 +151,20 @@ export default function SettingsLibraryPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-[var(--moge-text-main)]">
-                    {category.count}
+                    {getCategoryCount(category.key)}
                   </p>
                   <p className="text-xs text-[var(--moge-text-muted)]">个设定</p>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4">
                 <Button
-                  className="flex-1"
+                  className="w-full"
                   onClick={() => handleCategoryClick(category.key)}
-                  disabled={category.count === 0}
+                  disabled={loading}
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   查看全部
-                </Button>
-                <Button variant="outline" onClick={() => handleCategoryClick(category.key)}>
-                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </Card>
