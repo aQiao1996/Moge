@@ -34,14 +34,10 @@ const EMPTY_DEFAULT_VALUES = {};
  * 定义表单字段的基本属性
  */
 export type FormFieldConfig<T extends FieldValues> = {
-  /** 字段名称 */
-  name: FieldPath<T>;
-  /** 字段标签 */
-  label: string;
-  /** 是否必填 */
-  required?: boolean;
-  /** 分组标题 */
-  section?: string;
+  name: FieldPath<T>; // 字段名称
+  label: string; // 字段标签
+  required?: boolean; // 是否必填
+  section?: string; // 分组标题
 };
 
 /**
@@ -49,14 +45,10 @@ export type FormFieldConfig<T extends FieldValues> = {
  * 使用与 HookForm 相同的定义确保类型一致性
  */
 export interface FieldConfig<T extends FieldValues = FieldValues> {
-  /** 字段名称 */
-  name: FieldPath<T>;
-  /** 字段标签 */
-  label: string;
-  /** 是否必填 */
-  required?: boolean;
-  /** 分组标题 */
-  section?: string;
+  name: FieldPath<T>; // 字段名称
+  label: string; // 字段标签
+  required?: boolean; // 是否必填
+  section?: string; // 分组标题
 }
 
 /**
@@ -64,49 +56,50 @@ export interface FieldConfig<T extends FieldValues = FieldValues> {
  * 用于在表单中插入自定义内容区域
  */
 export interface CustomSection {
-  /** 节标题 */
-  title?: string;
-  /** 节内容 */
-  content: ReactNode;
+  title?: string; // 节标题
+  content: ReactNode; // 节内容
 }
 
-// MogeFormDialog属性接口
+/**
+ * MogeFormDialog组件的属性接口
+ * @template T - 表单数据类型
+ */
 export interface MogeFormDialogProps<T extends FieldValues> {
   // 基础属性
-  mode: 'create' | 'edit';
-  title: string;
-  description: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  trigger?: React.ReactNode;
+  mode: 'create' | 'edit'; // 表单模式: 'create' 或 'edit'
+  title: string; // 对话框标题
+  description: string; // 对话框描述
+  open?: boolean; // 受控模式下的打开状态
+  onOpenChange?: (open: boolean) => void; // 受控模式下的状态变更回调
+  trigger?: React.ReactNode; // 触发对话框的自定义元素
 
   // 表单相关
-  createSchema: ZodSchema<T>;
-  updateSchema: ZodSchema<T>;
-  defaultValues?: Partial<T>;
-  onSubmit: (values: T) => Promise<void>;
+  createSchema: ZodSchema<T>; // 创建模式下的Zod校验schema
+  updateSchema: ZodSchema<T>; // 编辑模式下的Zod校验schema
+  defaultValues?: Partial<T>; // 表单的默认值
+  onSubmit: (values: T) => Promise<void>; // 表单提交回调
 
-  // 字段配置 - 使用与 HookForm 相同的类型
-  fields: FormFieldConfig<T>[];
-  renderControl: (field: ControllerRenderProps<T, FieldPath<T>>, name: FieldPath<T>) => ReactNode;
+  // 字段配置
+  fields: FormFieldConfig<T>[]; // 表单字段配置数组
+  renderControl: (field: ControllerRenderProps<T, FieldPath<T>>, name: FieldPath<T>) => ReactNode; // 自定义表单控件渲染函数
 
   // 自定义内容
-  customSections?: CustomSection[];
+  customSections?: CustomSection[]; // 在表单中插入的自定义内容区域
 
   // 按钮配置
-  submitText?: string;
-  cancelText?: string;
-  defaultTrigger?: ReactNode;
+  submitText?: string; // 提交按钮文本
+  cancelText?: string; // 取消按钮文本
+  defaultTrigger?: ReactNode; // 默认的触发器元素
 
   // 样式配置
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl'; // 对话框最大宽度
 
   // 数据
-  item?: T; // 编辑时的数据
+  item?: T; // 编辑模式下的初始数据
 
   // 生命周期回调
-  onOpen?: () => void;
-  onClose?: () => void;
+  onOpen?: () => void; // 对话框打开时的回调
+  onClose?: () => void; // 对话框关闭时的回调
 }
 
 const maxWidthClasses = {
@@ -118,6 +111,11 @@ const maxWidthClasses = {
   '4xl': 'max-w-4xl',
 };
 
+/**
+ * 通用表单对话框组件
+ * 封装了创建和编辑两种模式,集成了Zod校验、异步提交和自定义字段渲染。
+ * @template T - 表单数据类型
+ */
 export default function MogeFormDialog<T extends FieldValues>({
   mode,
   title,

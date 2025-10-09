@@ -9,36 +9,23 @@ import { AlertTriangle } from 'lucide-react';
  * 确认气泡组件属性接口
  */
 interface MogeConfirmPopoverProps {
-  /** 触发器，可以自定义 */
-  trigger: React.ReactNode;
-  /** 确认操作的标题 */
-  title: string;
-  /** 确认操作的描述信息 */
-  description: string;
-  /** 确认按钮文本 */
-  confirmText?: string;
-  /** 取消按钮文本 */
-  cancelText?: string;
-  /** 操作中状态文本 */
-  loadingText?: string;
-  /** 确认按钮样式变体 */
-  confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  /** 确认操作函数 */
-  onConfirm: () => Promise<void> | void;
-  /** 是否禁用操作 */
-  disabled?: boolean;
-  /** 图标，默认为警告图标 */
-  icon?: React.ReactNode;
-  /** 图标背景颜色 */
-  iconBgColor?: string;
-  /** 图标文字颜色 */
-  iconTextColor?: string;
+  trigger: React.ReactNode; // 触发器，可以自定义
+  title: string; // 确认操作的标题
+  description: string; // 确认操作的描述信息
+  confirmText?: string; // 确认按钮文本
+  cancelText?: string; // 取消按钮文本
+  loadingText?: string; // 操作中状态文本
+  confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'; // 确认按钮样式变体
+  onConfirm: () => Promise<void> | void; // 确认操作函数
+  disabled?: boolean; // 是否禁用操作
+  icon?: React.ReactNode; // 图标，默认为警告图标
+  iconBgColor?: string; // 图标背景颜色
+  iconTextColor?: string; // 图标文字颜色
 }
 
 /**
  * 确认气泡组件
  * 提供危险操作的二次确认气泡提示,支持异步操作和自定义样式
- * @param {MogeConfirmPopoverProps} props - 组件属性
  */
 export default function MogeConfirmPopover({
   trigger,

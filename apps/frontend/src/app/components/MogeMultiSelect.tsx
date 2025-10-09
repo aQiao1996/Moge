@@ -7,41 +7,34 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 
-// 选项接口
+/**
+ * 多选下拉组件的选项接口
+ */
 interface MultiSelectOption {
-  value: string;
-  label: string;
-  description?: string;
+  value: string; // 选项的实际值
+  label: string; // 选项的显示文本
+  description?: string; // 选项的描述信息
 }
 
-// 多选组件接口
+/**
+ * 多选下拉组件的属性接口
+ */
 interface MogeMultiSelectProps {
-  options: MultiSelectOption[];
-  value?: string[];
-  onChange?: (value: string[]) => void;
-  onBlur?: () => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-  maxDisplay?: number; // 最多显示的选中项数量
-  loading?: boolean;
-  emptyMessage?: string;
+  options: MultiSelectOption[]; // 可选项列表
+  value?: string[]; // 当前选中的值数组
+  onChange?: (value: string[]) => void; // 值变化时的回调函数
+  onBlur?: () => void; // 失去焦点时的回调函数
+  placeholder?: string; // 占位符文本
+  disabled?: boolean; // 是否禁用
+  className?: string; // 额外的CSS类名
+  maxDisplay?: number; // 最多显示的选中项数量,超出部分会以 "+N" 形式显示
+  loading?: boolean; // 是否处于加载状态
+  emptyMessage?: string; // 选项为空时的提示信息
 }
 
 /**
  * 多选下拉组件
- * 支持多选选项、搜索过滤、选中项展示等功能
- *
- * @param options 可选项列表
- * @param value 当前选中值数组
- * @param onChange 值变化回调
- * @param onBlur 失焦回调
- * @param placeholder 占位符文本
- * @param disabled 是否禁用
- * @param className 额外样式类
- * @param maxDisplay 最多显示的选中项数量，超出显示 +N
- * @param loading 加载状态
- * @param emptyMessage 无数据提示
+ * 支持多选、搜索过滤、自定义显示数量等功能,专为表单设计。
  */
 const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps>(
   (

@@ -18,49 +18,48 @@ import { useState, useCallback, useEffect } from 'react';
  * 筛选器状态接口
  */
 export interface MogeFilterState {
-  search: string;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  viewMode: 'list' | 'grid';
-  [key: string]: string | string[];
+  search: string; // 搜索关键词
+  sortBy: string; // 排序字段
+  sortOrder: 'asc' | 'desc'; // 排序顺序
+  viewMode: 'list' | 'grid'; // 视图模式
+  [key: string]: string | string[]; // 其他动态筛选条件
 }
 
 /**
  * 筛选选项配置接口
  */
 export interface FilterOption {
-  key: string;
-  label: string;
-  type: 'select' | 'tags';
-  options: string[] | { value: string | boolean; label: string }[];
-  placeholder?: string;
+  key: string; // 对应MogeFilterState中的键名
+  label: string; // 筛选条件的显示标签
+  type: 'select' | 'tags'; // 筛选类型: 下拉选择或标签选择
+  options: string[] | { value: string | boolean; label: string }[]; // 可用选项
+  placeholder?: string; // select类型的占位符
 }
 
 /**
  * 排序选项配置接口
  */
 export interface SortOption {
-  value: string;
-  label: string;
+  value: string; // 排序字段值
+  label: string; // 排序选项的显示标签
 }
 
 /**
  * 筛选器组件属性接口
  */
 export interface MogeFilterProps {
-  filters: MogeFilterState;
-  onFiltersChange: (filters: MogeFilterState) => void;
-  filterOptions?: FilterOption[];
-  sortOptions?: SortOption[];
-  searchPlaceholder?: string;
-  showViewMode?: boolean;
-  showSort?: boolean;
+  filters: MogeFilterState; // 当前的筛选状态
+  onFiltersChange: (filters: MogeFilterState) => void; // 筛选状态变更时的回调函数
+  filterOptions?: FilterOption[]; // 筛选选项的配置数组
+  sortOptions?: SortOption[]; // 排序选项的配置数组
+  searchPlaceholder?: string; // 搜索框的占位符文本
+  showViewMode?: boolean; // 是否显示视图模式切换按钮
+  showSort?: boolean; // 是否显示排序控制
 }
 
 /**
  * 通用筛选器组件
- * 提供搜索、筛选、排序、视图切换等功能
- * @param props 组件属性
+ * 提供搜索、筛选、排序、视图切换等可组合的功能。
  */
 export default function MogeFilter({
   filters,

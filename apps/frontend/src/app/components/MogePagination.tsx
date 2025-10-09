@@ -9,14 +9,21 @@ import {
 } from '@/components/ui/pagination';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
+/**
+ * 分页组件的属性接口
+ */
 export interface MogePaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  showTotal?: boolean;
-  totalItems?: number;
+  currentPage: number; // 当前页码
+  totalPages: number; // 总页数
+  onPageChange: (page: number) => void; // 页码变化时的回调函数
+  showTotal?: boolean; // 是否显示总记录数和总页数信息
+  totalItems?: number; // 总记录数
 }
 
+/**
+ * 通用分页组件
+ * 提供了页码导航、上一页/下一页功能,并能自适应地显示省略号。
+ */
 export default function MogePagination({
   currentPage,
   totalPages,

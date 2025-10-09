@@ -8,6 +8,10 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
+/**
+ * Moge 定制 Select 触发器
+ * 封装了原始的 SelectTrigger,并应用了项目统一的输入框样式。
+ */
 const MogeSelectTrigger = React.forwardRef<
   React.ComponentRef<typeof OriginalSelectTrigger>,
   React.ComponentPropsWithoutRef<typeof OriginalSelectTrigger>

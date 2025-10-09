@@ -17,9 +17,9 @@ import type { FormEvent } from 'react';
  * @template T - 表单数据类型
  */
 interface FieldDef<T extends FieldValues> {
-  name: FieldPath<T>;
-  label: string;
-  required?: boolean;
+  name: FieldPath<T>; // 字段名称,对应react-hook-form的字段路径
+  label: string; // 字段标签,用于显示在表单上
+  required?: boolean; // 是否为必填字段
 }
 
 /**
@@ -27,9 +27,9 @@ interface FieldDef<T extends FieldValues> {
  * 用于浏览器自动填充功能的隐藏字段
  */
 interface HiddenField {
-  name: string;
-  value: string;
-  autoComplete: string;
+  name: string; // 隐藏字段的名称
+  value: string; // 隐藏字段的值
+  autoComplete: string; // 浏览器的自动填充类型,如 "username" 或 "current-password"
 }
 
 /**
@@ -37,38 +37,27 @@ interface HiddenField {
  * @template T - 表单数据类型
  */
 interface HookFormProps<T extends FieldValues> {
-  form: UseFormReturn<T>;
-  fields: FieldDef<T>[];
-  loading?: boolean;
-  submitText?: string;
-  cancelText?: string;
-  onCancel?: () => void;
+  form: UseFormReturn<T>; // react-hook-form的实例,通过useForm()获取
+  fields: FieldDef<T>[]; // 表单字段定义数组
+  loading?: boolean; // 是否处于加载状态,用于禁用提交按钮
+  submitText?: string; // 提交按钮的文本,默认为 "提交"
+  cancelText?: string; // 取消按钮的文本,如果未提供,则不显示取消按钮
+  onCancel?: () => void; // 取消按钮的点击事件处理函数
   renderControl: (
+    // 自定义渲染表单控件的函数
     field: ControllerRenderProps<T, FieldPath<T>>,
     name: FieldPath<T>
   ) => React.ReactNode;
-  onSubmit: (values: T) => Promise<void> | void;
-  submitButtonClassName?: string;
-  hiddenFields?: HiddenField[];
-  renderSubmitButton?: (props: { loading?: boolean }) => React.ReactNode;
+  onSubmit: (values: T) => Promise<void> | void; // 表单提交时的回调函数
+  submitButtonClassName?: string; // 提交按钮的额外CSS类名
+  hiddenFields?: HiddenField[]; // 隐藏字段数组,用于支持浏览器的自动填充功能
+  renderSubmitButton?: (props: { loading?: boolean }) => React.ReactNode; // 自定义渲染提交按钮的函数
 }
 
 /**
  * 通用表单组件
- * 基于react-hook-form的封装组件,提供统一的表单样式和交互
- * @template T - 表单数据类型
- * @param {HookFormProps<T>} props - 组件属性
- * @param {UseFormReturn<T>} props.form - react-hook-form实例
- * @param {FieldDef<T>[]} props.fields - 表单字段定义数组
- * @param {boolean} props.loading - 提交加载状态
- * @param {string} props.submitText - 提交按钮文本,默认"提交"
- * @param {string} props.cancelText - 取消按钮文本,不传则不显示取消按钮
- * @param {Function} props.onCancel - 取消按钮点击回调
- * @param {Function} props.renderControl - 自定义表单控件渲染函数
- * @param {Function} props.onSubmit - 表单提交回调
- * @param {string} props.submitButtonClassName - 提交按钮额外样式类名
- * @param {HiddenField[]} props.hiddenFields - 隐藏字段数组,用于浏览器自动填充
- * @param {Function} props.renderSubmitButton - 自定义提交按钮渲染函数
+ * 基于react-hook-form的封装,提供统一的表单样式和交互。
+ * @template T - 表单数据类型,必须是FieldValues的子类型
  */
 export default function HookForm<T extends FieldValues>({
   form,

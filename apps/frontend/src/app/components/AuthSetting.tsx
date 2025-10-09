@@ -5,12 +5,17 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
 /**
- * 主题和语言设置组件
- * 提供明暗主题切换和中英文语言切换功能
- * @param {Object} props - 组件属性
- * @param {boolean} props.isAbsolute - 是否使用绝对定位,默认为true
+ * AuthSetting组件的属性接口
  */
-export default function AuthSetting({ isAbsolute = true }) {
+interface AuthSettingProps {
+  isAbsolute?: boolean; // 是否使用绝对定位,默认为true
+}
+
+/**
+ * 主题和语言设置组件
+ * 提供明暗主题切换和中英文语言切换功能。
+ */
+export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
   const { lang, setLang } = useSettings();
   const { theme, setTheme } = useTheme();
 

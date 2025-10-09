@@ -9,35 +9,35 @@ import { ReactNode } from 'react';
  * 列表项数据接口
  */
 export interface MogeListItem {
-  id: string | number;
-  [key: string]: string | number | boolean | string[] | null | undefined | object;
+  id: string | number; // 列表项的唯一标识符
+  [key: string]: string | number | boolean | string[] | null | undefined | object; // 其他动态属性
 }
 
 /**
  * 列表组件属性接口
  */
 export interface MogeListProps<T extends MogeListItem> {
-  items: T[];
-  total: number;
-  loading: boolean;
-  currentPage: number;
-  pageSize: number;
-  viewMode: 'list' | 'grid';
-  onPageChange: (page: number) => void;
-  renderItem: (item: T) => ReactNode;
-  emptyIcon?: ReactNode;
-  emptyTitle?: string;
-  emptyDescription?: string;
-  hasFilters?: boolean;
-  showPagination?: boolean;
-  gridClassName?: string;
-  listClassName?: string;
+  items: T[]; // 当前页的列表数据项
+  total: number; // 数据总数
+  loading: boolean; // 是否处于加载状态
+  currentPage: number; // 当前页码
+  pageSize: number; // 每页显示数量
+  viewMode: 'list' | 'grid'; // 视图模式: 'list' 或 'grid'
+  onPageChange: (page: number) => void; // 页码变化时的回调函数
+  renderItem: (item: T) => ReactNode; // 单个列表项的渲染函数
+  emptyIcon?: ReactNode; // 空状态时显示的图标
+  emptyTitle?: string; // 空状态时显示的标题
+  emptyDescription?: string; // 空状态时显示的描述
+  hasFilters?: boolean; // 是否有筛选条件,用于在空状态时显示不同文本
+  showPagination?: boolean; // 是否显示分页组件
+  gridClassName?: string; // 网格视图模式下的CSS类名
+  listClassName?: string; // 列表视图模式下的CSS类名
 }
 
 /**
  * 通用列表组件
- * 支持列表和网格两种视图模式，提供加载状态、空状态、分页等功能
- * @param props 组件属性
+ * 支持列表和网格两种视图模式,并内置了加载状态、空状态和分页功能。
+ * @template T - 列表项的数据类型,必须继承自MogeListItem
  */
 export default function MogeList<T extends MogeListItem>({
   items,
