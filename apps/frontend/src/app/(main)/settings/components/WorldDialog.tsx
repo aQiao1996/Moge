@@ -37,10 +37,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { createWorld, updateWorld } from '@/api/settings.api';
 
 interface WorldDialogProps {
   mode: 'create' | 'edit';
-  world?: World;
+  world?: World & { id?: number | string };
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -89,7 +90,7 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     { name: 'cultivationResources', label: '修炼资源' },
     { name: 'worldHistory', label: '世界历史概述' },
     { name: 'currentEvents', label: '当前时代事件' },
-    { name: 'remark', label: '备注' },
+    { name: 'remarks', label: '备注' },
   ];
 
   const renderControl = useCallback(
@@ -131,7 +132,7 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
           'cultivationResources',
           'worldHistory',
           'currentEvents',
-          'remark',
+          'remarks',
         ].includes(name)
       ) {
         return (
@@ -157,8 +158,11 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
 
   // 处理提交
   const onSubmit = async (values: FormValues) => {
+    // 移除可能存在的id字段(编辑模式下form可能包含id)
+    const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
+    void _removedId; // id通过URL参数传递,不需要在表单数据中
     const submitData = {
-      ...values,
+      ...restValues,
       geographicLocations,
       politicalForces,
       culturalCustoms,
@@ -167,9 +171,13 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
       historicalFigures,
     };
 
-    await Promise.resolve(1);
-    console.log('提交世界设定:', submitData);
-    // TODO: 实际的API调用
+    if (isEditMode && world?.id) {
+      // 确保id是number类型
+      const worldId = typeof world.id === 'string' ? parseInt(world.id) : world.id;
+      await updateWorld(worldId, submitData);
+    } else {
+      await createWorld(submitData);
+    }
   };
 
   // 地理环境管理
@@ -913,7 +921,7 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
         worldHistory: '',
         currentEvents: '',
         tags: [],
-        remark: '',
+        remarks: '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateWorldValues | UpdateWorldValues>[]}

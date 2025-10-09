@@ -55,16 +55,16 @@ export const systemSchema = z.object({
   rules: z.string().optional(),
 
   // 触发条件
-  triggerConditions: z.string().optional(),
+  triggers: z.string().optional(),
 
   // 限制约束
-  limitations: z.string().optional(),
+  constraints: z.string().optional(),
 
   // 标签
   tags: z.array(z.string()).optional(),
 
   // 备注
-  remark: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 // 创建系统设定的schema

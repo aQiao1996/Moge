@@ -25,8 +25,24 @@ import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
 import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
 import MiscDialog from '@/app/(main)/settings/components/MiscDialog';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
-import { getSettingsByCategory, deleteCharacter, type CharacterSetting } from '@/api/settings.api';
-import { type Character } from '@moge/types';
+import {
+  getSettingsByCategory,
+  deleteCharacter,
+  deleteSystem,
+  deleteWorld,
+  deleteMisc,
+  type CharacterSetting,
+} from '@/api/settings.api';
+import {
+  type Character,
+  type System,
+  type World,
+  type Misc,
+  characterTypes,
+  systemTypes,
+  worldTypes,
+  miscTypes,
+} from '@moge/types';
 
 // 设定分类配置
 const settingCategories = [
@@ -163,7 +179,24 @@ export default function CategorySettingsPage() {
   // 处理删除操作
   const handleDelete = async (setting: CharacterSetting) => {
     try {
-      await deleteCharacter(setting.id);
+      // 根据分类调用不同的删除API
+      switch (category) {
+        case 'characters':
+          await deleteCharacter(setting.id);
+          break;
+        case 'systems':
+          await deleteSystem(setting.id);
+          break;
+        case 'worlds':
+          await deleteWorld(setting.id);
+          break;
+        case 'misc':
+          await deleteMisc(setting.id);
+          break;
+        default:
+          console.error('未知的设定类型:', category);
+          return;
+      }
       toast.success('删除成功');
       void loadSettings();
     } catch (error) {
@@ -175,6 +208,20 @@ export default function CategorySettingsPage() {
   const handleViewProjects = (setting: CharacterSetting) => {
     // TODO: 打开关联项目弹框
     console.log('查看关联项目:', setting);
+  };
+
+  // 获取类型标签的中文名称
+  const getTypeLabel = (type: string) => {
+    if (category === 'characters') {
+      return characterTypes.find((t) => t.value === type)?.label || type;
+    } else if (category === 'systems') {
+      return systemTypes.find((t) => t.value === type)?.label || type;
+    } else if (category === 'worlds') {
+      return worldTypes.find((t) => t.value === type)?.label || type;
+    } else if (category === 'misc') {
+      return miscTypes.find((t) => t.value === type)?.label || type;
+    }
+    return type;
   };
 
   const renderSettingCard = (setting: CharacterSetting) => {
@@ -199,7 +246,9 @@ export default function CategorySettingsPage() {
               <h3 className="font-semibold text-[var(--moge-text-main)]">{setting.name}</h3>
             </div>
             <p className="mb-3 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-              {setting.background || setting.type || '暂无描述'}
+              {(setting.background as string) ||
+                (setting.description as string) ||
+                (setting.type ? `类型: ${getTypeLabel(setting.type)}` : '暂无描述')}
             </p>
             <div className="mb-2 flex flex-wrap gap-1">
               {(setting.tags || []).map((tag, index) => (
@@ -311,11 +360,41 @@ export default function CategorySettingsPage() {
             />
           </>
         ) : category === 'systems' ? (
-          <SystemDialog mode="create" />
+          <>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建{currentCategory.label}
+            </Button>
+            <SystemDialog
+              mode="create"
+              open={createDialogOpen}
+              onOpenChange={handleCreateDialogChange}
+            />
+          </>
         ) : category === 'worlds' ? (
-          <WorldDialog mode="create" />
+          <>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建{currentCategory.label}
+            </Button>
+            <WorldDialog
+              mode="create"
+              open={createDialogOpen}
+              onOpenChange={handleCreateDialogChange}
+            />
+          </>
         ) : category === 'misc' ? (
-          <MiscDialog mode="create" />
+          <>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建{currentCategory.label}
+            </Button>
+            <MiscDialog
+              mode="create"
+              open={createDialogOpen}
+              onOpenChange={handleCreateDialogChange}
+            />
+          </>
         ) : (
           <Button>
             <Plus className="mr-2 h-4 w-4" />
@@ -367,6 +446,30 @@ export default function CategorySettingsPage() {
         <CharacterDialog
           mode="edit"
           character={editingSetting as Character & { id?: string | number }}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogChange}
+        />
+      )}
+      {category === 'systems' && editingSetting && (
+        <SystemDialog
+          mode="edit"
+          system={editingSetting as System & { id?: string | number }}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogChange}
+        />
+      )}
+      {category === 'worlds' && editingSetting && (
+        <WorldDialog
+          mode="edit"
+          world={editingSetting as World & { id?: string | number }}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogChange}
+        />
+      )}
+      {category === 'misc' && editingSetting && (
+        <MiscDialog
+          mode="edit"
+          misc={editingSetting as Misc & { id?: string | number }}
           open={editDialogOpen}
           onOpenChange={handleEditDialogChange}
         />

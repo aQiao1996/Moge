@@ -103,7 +103,7 @@ export const worldSchema = z.object({
 
   // 标签和备注
   tags: z.array(z.string()).optional(),
-  remark: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 // 创建世界设定的schema

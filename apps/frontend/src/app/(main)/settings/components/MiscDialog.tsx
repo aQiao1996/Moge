@@ -40,10 +40,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { createMisc, updateMisc } from '@/api/settings.api';
 
 interface MiscDialogProps {
   mode: 'create' | 'edit';
-  misc?: Misc;
+  misc?: Misc & { id?: number | string };
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -54,12 +55,10 @@ type FormValues = CreateMiscValues | UpdateMiscValues;
 export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 动态数组状态
-  const [ideaRecords, setIdeaRecords] = useState<IdeaRecord[]>(misc?.ideaRecords || []);
-  const [referenceMaterials, setReferenceMaterials] = useState<ReferenceMaterial[]>(
-    misc?.referenceMaterials || []
-  );
-  const [creativeNotes, setCreativeNotes] = useState<CreativeNote[]>(misc?.creativeNotes || []);
+  // 动态数组状态 - 字段名匹配数据库
+  const [inspirations, setInspirations] = useState<IdeaRecord[]>(misc?.inspirations || []);
+  const [references, setReferences] = useState<ReferenceMaterial[]>(misc?.references || []);
+  const [notes, setNotes] = useState<CreativeNote[]>(misc?.notes || []);
   const [terminology, setTerminology] = useState<Terminology[]>(misc?.terminology || []);
   const [templates, setTemplates] = useState<Template[]>(misc?.templates || []);
   const [projectTags, setProjectTags] = useState<ProjectTag[]>(misc?.projectTags || []);
@@ -69,7 +68,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     { name: 'name', label: '辅助设定名称', required: !isEditMode },
     { name: 'type', label: '辅助设定类型', required: !isEditMode },
     { name: 'description', label: '描述说明' },
-    { name: 'remark', label: '备注' },
+    { name: 'remarks', label: '备注' },
   ];
 
   const renderControl = useCallback(
@@ -97,7 +96,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         );
       }
 
-      if (name === 'description' || name === 'remark') {
+      if (name === 'description' || name === 'remarks') {
         return (
           <MogeTextarea
             placeholder={`请输入${fields.find((f) => f.name === name)?.label}`}
@@ -121,25 +120,32 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
 
   // 处理提交
   const onSubmit = async (values: FormValues) => {
+    // 移除可能存在的id字段(编辑模式下form可能包含id)
+    const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
+    void _removedId; // id通过URL参数传递,不需要在表单数据中
     const submitData = {
-      ...values,
-      ideaRecords,
-      referenceMaterials,
-      creativeNotes,
+      ...restValues,
+      inspirations,
+      references,
+      notes,
       terminology,
       templates,
       projectTags,
     };
 
-    await Promise.resolve(1);
-    console.log('提交辅助设定:', submitData);
-    // TODO: 实际的API调用
+    if (isEditMode && misc?.id) {
+      // 确保id是number类型
+      const miscId = typeof misc.id === 'string' ? parseInt(misc.id) : misc.id;
+      await updateMisc(miscId, submitData);
+    } else {
+      await createMisc(submitData);
+    }
   };
 
   // 灵感记录管理
   const addIdeaRecord = () => {
-    setIdeaRecords([
-      ...ideaRecords,
+    setInspirations([
+      ...inspirations,
       {
         title: '',
         type: '',
@@ -153,19 +159,19 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
   };
 
   const updateIdeaRecord = (index: number, field: keyof IdeaRecord, value: string) => {
-    const newRecords = [...ideaRecords];
+    const newRecords = [...inspirations];
     newRecords[index] = { ...newRecords[index], [field]: value };
-    setIdeaRecords(newRecords);
+    setInspirations(newRecords);
   };
 
   const removeIdeaRecord = (index: number) => {
-    setIdeaRecords(ideaRecords.filter((_, i) => i !== index));
+    setInspirations(inspirations.filter((_, i) => i !== index));
   };
 
   // 参考资料管理
   const addReferenceMaterial = () => {
-    setReferenceMaterials([
-      ...referenceMaterials,
+    setReferences([
+      ...references,
       {
         title: '',
         type: '',
@@ -184,19 +190,19 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     field: keyof ReferenceMaterial,
     value: string
   ) => {
-    const newMaterials = [...referenceMaterials];
+    const newMaterials = [...references];
     newMaterials[index] = { ...newMaterials[index], [field]: value };
-    setReferenceMaterials(newMaterials);
+    setReferences(newMaterials);
   };
 
   const removeReferenceMaterial = (index: number) => {
-    setReferenceMaterials(referenceMaterials.filter((_, i) => i !== index));
+    setReferences(references.filter((_, i) => i !== index));
   };
 
   // 创作笔记管理
   const addCreativeNote = () => {
-    setCreativeNotes([
-      ...creativeNotes,
+    setNotes([
+      ...notes,
       {
         title: '',
         type: '',
@@ -209,13 +215,13 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
   };
 
   const updateCreativeNote = (index: number, field: keyof CreativeNote, value: string) => {
-    const newNotes = [...creativeNotes];
+    const newNotes = [...notes];
     newNotes[index] = { ...newNotes[index], [field]: value };
-    setCreativeNotes(newNotes);
+    setNotes(newNotes);
   };
 
   const removeCreativeNote = (index: number) => {
-    setCreativeNotes(creativeNotes.filter((_, i) => i !== index));
+    setNotes(notes.filter((_, i) => i !== index));
   };
 
   // 术语管理
@@ -317,7 +323,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         </Button>
       </div>
       <div className="space-y-3">
-        {ideaRecords.map((record, index) => (
+        {inspirations.map((record, index) => (
           <Card
             key={index}
             className="p-3"
@@ -383,9 +389,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
             </div>
           </Card>
         ))}
-        {ideaRecords.length === 0 && (
+        {inspirations.length === 0 && (
           <div className="py-4 text-center text-sm text-[var(--moge-text-muted)]">
-            暂无灵感记录，点击"添加灵感"开始创建
+            暂无灵感记录,点击"添加灵感"开始创建
           </div>
         )}
       </div>
@@ -406,7 +412,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         </Button>
       </div>
       <div className="space-y-3">
-        {referenceMaterials.map((material, index) => (
+        {references.map((material, index) => (
           <Card
             key={index}
             className="p-3"
@@ -479,9 +485,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
             </div>
           </Card>
         ))}
-        {referenceMaterials.length === 0 && (
+        {references.length === 0 && (
           <div className="py-4 text-center text-sm text-[var(--moge-text-muted)]">
-            暂无参考资料，点击"添加资料"开始创建
+            暂无参考资料,点击"添加资料"开始创建
           </div>
         )}
       </div>
@@ -502,7 +508,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         </Button>
       </div>
       <div className="space-y-3">
-        {creativeNotes.map((note, index) => (
+        {notes.map((note, index) => (
           <Card
             key={index}
             className="p-3"
@@ -568,9 +574,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
             </div>
           </Card>
         ))}
-        {creativeNotes.length === 0 && (
+        {notes.length === 0 && (
           <div className="py-4 text-center text-sm text-[var(--moge-text-muted)]">
-            暂无创作笔记，点击"添加笔记"开始创建
+            暂无创作笔记,点击"添加笔记"开始创建
           </div>
         )}
       </div>
@@ -887,7 +893,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         type: '',
         description: '',
         tags: [],
-        remark: '',
+        remarks: '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateMiscValues | UpdateMiscValues>[]}

@@ -33,10 +33,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { createSystem, updateSystem } from '@/api/settings.api';
 
 interface SystemDialogProps {
   mode: 'create' | 'edit';
-  system?: System;
+  system?: System & { id?: number | string };
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -59,9 +60,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     { name: 'type', label: '系统类型', required: !isEditMode },
     { name: 'description', label: '系统描述' },
     { name: 'rules', label: '运作规则' },
-    { name: 'triggerConditions', label: '触发条件' },
-    { name: 'limitations', label: '限制约束' },
-    { name: 'remark', label: '备注' },
+    { name: 'triggers', label: '触发条件' },
+    { name: 'constraints', label: '限制约束' },
+    { name: 'remarks', label: '备注' },
   ];
 
   const renderControl = useCallback(
@@ -92,9 +93,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
       if (
         name === 'description' ||
         name === 'rules' ||
-        name === 'triggerConditions' ||
-        name === 'limitations' ||
-        name === 'remark'
+        name === 'triggers' ||
+        name === 'constraints' ||
+        name === 'remarks'
       ) {
         return (
           <MogeTextarea
@@ -119,16 +120,24 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
 
   // 处理提交
   const onSubmit = async (values: FormValues) => {
+    // 移除可能存在的id字段(编辑模式下form可能包含id)
+    const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
+    void _removedId; // id通过URL参数传递,不需要在表单数据中
     const submitData = {
-      ...values,
+      ...restValues,
       modules,
       levels,
       items,
       parameters,
     };
-    await Promise.resolve(1);
-    console.log('提交系统设定:', submitData);
-    // TODO: 实际的API调用
+
+    if (isEditMode && system?.id) {
+      // 确保id是number类型
+      const systemId = typeof system.id === 'string' ? parseInt(system.id) : system.id;
+      await updateSystem(systemId, submitData);
+    } else {
+      await createSystem(submitData);
+    }
   };
 
   // 功能模块管理
@@ -488,10 +497,10 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
         type: '',
         description: '',
         rules: '',
-        triggerConditions: '',
-        limitations: '',
+        triggers: '',
+        constraints: '',
         tags: [],
-        remark: '',
+        remarks: '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateSystemValues | UpdateSystemValues>[]}

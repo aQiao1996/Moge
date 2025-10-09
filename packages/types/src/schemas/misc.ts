@@ -72,17 +72,17 @@ export const miscSchema = z.object({
   type: z.string().min(1, '请选择辅助设定类型'),
   description: z.string().optional(), // 整体描述
 
-  // 各类辅助内容
-  ideaRecords: z.array(ideaRecordSchema).optional(),
-  referenceMaterials: z.array(referenceMaterialSchema).optional(),
-  creativeNotes: z.array(creativeNoteSchema).optional(),
+  // 各类辅助内容 - 字段名匹配数据库
+  inspirations: z.array(ideaRecordSchema).optional(),
+  references: z.array(referenceMaterialSchema).optional(),
+  notes: z.array(creativeNoteSchema).optional(),
   terminology: z.array(terminologySchema).optional(),
   templates: z.array(templateSchema).optional(),
   projectTags: z.array(projectTagSchema).optional(),
 
   // 标签和备注
   tags: z.array(z.string()).optional(),
-  remark: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 // 创建辅助设定的schema
