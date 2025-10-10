@@ -394,6 +394,20 @@ export class SettingsController {
   // ==================== 世界设定相关接口 ====================
 
   /**
+   * 获取单个世界设定详情
+   */
+  @Get('worlds/:id')
+  @ApiOperation({
+    summary: '获取世界设定详情',
+    description: '获取指定ID的世界设定详细信息（用于编辑）',
+  })
+  @ApiParam({ name: 'id', description: '世界设定ID' })
+  @ApiResponse({ status: 200, description: '世界设定详情' })
+  async getWorldById(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.settingsService.getWorldById(Number(req.user.id), id);
+  }
+
+  /**
    * 创建世界设定
    */
   @Post('worlds')

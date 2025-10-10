@@ -21,30 +21,11 @@ export class SettingsService {
   /**
    * 获取用户的所有角色设定（用于项目关联选择）
    * @param userId 用户ID
-   * @returns 角色设定列表
+   * @returns 角色设定列表（包含完整数据，用于编辑）
    */
   async getCharacterLibrary(userId: number): Promise<Partial<character_settings>[]> {
     return this.prisma.character_settings.findMany({
       where: { userId },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        gender: true,
-        age: true,
-        height: true,
-        appearance: true,
-        personality: true,
-        background: true,
-        occupation: true,
-        powerLevel: true,
-        abilities: true,
-        relationships: true,
-        tags: true,
-        remarks: true,
-        createdAt: true,
-        updatedAt: true,
-      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -52,20 +33,11 @@ export class SettingsService {
   /**
    * 获取用户的所有系统设定（用于项目关联选择）
    * @param userId 用户ID
-   * @returns 系统设定列表
+   * @returns 系统设定列表（包含完整数据，用于编辑）
    */
   async getSystemLibrary(userId: number): Promise<Partial<system_settings>[]> {
     return this.prisma.system_settings.findMany({
       where: { userId },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        description: true,
-        tags: true,
-        createdAt: true,
-        updatedAt: true,
-      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -73,42 +45,26 @@ export class SettingsService {
   /**
    * 获取用户的所有世界设定（用于项目关联选择）
    * @param userId 用户ID
-   * @returns 世界设定列表
+   * @returns 世界设定列表（包含完整的扁平字段，用于编辑）
    */
   async getWorldLibrary(userId: number): Promise<Partial<world_settings>[]> {
-    return this.prisma.world_settings.findMany({
+    const worlds = await this.prisma.world_settings.findMany({
       where: { userId },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        description: true,
-        era: true,
-        tags: true,
-        createdAt: true,
-        updatedAt: true,
-      },
       orderBy: { createdAt: 'desc' },
     });
+
+    // 将所有世界设定转换为扁平字段格式
+    return worlds.map((world) => this.transformWorldFromPrisma(world));
   }
 
   /**
    * 获取用户的所有辅助设定（用于项目关联选择）
    * @param userId 用户ID
-   * @returns 辅助设定列表
+   * @returns 辅助设定列表（包含完整数据，用于编辑）
    */
   async getMiscLibrary(userId: number): Promise<Partial<misc_settings>[]> {
     return this.prisma.misc_settings.findMany({
       where: { userId },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        description: true,
-        tags: true,
-        createdAt: true,
-        updatedAt: true,
-      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -531,6 +487,26 @@ export class SettingsService {
       historicalEvents: (history?.['events'] as unknown[]) || [],
       historicalFigures: (history?.['figures'] as unknown[]) || [],
     };
+  }
+
+  /**
+   * 获取单个世界设定详情（用于编辑）
+   * @param userId 用户ID
+   * @param id 世界设定ID
+   * @returns 世界设定详情（扁平格式）
+   */
+  async getWorldById(userId: number, id: number): Promise<world_settings> {
+    // 检查世界设定是否存在且属于当前用户
+    const world = await this.prisma.world_settings.findFirst({
+      where: { id, userId },
+    });
+
+    if (!world) {
+      throw new NotFoundException('世界设定不存在或无权限访问');
+    }
+
+    // 将数据库 JSON 格式转换为扁平字段返回给前端
+    return this.transformWorldFromPrisma(world);
   }
 
   /**

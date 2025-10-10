@@ -243,6 +243,16 @@ export interface WorldSetting {
 }
 
 /**
+ * 获取单个世界设定详情
+ * @param id 世界设定ID
+ * @returns 世界设定详情（包含所有扁平字段）
+ */
+export const getWorldById = async (id: number): Promise<WorldSetting> => {
+  const response = await get<WorldSetting>(`/settings/worlds/${id}`);
+  return response.data;
+};
+
+/**
  * 创建世界设定
  * @param data 世界设定数据
  * @returns 创建的世界设定
