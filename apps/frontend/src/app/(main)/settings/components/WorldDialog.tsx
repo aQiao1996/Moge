@@ -52,7 +52,7 @@ type FormValues = CreateWorldValues | UpdateWorldValues;
 export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 动态数组状态
+  // 动态数组状态 - 后端将返回扁平字段格式的数据
   const [geographicLocations, setGeographicLocations] = useState<GeographicLocation[]>(
     world?.geographicLocations || []
   );
@@ -160,7 +160,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
   const onSubmit = async (values: FormValues) => {
     // 移除可能存在的id字段(编辑模式下form可能包含id)
     const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
-    void _removedId; // id通过URL参数传递,不需要在表单数据中
+    void _removedId; // id通过URL参数传递，不需要在表单数据中
+
+    // 提交扁平数据和数组数据，由后端负责转换为数据库所需的 JSON 格式
     const submitData = {
       ...restValues,
       geographicLocations,
@@ -904,24 +906,24 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
       createSchema={createWorldSchema}
       updateSchema={updateWorldSchema}
       defaultValues={{
-        name: '',
-        type: '',
-        era: '',
-        description: '',
-        generalClimate: '',
-        majorTerrain: '',
-        politicalSystem: '',
-        majorConflicts: '',
-        socialStructure: '',
-        languages: '',
-        religions: '',
-        powerSystemName: '',
-        powerSystemDescription: '',
-        cultivationResources: '',
-        worldHistory: '',
-        currentEvents: '',
-        tags: [],
-        remarks: '',
+        name: world?.name || '',
+        type: world?.type || '',
+        era: world?.era || '',
+        description: world?.description || '',
+        generalClimate: world?.generalClimate || '',
+        majorTerrain: world?.majorTerrain || '',
+        politicalSystem: world?.politicalSystem || '',
+        majorConflicts: world?.majorConflicts || '',
+        socialStructure: world?.socialStructure || '',
+        languages: world?.languages || '',
+        religions: world?.religions || '',
+        powerSystemName: world?.powerSystemName || '',
+        powerSystemDescription: world?.powerSystemDescription || '',
+        cultivationResources: world?.cultivationResources || '',
+        worldHistory: world?.worldHistory || '',
+        currentEvents: world?.currentEvents || '',
+        tags: world?.tags || [],
+        remarks: world?.remarks || '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateWorldValues | UpdateWorldValues>[]}

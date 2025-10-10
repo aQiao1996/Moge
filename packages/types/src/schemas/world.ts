@@ -65,7 +65,7 @@ export const historicalFigureSchema = z.object({
   legacy: z.string().optional(), // 历史影响
 });
 
-// 世界设定表单数据类型
+// 世界设定表单数据类型（前端使用扁平字段）
 export const worldSchema = z.object({
   // 基础信息
   name: z.string().min(1, '请输入世界名称'),
@@ -73,29 +73,29 @@ export const worldSchema = z.object({
   era: z.string().optional(), // 时代背景
   description: z.string().optional(), // 整体描述
 
-  // 地理环境
+  // 地理环境（扁平字段）
   generalClimate: z.string().optional(), // 总体气候
   majorTerrain: z.string().optional(), // 主要地形
   geographicLocations: z.array(geographicLocationSchema).optional(),
 
-  // 政治势力
+  // 政治势力（扁平字段）
   politicalSystem: z.string().optional(), // 政治制度
   majorConflicts: z.string().optional(), // 主要冲突
   politicalForces: z.array(politicalForceSchema).optional(),
 
-  // 文化体系
+  // 文化体系（扁平字段）
   socialStructure: z.string().optional(), // 社会结构
   languages: z.string().optional(), // 语言文字
   religions: z.string().optional(), // 宗教信仰
   culturalCustoms: z.array(culturalCustomSchema).optional(),
 
-  // 修炼/力量体系
+  // 修炼/力量体系（扁平字段）
   powerSystemName: z.string().optional(), // 力量体系名称
   powerSystemDescription: z.string().optional(), // 体系描述
   cultivationResources: z.string().optional(), // 修炼资源
   cultivationLevels: z.array(cultivationLevelSchema).optional(),
 
-  // 历史脉络
+  // 历史脉络（扁平字段）
   worldHistory: z.string().optional(), // 世界历史概述
   currentEvents: z.string().optional(), // 当前时代事件
   historicalEvents: z.array(historicalEventSchema).optional(),
@@ -106,10 +106,10 @@ export const worldSchema = z.object({
   remarks: z.string().optional(),
 });
 
-// 创建世界设定的schema
+// 创建世界设定的schema（用于表单验证）
 export const createWorldSchema = worldSchema;
 
-// 更新世界设定的schema
+// 更新世界设定的schema（用于表单验证）
 export const updateWorldSchema = worldSchema.partial().extend({
   id: z.string(),
 });

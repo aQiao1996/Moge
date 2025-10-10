@@ -889,11 +889,11 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       createSchema={createMiscSchema}
       updateSchema={updateMiscSchema}
       defaultValues={{
-        name: '',
-        type: '',
-        description: '',
-        tags: [],
-        remarks: '',
+        name: misc?.name || '',
+        type: misc?.type || '',
+        description: misc?.description || '',
+        tags: misc?.tags || [],
+        remarks: misc?.remarks || '',
       }}
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateMiscValues | UpdateMiscValues>[]}

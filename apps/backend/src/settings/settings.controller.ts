@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { Request } from 'express';
 import type { User } from '@moge/types';
 import type { Prisma } from '../../generated/prisma';
+import type { CreateWorldDto, UpdateWorldDto } from './dto/world.dto';
 
 // 扩展Request类型以包含用户信息
 interface AuthenticatedRequest extends Request {
@@ -401,26 +402,36 @@ export class SettingsController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['name'],
+      required: ['name', 'type'],
       properties: {
         name: { type: 'string', example: '修仙界' },
         type: { type: 'string', example: '修仙世界' },
         era: { type: 'string', example: '上古时期' },
         description: { type: 'string', example: '修仙者的世界' },
-        geography: { type: 'array', items: { type: 'object' } },
-        politics: { type: 'array', items: { type: 'object' } },
-        culture: { type: 'array', items: { type: 'object' } },
-        powerSystem: { type: 'array', items: { type: 'object' } },
-        history: { type: 'object' },
+        generalClimate: { type: 'string', example: '四季分明' },
+        majorTerrain: { type: 'string', example: '山地丘陵' },
+        geographicLocations: { type: 'array', items: { type: 'object' } },
+        politicalSystem: { type: 'string', example: '宗门制度' },
+        majorConflicts: { type: 'string', example: '正邪之争' },
+        politicalForces: { type: 'array', items: { type: 'object' } },
+        socialStructure: { type: 'string', example: '修仙者等级制' },
+        languages: { type: 'string', example: '上古仙文' },
+        religions: { type: 'string', example: '道教' },
+        culturalCustoms: { type: 'array', items: { type: 'object' } },
+        powerSystemName: { type: 'string', example: '修仙体系' },
+        powerSystemDescription: { type: 'string', example: '从炼气到飞升的修炼路径' },
+        cultivationResources: { type: 'string', example: '灵石、仙草、法宝' },
+        cultivationLevels: { type: 'array', items: { type: 'object' } },
+        worldHistory: { type: 'string', example: '上古大战后的新纪元' },
+        currentEvents: { type: 'string', example: '魔族入侵' },
+        historicalEvents: { type: 'array', items: { type: 'object' } },
+        historicalFigures: { type: 'array', items: { type: 'object' } },
         tags: { type: 'array', items: { type: 'string' }, example: ['修仙', '上古'] },
         remarks: { type: 'string', example: '备注信息' },
       },
     },
   })
-  async createWorld(
-    @Req() req: AuthenticatedRequest,
-    @Body() data: Omit<Prisma.world_settingsCreateInput, 'user'>
-  ) {
+  async createWorld(@Req() req: AuthenticatedRequest, @Body() data: CreateWorldDto) {
     return this.settingsService.createWorld(Number(req.user.id), data);
   }
 
@@ -434,7 +445,7 @@ export class SettingsController {
   async updateWorld(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Prisma.world_settingsUpdateInput
+    @Body() data: UpdateWorldDto
   ) {
     return this.settingsService.updateWorld(Number(req.user.id), id, data);
   }

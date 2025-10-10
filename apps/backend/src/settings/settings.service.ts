@@ -8,6 +8,7 @@ import type {
   projects,
   Prisma,
 } from '../../generated/prisma';
+import type { CreateWorldDto, UpdateWorldDto } from './dto/world.dto';
 
 /**
  * 设定库服务
@@ -371,37 +372,198 @@ export class SettingsService {
   // ==================== 世界设定相关方法 ====================
 
   /**
+   * 将前端扁平字段转换为数据库 JSON 格式
+   * @param dto 前端发送的扁平数据
+   * @returns 数据库所需的 JSON 格式数据
+   */
+  private transformWorldDtoToPrisma(
+    dto: CreateWorldDto | UpdateWorldDto
+  ): Omit<Prisma.world_settingsCreateInput, 'user'> {
+    const {
+      // 提取扁平字段
+      generalClimate,
+      majorTerrain,
+      geographicLocations,
+      politicalSystem,
+      majorConflicts,
+      politicalForces,
+      socialStructure,
+      languages,
+      religions,
+      culturalCustoms,
+      powerSystemName,
+      powerSystemDescription,
+      cultivationResources,
+      cultivationLevels,
+      worldHistory,
+      currentEvents,
+      historicalEvents,
+      historicalFigures,
+      // 其余字段直接透传
+      ...baseFields
+    } = dto;
+
+    // 构建数据库格式
+    const result: Partial<Prisma.world_settingsCreateInput> = {
+      ...baseFields,
+    };
+
+    // 转换地理环境为 JSON
+    if (generalClimate !== undefined || majorTerrain !== undefined || geographicLocations) {
+      result.geography = {
+        generalClimate,
+        majorTerrain,
+        locations: geographicLocations,
+      } as unknown as Prisma.InputJsonValue;
+    }
+
+    // 转换政治势力为 JSON
+    if (politicalSystem !== undefined || majorConflicts !== undefined || politicalForces) {
+      result.politics = {
+        politicalSystem,
+        majorConflicts,
+        forces: politicalForces,
+      } as unknown as Prisma.InputJsonValue;
+    }
+
+    // 转换文化体系为 JSON
+    if (
+      socialStructure !== undefined ||
+      languages !== undefined ||
+      religions !== undefined ||
+      culturalCustoms
+    ) {
+      result.culture = {
+        socialStructure,
+        languages,
+        religions,
+        customs: culturalCustoms,
+      } as unknown as Prisma.InputJsonValue;
+    }
+
+    // 转换力量体系为 JSON
+    if (
+      powerSystemName !== undefined ||
+      powerSystemDescription !== undefined ||
+      cultivationResources !== undefined ||
+      cultivationLevels
+    ) {
+      result.powerSystem = {
+        name: powerSystemName,
+        description: powerSystemDescription,
+        cultivationResources,
+        levels: cultivationLevels,
+      } as unknown as Prisma.InputJsonValue;
+    }
+
+    // 转换历史脉络为 JSON
+    if (
+      worldHistory !== undefined ||
+      currentEvents !== undefined ||
+      historicalEvents ||
+      historicalFigures
+    ) {
+      result.history = {
+        worldHistory,
+        currentEvents,
+        events: historicalEvents,
+        figures: historicalFigures,
+      } as unknown as Prisma.InputJsonValue;
+    }
+
+    return result as Omit<Prisma.world_settingsCreateInput, 'user'>;
+  }
+
+  /**
+   * 将数据库 JSON 格式转换为前端扁平字段
+   * @param world 数据库中的世界设定数据
+   * @returns 前端所需的扁平格式数据
+   */
+  private transformWorldFromPrisma(world: world_settings): world_settings & {
+    generalClimate?: string;
+    majorTerrain?: string;
+    geographicLocations?: unknown[];
+    politicalSystem?: string;
+    majorConflicts?: string;
+    politicalForces?: unknown[];
+    socialStructure?: string;
+    languages?: string;
+    religions?: string;
+    culturalCustoms?: unknown[];
+    powerSystemName?: string;
+    powerSystemDescription?: string;
+    cultivationResources?: string;
+    cultivationLevels?: unknown[];
+    worldHistory?: string;
+    currentEvents?: string;
+    historicalEvents?: unknown[];
+    historicalFigures?: unknown[];
+  } {
+    const geography = world.geography as Record<string, unknown> | null;
+    const politics = world.politics as Record<string, unknown> | null;
+    const culture = world.culture as Record<string, unknown> | null;
+    const powerSystem = world.powerSystem as Record<string, unknown> | null;
+    const history = world.history as Record<string, unknown> | null;
+
+    return {
+      ...world,
+      // 展开地理环境
+      generalClimate: geography?.['generalClimate'] as string | undefined,
+      majorTerrain: geography?.['majorTerrain'] as string | undefined,
+      geographicLocations: (geography?.['locations'] as unknown[]) || [],
+      // 展开政治势力
+      politicalSystem: politics?.['politicalSystem'] as string | undefined,
+      majorConflicts: politics?.['majorConflicts'] as string | undefined,
+      politicalForces: (politics?.['forces'] as unknown[]) || [],
+      // 展开文化体系
+      socialStructure: culture?.['socialStructure'] as string | undefined,
+      languages: culture?.['languages'] as string | undefined,
+      religions: culture?.['religions'] as string | undefined,
+      culturalCustoms: (culture?.['customs'] as unknown[]) || [],
+      // 展开力量体系
+      powerSystemName: powerSystem?.['name'] as string | undefined,
+      powerSystemDescription: powerSystem?.['description'] as string | undefined,
+      cultivationResources: powerSystem?.['cultivationResources'] as string | undefined,
+      cultivationLevels: (powerSystem?.['levels'] as unknown[]) || [],
+      // 展开历史脉络
+      worldHistory: history?.['worldHistory'] as string | undefined,
+      currentEvents: history?.['currentEvents'] as string | undefined,
+      historicalEvents: (history?.['events'] as unknown[]) || [],
+      historicalFigures: (history?.['figures'] as unknown[]) || [],
+    };
+  }
+
+  /**
    * 创建世界设定
    * @param userId 用户ID
-   * @param data 世界设定数据
-   * @returns 创建的世界设定
+   * @param dto 世界设定数据（扁平格式）
+   * @returns 创建的世界设定（扁平格式）
    */
-  async createWorld(
-    userId: number,
-    data: Omit<Prisma.world_settingsCreateInput, 'user'>
-  ): Promise<world_settings> {
-    return this.prisma.world_settings.create({
+  async createWorld(userId: number, dto: CreateWorldDto): Promise<world_settings> {
+    // 将扁平字段转换为数据库 JSON 格式
+    const prismaData = this.transformWorldDtoToPrisma(dto);
+
+    const world = await this.prisma.world_settings.create({
       data: {
-        ...data,
+        ...prismaData,
         user: {
           connect: { id: userId },
         },
       },
     });
+
+    // 将数据库 JSON 格式转换回扁平字段返回给前端
+    return this.transformWorldFromPrisma(world);
   }
 
   /**
    * 更新世界设定
    * @param userId 用户ID
    * @param id 世界设定ID
-   * @param data 更新的世界设定数据
-   * @returns 更新后的世界设定
+   * @param dto 更新的世界设定数据（扁平格式）
+   * @returns 更新后的世界设定（扁平格式）
    */
-  async updateWorld(
-    userId: number,
-    id: number,
-    data: Prisma.world_settingsUpdateInput
-  ): Promise<world_settings> {
+  async updateWorld(userId: number, id: number, dto: UpdateWorldDto): Promise<world_settings> {
     // 检查世界设定是否存在且属于当前用户
     const world = await this.prisma.world_settings.findFirst({
       where: { id, userId },
@@ -411,11 +573,17 @@ export class SettingsService {
       throw new NotFoundException('世界设定不存在或无权限访问');
     }
 
+    // 将扁平字段转换为数据库 JSON 格式
+    const prismaData = this.transformWorldDtoToPrisma(dto);
+
     // 更新世界设定
-    return this.prisma.world_settings.update({
+    const updatedWorld = await this.prisma.world_settings.update({
       where: { id },
-      data,
+      data: prismaData,
     });
+
+    // 将数据库 JSON 格式转换回扁平字段返回给前端
+    return this.transformWorldFromPrisma(updatedWorld);
   }
 
   /**
