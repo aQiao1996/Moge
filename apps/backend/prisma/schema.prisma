@@ -328,10 +328,10 @@ model character_settings {
   id                Int      @id @default(autoincrement())
   /// 角色名称
   name              String
-  /// 角色类型
-  type              String?
-  /// 性别
-  gender            String?
+  /// 角色类型（0-主角, 1-重要配角, 2-普通配角, 3-反派, 4-路人）
+  type              Int?
+  /// 性别（1-男, 2-女, 3-其他）
+  gender            Int?
   /// 年龄
   age               String?
   /// 身高

@@ -12,8 +12,8 @@ export const relationshipSchema = z.object({
 // 角色设定表单数据类型
 export const characterSchema = z.object({
   name: z.string().min(1, '请输入角色名称'),
-  type: z.string().min(1, '请选择角色类型'),
-  gender: z.string().min(1, '请选择性别'),
+  type: z.number().int().min(0, '请选择角色类型'),
+  gender: z.number().int().min(0, '请选择性别'),
   age: z.string().optional(),
   height: z.string().optional(),
   appearance: z.string().optional(),
@@ -41,20 +41,36 @@ export type Character = z.infer<typeof characterSchema>;
 export type CreateCharacterValues = z.infer<typeof createCharacterSchema>;
 export type UpdateCharacterValues = z.infer<typeof updateCharacterSchema>;
 
+// 角色类型枚举
+export enum CharacterType {
+  PROTAGONIST = 0, // 主角
+  IMPORTANT = 1, // 重要配角
+  SUPPORTING = 2, // 普通配角
+  ANTAGONIST = 3, // 反派
+  MINOR = 4, // 路人
+}
+
+// 性别枚举
+export enum Gender {
+  MALE = 1, // 男
+  FEMALE = 2, // 女
+  OTHER = 3, // 其他
+}
+
 // 角色类型选项
 export const characterTypes = [
-  { value: 'protagonist', label: '主角' },
-  { value: 'important', label: '重要配角' },
-  { value: 'supporting', label: '普通配角' },
-  { value: 'antagonist', label: '反派' },
-  { value: 'minor', label: '路人' },
+  { value: CharacterType.PROTAGONIST, label: '主角' },
+  { value: CharacterType.IMPORTANT, label: '重要配角' },
+  { value: CharacterType.SUPPORTING, label: '普通配角' },
+  { value: CharacterType.ANTAGONIST, label: '反派' },
+  { value: CharacterType.MINOR, label: '路人' },
 ] as const;
 
 // 性别选项
 export const genderOptions = [
-  { value: 'male', label: '男' },
-  { value: 'female', label: '女' },
-  { value: 'other', label: '其他' },
+  { value: Gender.MALE, label: '男' },
+  { value: Gender.FEMALE, label: '女' },
+  { value: Gender.OTHER, label: '其他' },
 ] as const;
 
 // 关系类型选项

@@ -39,6 +39,7 @@ import {
   type World,
   type Misc,
   characterTypes,
+  genderOptions,
   systemTypes,
   worldTypes,
   miscTypes,
@@ -211,17 +212,38 @@ export default function CategorySettingsPage() {
   };
 
   // 获取类型标签的中文名称
-  const getTypeLabel = (type: string) => {
+  const getTypeLabel = (type: string | number) => {
+    let typeOptions: readonly { value: number | string; label: string }[] = [];
+
     if (category === 'characters') {
-      return characterTypes.find((t) => t.value === type)?.label || type;
+      typeOptions = characterTypes;
     } else if (category === 'systems') {
-      return systemTypes.find((t) => t.value === type)?.label || type;
+      typeOptions = systemTypes;
     } else if (category === 'worlds') {
-      return worldTypes.find((t) => t.value === type)?.label || type;
+      typeOptions = worldTypes;
     } else if (category === 'misc') {
-      return miscTypes.find((t) => t.value === type)?.label || type;
+      typeOptions = miscTypes;
     }
-    return type;
+
+    // 如果是字符串，尝试转换为数字（仅对 characters 类型）
+    if (category === 'characters') {
+      const numType = typeof type === 'string' ? Number(type) : type;
+      const byValue = typeOptions.find((t) => t.value === numType);
+      return byValue?.label || String(type);
+    }
+
+    // 其他类型直接字符串匹配
+    const byValue = typeOptions.find((t) => String(t.value) === String(type));
+    return byValue?.label || String(type);
+  };
+
+  // 获取性别的中文标签
+  const getGenderLabel = (gender: string | number) => {
+    // 如果是字符串，尝试转换为数字
+    const numGender = typeof gender === 'string' ? Number(gender) : gender;
+
+    const byValue = genderOptions.find((g) => Number(g.value) === Number(numGender));
+    return byValue?.label || String(gender);
   };
 
   const renderSettingCard = (setting: CharacterSetting) => {
@@ -244,11 +266,19 @@ export default function CategorySettingsPage() {
             <div className="mb-2 flex items-center gap-2">
               <Icon className={`h-5 w-5 ${settingCategory?.color || 'text-gray-500'}`} />
               <h3 className="font-semibold text-[var(--moge-text-main)]">{setting.name}</h3>
+              {category === 'characters' && setting.type && (
+                <Badge variant="outline" className="text-xs">
+                  {getTypeLabel(setting.type)}
+                </Badge>
+              )}
+              {category === 'characters' && setting.gender && (
+                <Badge variant="outline" className="text-xs">
+                  {getGenderLabel(setting.gender)}
+                </Badge>
+              )}
             </div>
             <p className="mb-3 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-              {(setting.background as string) ||
-                (setting.description as string) ||
-                (setting.type ? `类型: ${getTypeLabel(setting.type)}` : '暂无描述')}
+              {(setting.background as string) || (setting.description as string) || '暂无描述'}
             </p>
             <div className="mb-2 flex flex-wrap gap-1">
               {(setting.tags || []).map((tag, index) => (

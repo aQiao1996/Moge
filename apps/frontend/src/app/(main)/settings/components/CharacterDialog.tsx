@@ -11,6 +11,8 @@ import {
   type UpdateCharacterValues,
   type Character,
   type Relationship,
+  CharacterType,
+  Gender,
   characterTypes,
   genderOptions,
   relationshipTypes,
@@ -87,14 +89,19 @@ export default function CharacterDialog({
       name: FieldPath<FormValues>
     ) => {
       if (name === 'type') {
+        const fieldValue = field.value;
+        const stringValue =
+          fieldValue !== null && fieldValue !== undefined && typeof fieldValue === 'number'
+            ? String(fieldValue)
+            : '';
         return (
-          <MogeSelect onValueChange={field.onChange} value={field.value as string}>
+          <MogeSelect onValueChange={(value) => field.onChange(Number(value))} value={stringValue}>
             <MogeSelectTrigger>
               <MogeSelectValue placeholder="请选择角色类型" />
             </MogeSelectTrigger>
             <MogeSelectContent>
               {characterTypes.map((type) => (
-                <MogeSelectItem key={type.value} value={type.value}>
+                <MogeSelectItem key={type.value} value={type.value.toString()}>
                   {type.label}
                 </MogeSelectItem>
               ))}
@@ -104,14 +111,19 @@ export default function CharacterDialog({
       }
 
       if (name === 'gender') {
+        const fieldValue = field.value;
+        const stringValue =
+          fieldValue !== null && fieldValue !== undefined && typeof fieldValue === 'number'
+            ? String(fieldValue)
+            : '';
         return (
-          <MogeSelect onValueChange={field.onChange} value={field.value as string}>
+          <MogeSelect onValueChange={(value) => field.onChange(Number(value))} value={stringValue}>
             <MogeSelectTrigger>
               <MogeSelectValue placeholder="请选择性别" />
             </MogeSelectTrigger>
             <MogeSelectContent>
               {genderOptions.map((gender) => (
-                <MogeSelectItem key={gender.value} value={gender.value}>
+                <MogeSelectItem key={gender.value} value={gender.value.toString()}>
                   {gender.label}
                 </MogeSelectItem>
               ))}
@@ -366,8 +378,8 @@ export default function CharacterDialog({
       item={isEditMode ? character : undefined}
       defaultValues={{
         name: '',
-        type: '',
-        gender: '',
+        type: CharacterType.PROTAGONIST,
+        gender: Gender.MALE,
         age: '',
         height: '',
         appearance: '',

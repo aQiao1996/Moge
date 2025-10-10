@@ -67,7 +67,16 @@ export class SettingsController {
             properties: {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: '叶凡' },
-              type: { type: 'string', example: '主角' },
+              type: {
+                type: 'number',
+                example: 0,
+                description: '角色类型: 0-主角, 1-重要配角, 2-普通配角, 3-反派, 4-路人',
+              },
+              gender: {
+                type: 'number',
+                example: 1,
+                description: '性别: 1-男, 2-女, 3-其他',
+              },
               description: { type: 'string', example: '主角，修仙者' },
               tags: { type: 'array', items: { type: 'string' }, example: ['主角', '修仙'] },
               createdAt: { type: 'string', format: 'date-time' },
@@ -216,8 +225,16 @@ export class SettingsController {
       required: ['name'],
       properties: {
         name: { type: 'string', example: '叶凡' },
-        type: { type: 'string', example: '主角' },
-        gender: { type: 'string', example: '男' },
+        type: {
+          type: 'number',
+          example: 0,
+          description: '角色类型: 0-主角, 1-重要配角, 2-普通配角, 3-反派, 4-路人',
+        },
+        gender: {
+          type: 'number',
+          example: 1,
+          description: '性别: 1-男, 2-女, 3-其他',
+        },
         age: { type: 'string', example: '18' },
         height: { type: 'string', example: '180cm' },
         appearance: { type: 'string', example: '英俊潇洒' },
