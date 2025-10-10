@@ -20,11 +20,12 @@ import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import CategoryDialogs from '@/app/(main)/settings/library/components/CategoryDialogs';
 import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
 import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
 import MiscDialog from '@/app/(main)/settings/components/MiscDialog';
-import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import {
   getSettingsByCategory,
   deleteCharacter,
@@ -33,17 +34,22 @@ import {
   deleteMisc,
   type CharacterSetting,
 } from '@/api/settings.api';
-import {
-  type Character,
-  type System,
-  type World,
-  type Misc,
-  characterTypes,
-  genderOptions,
-  systemTypes,
-  worldTypes,
-  miscTypes,
-} from '@moge/types';
+import { characterTypes, genderOptions, systemTypes, worldTypes, miscTypes } from '@moge/types';
+
+// 分类配置类型定义
+type CategoryConfig = {
+  key: string;
+  label: string;
+  icon: typeof Users;
+  color: string;
+  DialogComponent:
+    | typeof CharacterDialog
+    | typeof SystemDialog
+    | typeof WorldDialog
+    | typeof MiscDialog;
+  deleteApi: (id: number) => Promise<{ message: string }>;
+  typeKey: 'character' | 'system' | 'world' | 'misc';
+};
 
 // 设定分类配置
 const settingCategories = [
@@ -52,6 +58,46 @@ const settingCategories = [
   { key: 'worlds', label: '世界背景', icon: Globe, color: 'text-green-500' },
   { key: 'misc', label: '辅助设定', icon: Folder, color: 'text-purple-500' },
 ];
+
+// 分类配置映射表
+const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
+  characters: {
+    key: 'characters',
+    label: '角色设定',
+    icon: Users,
+    color: 'text-blue-500',
+    DialogComponent: CharacterDialog,
+    deleteApi: deleteCharacter,
+    typeKey: 'character',
+  },
+  systems: {
+    key: 'systems',
+    label: '系统/金手指',
+    icon: Zap,
+    color: 'text-yellow-500',
+    DialogComponent: SystemDialog,
+    deleteApi: deleteSystem,
+    typeKey: 'system',
+  },
+  worlds: {
+    key: 'worlds',
+    label: '世界背景',
+    icon: Globe,
+    color: 'text-green-500',
+    DialogComponent: WorldDialog,
+    deleteApi: deleteWorld,
+    typeKey: 'world',
+  },
+  misc: {
+    key: 'misc',
+    label: '辅助设定',
+    icon: Folder,
+    color: 'text-purple-500',
+    DialogComponent: MiscDialog,
+    deleteApi: deleteMisc,
+    typeKey: 'misc',
+  },
+};
 
 export default function CategorySettingsPage() {
   const params = useParams();
@@ -180,24 +226,12 @@ export default function CategorySettingsPage() {
   // 处理删除操作
   const handleDelete = async (setting: CharacterSetting) => {
     try {
-      // 根据分类调用不同的删除API
-      switch (category) {
-        case 'characters':
-          await deleteCharacter(setting.id);
-          break;
-        case 'systems':
-          await deleteSystem(setting.id);
-          break;
-        case 'worlds':
-          await deleteWorld(setting.id);
-          break;
-        case 'misc':
-          await deleteMisc(setting.id);
-          break;
-        default:
-          console.error('未知的设定类型:', category);
-          return;
+      const config = CATEGORY_CONFIGS[category];
+      if (!config) {
+        console.error('未知的设定类型:', category);
+        return;
       }
+      await config.deleteApi(setting.id);
       toast.success('删除成功');
       void loadSettings();
     } catch (error) {
@@ -213,36 +247,23 @@ export default function CategorySettingsPage() {
 
   // 获取类型标签的中文名称
   const getTypeLabel = (type: string | number) => {
-    let typeOptions: readonly { value: number | string; label: string }[] = [];
+    const typeOptionsMap: Record<string, readonly { value: number | string; label: string }[]> = {
+      characters: characterTypes,
+      systems: systemTypes,
+      worlds: worldTypes,
+      misc: miscTypes,
+    };
 
-    if (category === 'characters') {
-      typeOptions = characterTypes;
-    } else if (category === 'systems') {
-      typeOptions = systemTypes;
-    } else if (category === 'worlds') {
-      typeOptions = worldTypes;
-    } else if (category === 'misc') {
-      typeOptions = miscTypes;
-    }
+    const typeOptions = typeOptionsMap[category] || [];
 
-    // 如果是字符串，尝试转换为数字（仅对 characters 类型）
-    if (category === 'characters') {
-      const numType = typeof type === 'string' ? Number(type) : type;
-      const byValue = typeOptions.find((t) => t.value === numType);
-      return byValue?.label || String(type);
-    }
-
-    // 其他类型直接字符串匹配
+    // 字符串转换统一比较
     const byValue = typeOptions.find((t) => String(t.value) === String(type));
     return byValue?.label || String(type);
   };
 
   // 获取性别的中文标签
   const getGenderLabel = (gender: string | number) => {
-    // 如果是字符串，尝试转换为数字
-    const numGender = typeof gender === 'string' ? Number(gender) : gender;
-
-    const byValue = genderOptions.find((g) => Number(g.value) === Number(numGender));
+    const byValue = genderOptions.find((g) => Number(g.value) === Number(gender));
     return byValue?.label || String(gender);
   };
 
@@ -266,16 +287,18 @@ export default function CategorySettingsPage() {
             <div className="mb-2 flex items-center gap-2">
               <Icon className={`h-5 w-5 ${settingCategory?.color || 'text-gray-500'}`} />
               <h3 className="font-semibold text-[var(--moge-text-main)]">{setting.name}</h3>
-              {category === 'characters' && setting.type && (
+              {category === 'characters' && setting.type !== null && setting.type !== undefined && (
                 <Badge variant="outline" className="text-xs">
                   {getTypeLabel(setting.type)}
                 </Badge>
               )}
-              {category === 'characters' && setting.gender && (
-                <Badge variant="outline" className="text-xs">
-                  {getGenderLabel(setting.gender)}
-                </Badge>
-              )}
+              {category === 'characters' &&
+                setting.gender !== null &&
+                setting.gender !== undefined && (
+                  <Badge variant="outline" className="text-xs">
+                    {getGenderLabel(setting.gender)}
+                  </Badge>
+                )}
             </div>
             <p className="mb-3 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
               {(setting.background as string) || (setting.description as string) || '暂无描述'}
@@ -373,64 +396,14 @@ export default function CategorySettingsPage() {
               {currentCategory.label}
             </h1>
             <p className="mt-1 text-[var(--moge-text-sub)]">
-              管理所有{currentCategory.label}，可跨项目复用
+              管理所有{currentCategory.label},可跨项目复用
             </p>
           </div>
         </div>
-        {category === 'characters' ? (
-          <>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              新建{currentCategory.label}
-            </Button>
-            <CharacterDialog
-              mode="create"
-              open={createDialogOpen}
-              onOpenChange={handleCreateDialogChange}
-            />
-          </>
-        ) : category === 'systems' ? (
-          <>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              新建{currentCategory.label}
-            </Button>
-            <SystemDialog
-              mode="create"
-              open={createDialogOpen}
-              onOpenChange={handleCreateDialogChange}
-            />
-          </>
-        ) : category === 'worlds' ? (
-          <>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              新建{currentCategory.label}
-            </Button>
-            <WorldDialog
-              mode="create"
-              open={createDialogOpen}
-              onOpenChange={handleCreateDialogChange}
-            />
-          </>
-        ) : category === 'misc' ? (
-          <>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              新建{currentCategory.label}
-            </Button>
-            <MiscDialog
-              mode="create"
-              open={createDialogOpen}
-              onOpenChange={handleCreateDialogChange}
-            />
-          </>
-        ) : (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            新建{currentCategory.label}
-          </Button>
-        )}
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          新建{currentCategory.label}
+        </Button>
       </div>
 
       {/* 筛选组件 */}
@@ -471,39 +444,15 @@ export default function CategorySettingsPage() {
         listClassName="grid gap-4"
       />
 
-      {/* 编辑对话框 */}
-      {category === 'characters' && editingSetting && (
-        <CharacterDialog
-          mode="edit"
-          character={editingSetting as Character & { id?: string | number }}
-          open={editDialogOpen}
-          onOpenChange={handleEditDialogChange}
-        />
-      )}
-      {category === 'systems' && editingSetting && (
-        <SystemDialog
-          mode="edit"
-          system={editingSetting as System & { id?: string | number }}
-          open={editDialogOpen}
-          onOpenChange={handleEditDialogChange}
-        />
-      )}
-      {category === 'worlds' && editingSetting && (
-        <WorldDialog
-          mode="edit"
-          world={editingSetting as World & { id?: string | number }}
-          open={editDialogOpen}
-          onOpenChange={handleEditDialogChange}
-        />
-      )}
-      {category === 'misc' && editingSetting && (
-        <MiscDialog
-          mode="edit"
-          misc={editingSetting as Misc & { id?: string | number }}
-          open={editDialogOpen}
-          onOpenChange={handleEditDialogChange}
-        />
-      )}
+      {/* 对话框组件 */}
+      <CategoryDialogs
+        category={category}
+        createOpen={createDialogOpen}
+        onCreateChange={handleCreateDialogChange}
+        editOpen={editDialogOpen}
+        editingSetting={editingSetting}
+        onEditChange={handleEditDialogChange}
+      />
     </div>
   );
 }

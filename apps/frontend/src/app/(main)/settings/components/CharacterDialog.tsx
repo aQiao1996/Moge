@@ -83,19 +83,23 @@ export default function CharacterDialog({
     { name: 'remarks', label: '备注' },
   ];
 
+  // 将数字值安全转换为字符串
+  const toSelectValue = (value: unknown): string => {
+    if (typeof value === 'number') return String(value);
+    return '';
+  };
+
   const renderControl = useCallback(
     (
       field: ControllerRenderProps<FormValues, FieldPath<FormValues>>,
       name: FieldPath<FormValues>
     ) => {
       if (name === 'type') {
-        const fieldValue = field.value;
-        const stringValue =
-          fieldValue !== null && fieldValue !== undefined && typeof fieldValue === 'number'
-            ? String(fieldValue)
-            : '';
         return (
-          <MogeSelect onValueChange={(value) => field.onChange(Number(value))} value={stringValue}>
+          <MogeSelect
+            onValueChange={(value) => field.onChange(Number(value))}
+            value={toSelectValue(field.value)}
+          >
             <MogeSelectTrigger>
               <MogeSelectValue placeholder="请选择角色类型" />
             </MogeSelectTrigger>
@@ -111,13 +115,11 @@ export default function CharacterDialog({
       }
 
       if (name === 'gender') {
-        const fieldValue = field.value;
-        const stringValue =
-          fieldValue !== null && fieldValue !== undefined && typeof fieldValue === 'number'
-            ? String(fieldValue)
-            : '';
         return (
-          <MogeSelect onValueChange={(value) => field.onChange(Number(value))} value={stringValue}>
+          <MogeSelect
+            onValueChange={(value) => field.onChange(Number(value))}
+            value={toSelectValue(field.value)}
+          >
             <MogeSelectTrigger>
               <MogeSelectValue placeholder="请选择性别" />
             </MogeSelectTrigger>
