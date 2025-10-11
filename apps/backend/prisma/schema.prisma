@@ -349,6 +349,7 @@ model character_settings {
   /// 特殊能力
   abilities         String?  @db.Text
   /// 角色关系（JSON数组）
+  /// 格式: [{relatedCharacter, customRelatedCharacter, relationshipType, customRelationshipType, relationshipDesc}]
   relationships     Json?
   /// 标签
   tags              String[] @default([])
@@ -377,10 +378,12 @@ model system_settings {
   /// 系统描述
   description     String?  @db.Text
   /// 功能模块（JSON数组）
+  /// 格式: [{name, description, mechanism, trigger, limitation}]
   modules         Json?
   /// 等级体系（JSON数组）
   levels          Json?
   /// 道具装备（JSON数组）
+  /// 格式: [{name, category, description, attributes, obtainMethod}]
   items           Json?
   /// 数值参数（JSON数组）
   parameters      Json?

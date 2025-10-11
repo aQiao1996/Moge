@@ -10,22 +10,6 @@ import type {
 } from '../../generated/prisma';
 import type { CreateWorldDto, UpdateWorldDto } from './dto/world.dto';
 
-// 数据库中的关系格式
-interface DBRelationship {
-  name: string;
-  relation: string;
-  description: string;
-}
-
-// 前端期望的关系格式
-interface FrontendRelationship {
-  relatedCharacter: string;
-  customRelatedCharacter: string;
-  relationshipType: string;
-  customRelationshipType: string;
-  relationshipDesc: string;
-}
-
 /**
  * 设定库服务
  * 提供角色、系统、世界、辅助设定的数据管理功能
@@ -35,99 +19,15 @@ export class SettingsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * 转换角色关系数据格式
-   * 数据库格式: { name, relation, description }
-   * 前端格式: { relatedCharacter, customRelatedCharacter, relationshipType, customRelationshipType, relationshipDesc }
-   * @param relationships 数据库中的关系数据
-   * @returns 前端期望的关系数据
-   */
-  private transformRelationshipsFromDB(relationships: unknown): FrontendRelationship[] {
-    if (!relationships || !Array.isArray(relationships)) {
-      return [];
-    }
-
-    // 预设的关系类型值列表
-    const predefinedRelationTypes = [
-      'father',
-      'mother',
-      'son',
-      'daughter',
-      'brother',
-      'sister',
-      'spouse',
-      'master',
-      'disciple',
-      'friend',
-      'colleague',
-      'boss',
-      'subordinate',
-      'lover',
-      'crush',
-      'ex',
-      'enemy',
-      'rival',
-    ];
-
-    return relationships.map((rel: unknown) => {
-      const dbRel = rel as Partial<DBRelationship>;
-      const name = dbRel.name || '';
-      const relation = dbRel.relation || '';
-
-      // 检查关系类型是否在预设列表中
-      const isRelationPredefined = predefinedRelationTypes.includes(relation);
-
-      return {
-        // 关联角色始终使用自定义模式,因为角色列表是动态的
-        relatedCharacter: 'custom',
-        customRelatedCharacter: name,
-        // 如果关系类型在预设列表中则使用预设值,否则使用自定义
-        relationshipType: isRelationPredefined ? relation : 'custom',
-        customRelationshipType: isRelationPredefined ? '' : relation,
-        relationshipDesc: dbRel.description || '',
-      };
-    });
-  }
-
-  /**
-   * 转换角色关系数据格式
-   * 前端格式: { relatedCharacter, customRelatedCharacter, relationshipType, customRelationshipType, relationshipDesc }
-   * 数据库格式: { name, relation, description }
-   * @param relationships 前端发送的关系数据
-   * @returns 数据库存储的关系数据
-   */
-  private transformRelationshipsToDB(relationships: unknown): DBRelationship[] {
-    if (!relationships || !Array.isArray(relationships)) {
-      return [];
-    }
-
-    return relationships.map((rel: unknown) => {
-      const frontendRel = rel as Partial<FrontendRelationship>;
-      return {
-        name: frontendRel.customRelatedCharacter || frontendRel.relatedCharacter || '',
-        relation: frontendRel.customRelationshipType || frontendRel.relationshipType || '',
-        description: frontendRel.relationshipDesc || '',
-      };
-    });
-  }
-
-  /**
    * 获取用户的所有角色设定（用于项目关联选择）
    * @param userId 用户ID
    * @returns 角色设定列表（包含完整数据，用于编辑）
    */
   async getCharacterLibrary(userId: number): Promise<Partial<character_settings>[]> {
-    const characters = await this.prisma.character_settings.findMany({
+    return this.prisma.character_settings.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
-
-    // 转换 relationships 字段格式
-    return characters.map((character) => ({
-      ...character,
-      relationships: this.transformRelationshipsFromDB(
-        character.relationships
-      ) as unknown as Prisma.JsonValue,
-    }));
   }
 
   /**
@@ -179,33 +79,14 @@ export class SettingsService {
     userId: number,
     data: Omit<Prisma.character_settingsCreateInput, 'user'>
   ): Promise<character_settings> {
-    // 转换 relationships 格式
-    const transformedData = {
-      ...data,
-      relationships:
-        data.relationships !== undefined
-          ? (this.transformRelationshipsToDB(
-              data.relationships
-            ) as unknown as Prisma.InputJsonValue)
-          : undefined,
-    };
-
-    const character = await this.prisma.character_settings.create({
+    return this.prisma.character_settings.create({
       data: {
-        ...transformedData,
+        ...data,
         user: {
           connect: { id: userId },
         },
       },
     });
-
-    // 返回时转换回前端格式
-    return {
-      ...character,
-      relationships: this.transformRelationshipsFromDB(
-        character.relationships
-      ) as unknown as Prisma.JsonValue,
-    } as character_settings;
   }
 
   /**
@@ -229,30 +110,11 @@ export class SettingsService {
       throw new NotFoundException('角色设定不存在或无权限访问');
     }
 
-    // 转换 relationships 格式
-    const transformedData = {
-      ...data,
-      relationships:
-        data.relationships !== undefined
-          ? (this.transformRelationshipsToDB(
-              data.relationships
-            ) as unknown as Prisma.InputJsonValue)
-          : undefined,
-    };
-
     // 更新角色设定
-    const updatedCharacter = await this.prisma.character_settings.update({
+    return this.prisma.character_settings.update({
       where: { id },
-      data: transformedData,
+      data,
     });
-
-    // 返回时转换回前端格式
-    return {
-      ...updatedCharacter,
-      relationships: this.transformRelationshipsFromDB(
-        updatedCharacter.relationships
-      ) as unknown as Prisma.JsonValue,
-    } as character_settings;
   }
 
   /**

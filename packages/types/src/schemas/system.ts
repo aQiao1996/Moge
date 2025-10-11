@@ -93,6 +93,7 @@ export const systemTypes = [
   { value: 'task', label: '任务系统' },
   { value: 'achievement', label: '成就系统' },
   { value: 'cultivation', label: '修炼系统' },
+  { value: 'cultivation_aid', label: '修炼辅助系统' },
   { value: 'combat', label: '战斗系统' },
   { value: 'equipment', label: '装备系统' },
   { value: 'skill', label: '技能系统' },

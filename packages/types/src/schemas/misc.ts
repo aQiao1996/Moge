@@ -110,6 +110,7 @@ export const miscTypes = [
   { value: 'idea_collection', label: '灵感收集' },
   { value: 'reference_library', label: '参考资料库' },
   { value: 'terminology_dict', label: '术语词典' },
+  { value: 'knowledge_base', label: '知识库' },
   { value: 'template_bank', label: '模板库' },
   { value: 'project_notes', label: '项目笔记' },
   { value: 'other', label: '其他类型' },
