@@ -68,6 +68,7 @@ pnpm run typecheck  # 类型检查所有项目
    - ✅ **类型安全**：优先使用精确的类型定义，必要时创建新的接口或类型别名
    - 🛡️ **类型保护**：使用类型守卫函数确保运行时类型安全
    - 📦 **共享类型**：全局类型定义统一放在`packages/types`中
+   - 🔒 **严禁绕过检查**：严禁使用 `// @ts-ignore`、`// @ts-nocheck`、`// eslint-disable` 等注释绕过类型检查或lint规则，必须从根本上解决问题而非隐藏错误
 
 6. **错误处理模式**：
    - 🎯 **统一处理**：依赖全局错误处理机制，避免重复的错误处理逻辑
@@ -88,6 +89,14 @@ pnpm run typecheck  # 类型检查所有项目
    - 🔄 **API设计**：保持与现有API接口设计的一致性
    - 📚 **依赖管理**：使用项目已有的库和工具，避免引入新的重复依赖
 
+9. **接口开发规范**：
+   - 🗄️ **数据库优先**：开发接口前必须先查看 `apps/backend/prisma/schema.prisma` 了解数据库表结构
+   - 🔗 **三端统一**：确保前端类型定义、后端接口、数据库字段完全对应
+   - 📋 **字段映射**：检查 `packages/types` 中的类型定义与数据库字段是否匹配
+   - ✅ **值对齐检查**：Select/Enum字段的可选值必须与数据库存储的实际值完全一致
+   - 🎯 **存储原则**：Select组件存储 `value` 而非 `label`，确保数据库存储的是值标识而非显示文本
+   - 🔍 **全面验证**：新增接口后需查询数据库实际数据，验证所有枚举/选择字段的值都有对应的前端选项定义
+
 ### 示例对比
 
 **❌ 错误做法**：
@@ -99,6 +108,23 @@ try {
 } catch (error: any) {
   toast.error('操作失败'); // 重复的错误处理
   console.log(error); // 英文日志
+}
+```
+
+```typescript
+// 错误的类型规范 - 使用注释绕过检查
+// @ts-ignore
+const result = someFunction(wrongType); // ❌ 隐藏类型错误
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function badFunction(param: any) {
+  // ❌ 绕过lint规则
+  return param.someProperty;
+}
+
+// @ts-nocheck  // ❌ 忽略整个文件的检查
+export function unsafeCode() {
+  // 随意编写不安全的代码
 }
 ```
 
@@ -133,6 +159,22 @@ async getStatistics() {
 }
 ```
 
+```typescript
+// 错误的接口开发示例 - 未检查数据库字段对应关系
+// packages/types/src/schemas/system.ts
+export const systemTypes = [
+  { value: 'upgrade', label: '升级系统' },
+  { value: 'signin', label: '签到系统' },
+  { value: 'cultivation', label: '修炼系统' },
+  // ❌ 缺少 'cultivation_aid'，但数据库中存储了这个值
+] as const;
+
+// 前端组件
+<Select value={system.type}> {/* ❌ 无法回显 'cultivation_aid' */}
+  {systemTypes.map(t => <Option value={t.value}>{t.label}</Option>)}
+</Select>
+```
+
 **✅ 正确做法**：
 
 ```typescript
@@ -142,6 +184,38 @@ try {
   toast.success('操作成功'); // 只保留成功提示
 } catch (error) {
   console.error('操作失败:', error); // 中文日志，全局错误处理
+}
+```
+
+```typescript
+// 正确的类型规范 - 从根本上解决类型问题
+// ✅ 创建精确的类型定义
+interface FunctionParams {
+  id: number;
+  name: string;
+}
+
+interface FunctionResult {
+  success: boolean;
+  data: string;
+}
+
+function goodFunction(param: FunctionParams): FunctionResult {
+  return {
+    success: true,
+    data: param.name,
+  };
+}
+
+// ✅ 使用类型守卫处理不确定类型
+function processValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value.toString();
+  }
+  return '未知类型';
 }
 ```
 
@@ -184,6 +258,41 @@ async getStatistics(): Promise<{ categoryCode: string; count: number }[]> {
     count: result._count.id,
   }));
 }
+```
+
+```typescript
+// 正确的接口开发示例 - 三端字段统一
+// 1. 先查看 apps/backend/prisma/schema.prisma
+model system_settings {
+  id          Int      @id @default(autoincrement())
+  type        String   // ✅ 查看数据库字段类型
+  // ...
+}
+
+// 2. 查询数据库实际存储的值
+// SELECT DISTINCT type FROM system_settings;
+// 结果: 'cultivation', 'cultivation_aid', 'upgrade' ...
+
+// 3. 确保前端类型定义包含所有数据库值
+// packages/types/src/schemas/system.ts
+export const systemTypes = [
+  { value: 'upgrade', label: '升级系统' },
+  { value: 'signin', label: '签到系统' },
+  { value: 'cultivation', label: '修炼系统' },
+  { value: 'cultivation_aid', label: '修炼辅助系统' }, // ✅ 添加缺失值
+] as const;
+
+// 4. 前端组件正确存储value
+<MogeSelect
+  value={field.value as string}
+  onValueChange={field.onChange}  // ✅ 存储value，不是label
+>
+  {systemTypes.map(type => (
+    <MogeSelectItem key={type.value} value={type.value}>
+      {type.label}
+    </MogeSelectItem>
+  ))}
+</MogeSelect>
 ```
 
 ```yaml

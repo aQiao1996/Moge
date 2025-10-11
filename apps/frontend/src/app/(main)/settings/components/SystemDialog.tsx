@@ -44,7 +44,6 @@ interface SystemDialogProps {
 }
 
 type FormValues = CreateSystemValues | UpdateSystemValues;
-console.log('🚀 ~ SystemDialog.tsx:13 ~ systemTypes:', systemTypes);
 
 export default function SystemDialog({ mode, system, open, onOpenChange }: SystemDialogProps) {
   const isEditMode = mode === 'edit';
