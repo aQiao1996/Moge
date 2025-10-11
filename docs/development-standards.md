@@ -1,10 +1,19 @@
-# 墨阁 (Moge) 开发文档
+# 墨阁 (Moge) AI开发规范
 
-## AI开发规范
+> 为确保代码质量和开发一致性，制定以下AI开发规范
 
-为确保代码质量和开发一致性，制定以下AI开发规范：
+## 📚 规范导航
 
-### 项目架构说明
+| 规范模块               | 说明                                                                   | 文档链接                                             |
+| ---------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| **核心开发规则**       | 依赖管理、Toast通知、质量检查、注释文档、类型规范、错误处理 (规范1-6)  | [core-rules.md](./standards/core-rules.md)           |
+| **AI协作与代码风格**   | AI协作规范、代码风格一致性 (规范7-8)                                   | [collaboration.md](./standards/collaboration.md)     |
+| **接口开发与安全**     | 接口开发、修改范围、危险操作、增量开发、数据库安全、API变更 (规范9-14) | [api-development.md](./standards/api-development.md) |
+| **性能优化与用户体验** | 性能优化意识、用户体验规范、代码完整性 (规范15-17)                     | [performance-ux.md](./standards/performance-ux.md)   |
+| **任务完成标准**       | 任务完成标准、AI响应规范 (规范18-19)                                   | [task-completion.md](./standards/task-completion.md) |
+| **示例对比**           | 所有规范的错误与正确示例代码                                           | [examples.md](./standards/examples.md)               |
+
+## 📁 项目架构
 
 本项目采用 **Monorepo 架构**，统一管理多个相关包：
 
@@ -15,7 +24,7 @@
 - 🔧 **依赖管理**: 所有依赖版本通过`pnpm-workspace.yaml`统一管理
 - 📋 **版本策略**: 子项目使用`catalog:`占位符引用workspace统一版本
 
-**核心命令**：
+### 核心命令
 
 ```bash
 # 根目录安装所有依赖
@@ -32,277 +41,123 @@ pnpm run lint       # 检查所有代码
 pnpm run typecheck  # 类型检查所有项目
 ```
 
-### 核心开发规则
+## ⚡ 最重要的5条规范（必读）
 
-1. **依赖管理规范**：
-   - 📦 **唯一包管理器**：必须使用pnpm，禁用npm/yarn
-   - 🏢 **Workspace统一**：所有依赖版本在`pnpm-workspace.yaml`中统一管理
-   - 🔖 **Catalog引用**：子项目package.json中使用`"dependency": "catalog:"`占位符
-   - ⚠️ **禁止直接版本**：禁止在子项目中直接指定具体版本号
-   - 🚫 **禁止重复安装**：不在子目录单独运行`pnpm install`
+### 1. 代码质量检查
 
-2. **Toast通知规范**：
-   - ✅ **保留成功通知**：业务操作成功时使用 `toast.success()` 显示成功提示
-   - ❌ **删除错误通知**：所有HTTP错误由 `request/index.ts` 全局处理，业务代码不应手动添加错误toast
-   - 📝 **异常处理**：catch块中只保留 `console.error()` 用于调试，不显示用户错误提示
+每次代码修改后必须执行：
 
-3. **代码质量检查**：
-   - 🔧 **必须执行**：每次代码修改后在根目录执行 `pnpm run lint` 和 `pnpm run typecheck`
-   - ✅ **通过标准**：代码必须通过所有lint和类型检查，无警告无错误
-   - 🚫 **禁止提交**：有lint或类型错误的代码不得提交,不需要执行 `git` 相关操作
-
-4. **注释与文档**：
-   - 🈯 **中文注释**：所有代码注释必须使用中文，便于团队理解
-   - 📖 **注释原则**：注释应解释"为什么"而不是"是什么"
-   - 🚫 **避免无用注释**：禁止添加"简化版"、"直接使用XX"等无意义的状态描述注释
-   - 🔤 **英文保留**：仅在技术术语、API名称等必要场景保留英文
-   - 📝 **JSDoc标准**：公共函数、Service方法、API接口必须使用JSDoc格式
-   - 🏷️ **分层注释**：核心层用完整JSDoc，业务层用简化JSDoc，实现层用行内注释
-   - 🧠 **逻辑注释**：函数内部只有逻辑稍微复杂的地方才需要增加简单的中文注释
-   - 📋 **必备要素**：JSDoc须包含功能描述、参数说明、返回值说明、异常情况（如适用）
-   - 💬 **Props注释**：接口（Interface）或类型（Type）的字段应使用内联注释（`//`）说明其用途，尤其是在表单、对话框等复杂组件中。
-
-5. **TypeScript类型规范**：
-   - 🚫 **禁用 as any**：严禁使用 `as any` 绕过类型检查
-   - ⚠️ **谨慎使用 unknown**：类型确实无法确定时可使用 `unknown`，但需添加类型保护
-   - ✅ **类型安全**：优先使用精确的类型定义，必要时创建新的接口或类型别名
-   - 🛡️ **类型保护**：使用类型守卫函数确保运行时类型安全
-   - 📦 **共享类型**：全局类型定义统一放在`packages/types`中
-   - 🔒 **严禁绕过检查**：严禁使用 `// @ts-ignore`、`// @ts-nocheck`、`// eslint-disable` 等注释绕过类型检查或lint规则，必须从根本上解决问题而非隐藏错误
-
-6. **错误处理模式**：
-   - 🎯 **统一处理**：依赖全局错误处理机制，避免重复的错误处理逻辑
-   - 📝 **日志记录**：保留console.error用于开发调试和问题追踪
-   - 🔄 **优雅降级**：确保错误不会导致页面崩溃，提供合理的备用方案
-
-7. **AI协作规范**：
-   - 🤖 **中文交流**：AI助手必须使用中文进行沟通和代码注释
-   - 📋 **简洁回复**：回复要简洁直接，避免冗长的解释和总结，除非用户要求回答详细
-   - 🎯 **任务导向**：专注解决具体问题，不进行不必要的扩展说明
-   - 💡 **主动建议**：在发现代码问题时主动提出改进建议
-   - ⚡ **快速响应**：优先快速解决问题，避免过度分析
-
-8. **代码风格一致性**：
-   - 🔍 **风格分析**：生成代码前先分析项目现有代码风格和模式
-   - 📏 **格式统一**：遵循项目的缩进、命名、函数结构等风格规范
-   - 🏗️ **架构一致**：使用项目既定的架构模式（如Prisma查询方式、错误处理模式等）
-   - 🔄 **API设计**：保持与现有API接口设计的一致性
-   - 📚 **依赖管理**：使用项目已有的库和工具，避免引入新的重复依赖
-
-9. **接口开发规范**：
-   - 🗄️ **数据库优先**：开发接口前必须先查看 `apps/backend/prisma/schema.prisma` 了解数据库表结构
-   - 🔗 **三端统一**：确保前端类型定义、后端接口、数据库字段完全对应
-   - 📋 **字段映射**：检查 `packages/types` 中的类型定义与数据库字段是否匹配
-   - ✅ **值对齐检查**：Select/Enum字段的可选值必须与数据库存储的实际值完全一致
-   - 🎯 **存储原则**：Select组件存储 `value` 而非 `label`，确保数据库存储的是值标识而非显示文本
-   - 🔍 **全面验证**：新增接口后需查询数据库实际数据，验证所有枚举/选择字段的值都有对应的前端选项定义
-
-### 示例对比
-
-**❌ 错误做法**：
-
-```typescript
-// 错误的错误处理
-try {
-  await apiCall();
-} catch (error: any) {
-  toast.error('操作失败'); // 重复的错误处理
-  console.log(error); // 英文日志
-}
+```bash
+pnpm run lint       # 必须通过，无警告无错误
+pnpm run typecheck  # 必须通过
 ```
 
-```typescript
-// 错误的类型规范 - 使用注释绕过检查
-// @ts-ignore
-const result = someFunction(wrongType); // ❌ 隐藏类型错误
+### 2. TypeScript类型安全
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function badFunction(param: any) {
-  // ❌ 绕过lint规则
-  return param.someProperty;
-}
+- 🚫 严禁使用 `as any` 绕过类型检查
+- 🔒 严禁使用 `// @ts-ignore`、`// @ts-nocheck`、`// eslint-disable` 等注释
+- ✅ 从根本上解决类型问题，不隐藏错误
 
-// @ts-nocheck  // ❌ 忽略整个文件的检查
-export function unsafeCode() {
-  // 随意编写不安全的代码
-}
-```
+### 3. 接口开发三端统一
 
-```json
-// 错误的依赖管理 - 子项目package.json
-{
-  "dependencies": {
-    "react": "^18.2.0", // ❌ 直接指定版本
-    "next": "14.0.0" // ❌ 直接指定版本
-  }
-}
-```
+开发接口前必须：
 
-```typescript
-// 错误的AI协作示例
-// This function handles user authentication
-function handleAuth() {
-  // TODO: implement this later
-  return true;
-}
-// ❌ 英文注释，缺乏具体实现指导
-```
+1. 查看 `apps/backend/prisma/schema.prisma` 了解数据库表结构
+2. 确保前端类型定义、后端接口、数据库字段完全对应
+3. Select/Enum字段的值必须与数据库存储的实际值完全一致
+4. Select组件存储 `value` 而非 `label`
 
-```typescript
-// 错误的代码风格示例 - 不一致的架构模式
-async getStatistics() {
-  // ❌ 使用原始SQL而非项目的Prisma风格
-  return this.prisma.$queryRaw`
-    SELECT "categoryCode", COUNT(*) as count
-    FROM "dict_items" GROUP BY "categoryCode"
-  `;
-}
-```
+### 4. 危险操作确认机制
 
-```typescript
-// 错误的接口开发示例 - 未检查数据库字段对应关系
-// packages/types/src/schemas/system.ts
-export const systemTypes = [
-  { value: 'upgrade', label: '升级系统' },
-  { value: 'signin', label: '签到系统' },
-  { value: 'cultivation', label: '修炼系统' },
-  // ❌ 缺少 'cultivation_aid'，但数据库中存储了这个值
-] as const;
+以下操作必须先确认：
 
-// 前端组件
-<Select value={system.type}> {/* ❌ 无法回显 'cultivation_aid' */}
-  {systemTypes.map(t => <Option value={t.value}>{t.label}</Option>)}
-</Select>
-```
+- 🗑️ 文件删除：列出文件列表并等待确认
+- 💾 数据库操作：执行migration、数据删除、字段变更前明确说明
+- 🚨 不可逆操作：删除、覆盖、重置需明确警告
 
-**✅ 正确做法**：
+### 5. 增量开发原则
 
-```typescript
-// 正确的错误处理
-try {
-  await apiCall();
-  toast.success('操作成功'); // 只保留成功提示
-} catch (error) {
-  console.error('操作失败:', error); // 中文日志，全局错误处理
-}
-```
+- 📦 小步迭代，一次只解决一个问题
+- ✅ 每个改动后立即验证（lint/typecheck/功能测试）
+- 🔙 保持每次修改都可以独立回滚
 
-```typescript
-// 正确的类型规范 - 从根本上解决类型问题
-// ✅ 创建精确的类型定义
-interface FunctionParams {
-  id: number;
-  name: string;
-}
+## 🎯 规范快速查询
 
-interface FunctionResult {
-  success: boolean;
-  data: string;
-}
+### 需要修改代码时
 
-function goodFunction(param: FunctionParams): FunctionResult {
-  return {
-    success: true,
-    data: param.name,
-  };
-}
+→ 查看 [修改范围控制](./standards/api-development.md#10-代码修改范围控制)
+→ 查看 [增量开发原则](./standards/api-development.md#12-增量开发原则)
 
-// ✅ 使用类型守卫处理不确定类型
-function processValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return value.toString();
-  }
-  return '未知类型';
-}
-```
+### 需要开发接口时
 
-```json
-// 正确的依赖管理 - 子项目package.json
-{
-  "dependencies": {
-    "react": "catalog:", // ✅ 使用catalog占位符
-    "next": "catalog:" // ✅ 统一版本管理
-  }
-}
-```
+→ 查看 [接口开发规范](./standards/api-development.md#9-接口开发规范)
+→ 查看 [数据库安全规范](./standards/api-development.md#13-数据库安全规范)
+→ 查看 [三端统一示例](./standards/examples.md)
 
-```typescript
-// 正确的AI协作示例
-/**
- * 处理用户认证逻辑
- * 验证JWT token有效性并返回用户信息
- */
-async function handleAuth(token: string): Promise<UserInfo | null> {
-  // 使用JWT验证库检查token有效性
-  const decoded = await verifyToken(token);
-  return decoded ? decoded.user : null;
-}
-// ✅ 中文注释，具体实现，明确返回类型
-```
+### 需要修改API时
 
-```typescript
-// 正确的代码风格示例 - 遵循项目Prisma风格
-async getStatistics(): Promise<{ categoryCode: string; count: number }[]> {
-  // ✅ 使用Prisma标准API，与项目其他方法保持一致
-  const results = await this.prisma.dict_items.groupBy({
-    by: ['categoryCode'],
-    _count: { id: true },
-    orderBy: { categoryCode: 'asc' },
-  });
+→ 查看 [API变更规范](./standards/api-development.md#14-api变更规范)
 
-  return results.map((result) => ({
-    categoryCode: result.categoryCode,
-    count: result._count.id,
-  }));
-}
-```
+### 遇到类型错误时
 
-```typescript
-// 正确的接口开发示例 - 三端字段统一
-// 1. 先查看 apps/backend/prisma/schema.prisma
-model system_settings {
-  id          Int      @id @default(autoincrement())
-  type        String   // ✅ 查看数据库字段类型
-  // ...
-}
+→ 查看 [TypeScript类型规范](./standards/core-rules.md#5-typescript类型规范)
+→ 查看 [类型安全示例](./standards/examples.md)
 
-// 2. 查询数据库实际存储的值
-// SELECT DISTINCT type FROM system_settings;
-// 结果: 'cultivation', 'cultivation_aid', 'upgrade' ...
+### 需要删除/重命名文件时
 
-// 3. 确保前端类型定义包含所有数据库值
-// packages/types/src/schemas/system.ts
-export const systemTypes = [
-  { value: 'upgrade', label: '升级系统' },
-  { value: 'signin', label: '签到系统' },
-  { value: 'cultivation', label: '修炼系统' },
-  { value: 'cultivation_aid', label: '修炼辅助系统' }, // ✅ 添加缺失值
-] as const;
+→ 查看 [危险操作确认机制](./standards/api-development.md#11-危险操作确认机制)
 
-// 4. 前端组件正确存储value
-<MogeSelect
-  value={field.value as string}
-  onValueChange={field.onChange}  // ✅ 存储value，不是label
->
-  {systemTypes.map(type => (
-    <MogeSelectItem key={type.value} value={type.value}>
-      {type.label}
-    </MogeSelectItem>
-  ))}
-</MogeSelect>
-```
+### 任务完成前
 
-```yaml
-# pnpm-workspace.yaml - 统一版本管理
-packages:
-  - 'apps/*'
-  - 'packages/*'
+→ 查看 [任务完成标准清单](./standards/task-completion.md#18-任务完成标准)
 
-catalog:
-  react: ^18.2.0
-  next: 14.0.0
-  typescript: ^5.0.0
-```
+## 📖 完整规范列表
+
+<details>
+<summary>点击展开19条规范概览</summary>
+
+### 核心开发规则 (1-6)
+
+1. 依赖管理规范
+2. Toast通知规范
+3. 代码质量检查
+4. 注释与文档
+5. TypeScript类型规范
+6. 错误处理模式
+
+### AI协作与代码风格 (7-8)
+
+7. AI协作规范
+8. 代码风格一致性
+
+### 接口开发与安全 (9-14)
+
+9. 接口开发规范
+10. 代码修改范围控制
+11. 危险操作确认机制
+12. 增量开发原则
+13. 数据库安全规范
+14. API变更规范
+
+### 性能优化与用户体验 (15-17)
+
+15. 性能优化意识
+16. 用户体验规范
+17. 代码完整性
+
+### 任务完成标准 (18-19)
+
+18. 任务完成标准
+19. AI响应规范
+
+</details>
+
+## 🔍 使用建议
+
+- **AI助手**：按需读取相关规范模块，避免一次性加载全部文档
+- **开发者**：建议先阅读"最重要的5条规范"，然后根据实际开发场景查阅对应模块
+- **示例参考**：遇到具体问题时，直接查看 [examples.md](./standards/examples.md) 中的代码示例
+
+---
+
+**备注**：原完整文档已备份至 `development-standards-backup.md`

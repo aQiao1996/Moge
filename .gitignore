@@ -29,3 +29,4 @@ docs/.vitepress/cache
 
 .history/
 .claude/
+.gemini/
