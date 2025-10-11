@@ -225,7 +225,6 @@ export default function CharacterDialog({
       }
     } catch (error) {
       console.error('保存角色设定失败:', error);
-      // 错误由全局错误处理机制处理
     }
   };
 
