@@ -1,4 +1,5 @@
 'use client';
+
 import { Sparkles, BookText, Settings, BarChart, LayoutDashboard, Database } from 'lucide-react';
 import {
   Sidebar as UISidebar,
@@ -15,6 +16,7 @@ import Link from 'next/link';
 import { useSidebar } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 
+// 导航菜单配置
 const nav = [
   { icon: LayoutDashboard, label: '工作台', href: '/workspace' },
   { icon: Sparkles, label: '大纲', href: '/outline' },
@@ -24,11 +26,24 @@ const nav = [
   { icon: BarChart, label: '统计', href: '/stats' },
 ];
 
+/**
+ * 应用侧边栏组件
+ *
+ * 功能：
+ * - 展示应用Logo和名称
+ * - 导航菜单（工作台、大纲、文稿、设定集、字典管理、统计）
+ * - 支持展开/收起切换
+ * - 高亮当前激活的菜单项
+ * - 底部品牌标语
+ */
 export default function AppSidebar() {
   const { open } = useSidebar();
   const pathname = usePathname();
 
-  // 检查当前路径是否匹配菜单项
+  /**
+   * 检查当前路径是否匹配菜单项
+   * 特殊处理：工作台同时匹配 /workspace 和根路径 /
+   */
   const isActive = (href: string) => {
     if (href === '/workspace') {
       return pathname === '/workspace' || pathname === '/';
@@ -38,6 +53,7 @@ export default function AppSidebar() {
 
   return (
     <UISidebar collapsible="icon">
+      {/* Logo和应用名称 */}
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
           <Sparkles className="h-6 w-6 flex-shrink-0 text-[var(--moge-primary-400)]" />
@@ -51,6 +67,7 @@ export default function AppSidebar() {
         </div>
       </SidebarHeader>
 
+      {/* 导航菜单列表 */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -70,6 +87,7 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
+      {/* 底部品牌标语 */}
       <SidebarFooter>
         <p
           className={`font-han brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 origin-left whitespace-nowrap text-base transition-all duration-200 ${

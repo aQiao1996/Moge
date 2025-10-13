@@ -14,8 +14,20 @@ import { signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 
+// 动态导入认证设置组件，避免SSR问题
 const AuthSetting = dynamic(() => import('@/app/components/AuthSetting'), { ssr: false });
 
+/**
+ * 主页面头部组件
+ *
+ * 功能：
+ * - 侧边栏展开/收起切换
+ * - 认证设置入口
+ * - 用户菜单（个人中心、退出登录）
+ * - 扫描线动画效果
+ *
+ * @param className - 可选的自定义样式类名
+ */
 export default function MainHeader({ className }: { className?: string }) {
   const { toggleSidebar, open } = useSidebar();
 
@@ -25,6 +37,7 @@ export default function MainHeader({ className }: { className?: string }) {
         className={`relative z-20 overflow-hidden border-b border-[var(--moge-card-border)] bg-[var(--moge-header-bg)] ${className}`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          {/* 左侧：侧边栏切换按钮 */}
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -38,8 +51,12 @@ export default function MainHeader({ className }: { className?: string }) {
               )}
             </Button>
           </div>
+
+          {/* 右侧：认证设置 + 用户菜单 */}
           <div className="flex items-center gap-2">
             <AuthSetting isAbsolute={false} />
+
+            {/* 用户下拉菜单 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div
@@ -81,10 +98,11 @@ export default function MainHeader({ className }: { className?: string }) {
           </div>
         </div>
 
-        {/* 扫描线 */}
+        {/* 扫描线动画效果 */}
         <div className="header-scan" />
       </header>
 
+      {/* 扫描线动画样式定义 */}
       <style jsx global>{`
         @keyframes scan {
           0% {
