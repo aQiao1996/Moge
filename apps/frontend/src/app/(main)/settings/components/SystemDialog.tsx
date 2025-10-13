@@ -16,7 +16,6 @@ import {
   type Item,
   type Parameter,
 } from '@moge/types';
-
 import MogeFormDialog, {
   type FieldConfig,
   type FormFieldConfig,
