@@ -1,3 +1,7 @@
+/**
+ * 大纲管理相关 API 接口
+ * 提供小说大纲的 CRUD 功能和卷、章节的管理
+ */
 import httpRequest from '@/lib/request';
 import type {
   CreateOutlineValues,
@@ -26,11 +30,21 @@ interface GetOutlinesParams {
   sortOrder?: 'asc' | 'desc';
 }
 
+/**
+ * 创建新大纲
+ * @param data 大纲数据
+ * @returns 创建的大纲对象
+ */
 export const createOutlineApi = async (data: CreateOutlineValues): Promise<Outline> => {
   const response = await httpRequest.post<Outline>('/outline', data);
   return response.data;
 };
 
+/**
+ * 获取大纲列表（支持分页、搜索、筛选、排序）
+ * @param params 查询参数
+ * @returns 大纲列表和总数
+ */
 export const getOutlinesApi = async (params: GetOutlinesParams): Promise<GetOutlinesResponse> => {
   // 过滤掉 undefined、null、空字符串和空数组
   const filteredParams = Object.fromEntries(
@@ -49,19 +63,32 @@ export const getOutlinesApi = async (params: GetOutlinesParams): Promise<GetOutl
   return response.data;
 };
 
+/**
+ * 根据 ID 获取大纲基本信息
+ * @param id 大纲 ID
+ * @returns 大纲对象
+ */
 export const getOutlineByIdApi = async (id: string): Promise<Outline> => {
   const response = await httpRequest.get<Outline>(`/outline/${id}`);
   return response.data;
 };
 
-// 获取大纲详情（包含完整的卷、章节和内容结构）
+/**
+ * 获取大纲详情（包含完整的卷、章节和内容结构）
+ * @param id 大纲 ID
+ * @returns 带结构的大纲详情
+ */
 export const getOutlineDetailApi = async (id: string): Promise<OutlineWithStructure> => {
   const response = await httpRequest.get<OutlineWithStructure>(`/outline/${id}/detail`);
   return response.data;
 };
 
-// 保留旧的 API 以兼容现有代码，但标记为已废弃
-/** @deprecated 使用 getOutlineWithStructureApi 替代 */
+/**
+ * 获取大纲内容
+ * @deprecated 使用 getOutlineDetailApi 替代
+ * @param id 大纲 ID
+ * @returns 大纲内容或 null
+ */
 export const getOutlineContentApi = async (id: string): Promise<OutlineContent | null> => {
   try {
     const response = await httpRequest.get<OutlineContent>(`/outline/${id}/content`);
@@ -72,6 +99,12 @@ export const getOutlineContentApi = async (id: string): Promise<OutlineContent |
   }
 };
 
+/**
+ * 更新大纲内容
+ * @param id 大纲 ID
+ * @param data 内容数据
+ * @returns 更新后的内容对象
+ */
 export const updateOutlineContentApi = async (
   id: string,
   data: UpdateOutlineContentValues
@@ -80,15 +113,32 @@ export const updateOutlineContentApi = async (
   return response.data;
 };
 
+/**
+ * 更新大纲基本信息
+ * @param id 大纲 ID
+ * @param data 更新数据
+ * @returns 更新后的大纲对象
+ */
 export const updateOutlineApi = async (id: string, data: UpdateOutlineValues): Promise<Outline> => {
   const response = await httpRequest.patch<Outline>(`/outline/${id}`, data);
   return response.data;
 };
 
+/**
+ * 删除大纲
+ * @param id 大纲 ID
+ */
 export const deleteOutlineApi = async (id: string): Promise<void> => {
   await httpRequest.delete(`/outline/${id}`);
 };
 
+/**
+ * 更新卷信息
+ * @param outlineId 大纲 ID
+ * @param volumeId 卷 ID
+ * @param data 卷数据（标题、描述）
+ * @returns 更新后的卷对象
+ */
 export const updateVolumeApi = async (
   outlineId: string,
   volumeId: string,
@@ -101,6 +151,13 @@ export const updateVolumeApi = async (
   return response.data;
 };
 
+/**
+ * 更新章节信息
+ * @param outlineId 大纲 ID
+ * @param chapterId 章节 ID
+ * @param data 章节数据（标题、内容）
+ * @returns 更新后的章节对象
+ */
 export const updateChapterApi = async (
   outlineId: string,
   chapterId: string,
