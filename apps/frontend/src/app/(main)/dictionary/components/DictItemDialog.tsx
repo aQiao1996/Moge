@@ -1,4 +1,5 @@
 'use client';
+
 import { useCallback } from 'react';
 import type { ControllerRenderProps, FieldPath } from 'react-hook-form';
 
@@ -20,6 +21,9 @@ import { MogeInput } from '@/app/components/MogeInput';
 import { MogeTextarea } from '@/app/components/MogeTextarea';
 import { Button } from '@/components/ui/button';
 
+/**
+ * 字典词条对话框组件的属性接口
+ */
 interface DictItemDialogProps {
   mode: 'create' | 'edit';
   categoryCode: string;
@@ -33,6 +37,24 @@ interface DictItemDialogProps {
 
 type FormValues = CreateDictItemValues | UpdateDictItemValues;
 
+/**
+ * 字典词条对话框组件
+ *
+ * 功能：
+ * - 支持创建和编辑两种模式
+ * - 提供词条编码、显示标签、存储值、排序序号、启用状态、描述等字段
+ * - 自动校验表单数据
+ * - 集成 MogeFormDialog 实现统一的对话框样式
+ *
+ * @param mode - 对话框模式：'create' 创建 | 'edit' 编辑
+ * @param categoryCode - 分类编码
+ * @param categoryTitle - 分类标题
+ * @param item - 编辑时的词条数据
+ * @param trigger - 自定义触发按钮
+ * @param open - 控制对话框打开状态
+ * @param onOpenChange - 对话框状态变化回调
+ * @param onSubmit - 表单提交回调
+ */
 export default function DictItemDialog({
   mode,
   categoryCode,
@@ -45,7 +67,7 @@ export default function DictItemDialog({
 }: DictItemDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 字段配置
+  // 字段配置：定义表单中需要显示的字段
   const fields: FieldConfig[] = [
     { name: 'code', label: '词条编码', required: !isEditMode },
     { name: 'label', label: '显示标签', required: !isEditMode },
@@ -55,6 +77,10 @@ export default function DictItemDialog({
     { name: 'description', label: '描述' },
   ];
 
+  /**
+   * 渲染表单控件
+   * 根据字段名渲染不同类型的输入控件
+   */
   const renderControl = useCallback(
     (
       field: ControllerRenderProps<
@@ -63,6 +89,7 @@ export default function DictItemDialog({
       >,
       name: FieldPath<CreateDictItemValues | UpdateDictItemValues>
     ) => {
+      // 启用状态：按钮切换
       if (name === 'isEnabled') {
         return (
           <div className="flex items-center space-x-2">
@@ -79,6 +106,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 排序序号：数字输入框
       if (name === 'sortOrder') {
         return (
           <MogeInput
@@ -96,6 +124,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 描述：多行文本框
       if (name === 'description') {
         return (
           <MogeTextarea
@@ -110,6 +139,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 词条编码：英文编码
       if (name === 'code') {
         return (
           <MogeInput
@@ -123,6 +153,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 显示标签：中文名称
       if (name === 'label') {
         return (
           <MogeInput
@@ -136,6 +167,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 存储值：可选字段
       if (name === 'value') {
         return (
           <MogeInput
@@ -149,6 +181,7 @@ export default function DictItemDialog({
         );
       }
 
+      // 默认：普通文本输入框
       return (
         <MogeInput
           value={(field.value as string) || ''}
@@ -162,6 +195,10 @@ export default function DictItemDialog({
     []
   );
 
+  /**
+   * 处理表单提交
+   * 添加分类编码并调用父组件的提交回调
+   */
   const handleSubmit = async (values: FormValues) => {
     const submissionValues = {
       ...values,
@@ -173,6 +210,7 @@ export default function DictItemDialog({
     }
   };
 
+  // 默认触发按钮：根据模式显示不同的按钮
   const defaultTrigger = isEditMode ? (
     <Button size="sm" variant="ghost" title="编辑词条">
       <Edit className="h-4 w-4" />

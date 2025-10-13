@@ -6,7 +6,10 @@ import { ArrowRight, Database, Tags, Book, Terminal, FileText } from 'lucide-rea
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
 
-// 字典分类配置
+/**
+ * 字典分类配置
+ * 定义了字典管理模块支持的四种分类及其展示信息
+ */
 const dictionaryCategories = [
   {
     key: 'novel_types',
@@ -38,12 +41,23 @@ const dictionaryCategories = [
   },
 ];
 
+/**
+ * 字典管理首页组件
+ *
+ * 功能：
+ * - 展示字典分类概览（分类总数、词条总数、启用词条数）
+ * - 展示各分类的卡片列表，可点击进入详情页
+ * - 实时获取各分类的词条统计数据
+ */
 export default function DictionaryPage() {
   const { fetchStatistics } = useDictStore();
   const [loading, setLoading] = useState(true);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
-  // 获取字典统计数据
+  /**
+   * 获取字典统计数据
+   * 从后端获取各分类的词条数量并映射到本地状态
+   */
   useEffect(() => {
     const fetchCounts = async () => {
       setLoading(true);
@@ -66,13 +80,13 @@ export default function DictionaryPage() {
     void fetchCounts();
   }, [fetchStatistics]);
 
-  // 计算总数
+  // 计算统计数据
   const totalCategories = dictionaryCategories.length;
   const totalItems = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0);
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* 页面标题 */}
+      {/* 页面标题区 */}
       <div className="mb-8">
         <div className="mb-4 flex items-center gap-3">
           <Database className="h-8 w-8 text-[var(--moge-primary)]" />
@@ -85,8 +99,9 @@ export default function DictionaryPage() {
         </div>
       </div>
 
-      {/* 统计概览 */}
+      {/* 统计概览卡片 */}
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {/* 分类总数 */}
         <Card
           className="p-4"
           style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
@@ -101,6 +116,8 @@ export default function DictionaryPage() {
             <Database className="h-8 w-8 text-[var(--moge-primary)]" />
           </div>
         </Card>
+
+        {/* 词条总数 */}
         <Card
           className="p-4"
           style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
@@ -115,6 +132,8 @@ export default function DictionaryPage() {
             <Tags className="h-8 w-8 text-blue-500" />
           </div>
         </Card>
+
+        {/* 启用词条数 */}
         <Card
           className="p-4"
           style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
@@ -131,7 +150,7 @@ export default function DictionaryPage() {
         </Card>
       </div>
 
-      {/* 分类卡片 */}
+      {/* 分类卡片列表 */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {dictionaryCategories.map((category) => {
           const Icon = category.icon;

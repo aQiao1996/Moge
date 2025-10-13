@@ -16,7 +16,10 @@ import { useDictStore } from '@/stores/dictStore';
 import dayjs from 'dayjs';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
-// 字典分类配置
+/**
+ * 字典分类配置
+ * 定义各分类的展示信息
+ */
 const dictionaryCategories = {
   novel_types: {
     title: '小说类型',
@@ -44,7 +47,7 @@ const dictionaryCategories = {
   },
 };
 
-// 筛选配置
+// 筛选配置：支持按状态筛选
 const filterOptions: FilterOption[] = [
   {
     key: 'isEnabled',
@@ -57,7 +60,7 @@ const filterOptions: FilterOption[] = [
   },
 ];
 
-// 排序配置
+// 排序配置：支持多种排序方式
 const sortOptions: SortOption[] = [
   { value: 'sortOrder', label: '排序' },
   { value: 'updatedAt', label: '更新时间' },
@@ -65,6 +68,16 @@ const sortOptions: SortOption[] = [
   { value: 'label', label: '标签名称' },
 ];
 
+/**
+ * 字典分类详情页组件
+ *
+ * 功能：
+ * - 展示指定分类下的所有词条
+ * - 支持搜索、筛选、排序
+ * - 支持创建、编辑、删除、启用/禁用词条
+ * - 支持列表/网格视图切换
+ * - 分页展示
+ */
 export default function DictionaryCategoryPage() {
   const params = useParams();
   const categoryKey = params.category as string;
@@ -83,7 +96,10 @@ export default function DictionaryCategoryPage() {
   // 获取当前分类信息
   const currentCategory = dictionaryCategories[categoryKey as keyof typeof dictionaryCategories];
 
-  // 获取字典数据
+  /**
+   * 获取字典数据
+   * 根据分类类型从后端获取词条列表
+   */
   useEffect(() => {
     const fetchData = async () => {
       if (!currentCategory) return;
@@ -111,7 +127,10 @@ export default function DictionaryCategoryPage() {
     viewMode: 'list',
   });
 
-  // 根据筛选条件过滤字典项
+  /**
+   * 根据筛选条件过滤字典项
+   * 支持搜索、状态筛选和多种排序方式
+   */
   const getFilteredItems = () => {
     let filtered = dictItems;
 
@@ -151,7 +170,10 @@ export default function DictionaryCategoryPage() {
   const filteredItems = getFilteredItems();
   const paginatedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // 处理创建词条
+  /**
+   * 处理创建词条
+   * 创建成功后刷新列表
+   */
   const handleCreateItem = async (values: CreateDictItemValues) => {
     try {
       await createDictItem(values);
@@ -164,7 +186,10 @@ export default function DictionaryCategoryPage() {
     }
   };
 
-  // 处理编辑词条
+  /**
+   * 处理编辑词条
+   * 更新成功后刷新列表并关闭对话框
+   */
   const handleEditItem = async (values: UpdateDictItemValues) => {
     if (!editingItem) return;
 
@@ -181,13 +206,19 @@ export default function DictionaryCategoryPage() {
     }
   };
 
-  // 处理编辑按钮点击
+  /**
+   * 处理编辑按钮点击
+   * 打开编辑对话框并设置当前编辑项
+   */
   const handleEdit = (item: Dict) => {
     setEditingItem(item);
     setEditDialogOpen(true);
   };
 
-  // 处理删除词条
+  /**
+   * 处理删除词条
+   * 删除成功后刷新列表
+   */
   const handleDelete = async (item: Dict) => {
     if (!confirm(`确定要删除词条"${item.label}"吗？`)) {
       return;
@@ -204,7 +235,10 @@ export default function DictionaryCategoryPage() {
     }
   };
 
-  // 处理启用/禁用切换
+  /**
+   * 处理启用/禁用切换
+   * 切换成功后刷新列表
+   */
   const handleToggle = async (item: Dict) => {
     try {
       await toggleDictItem(item.id, !item.isEnabled);
@@ -216,6 +250,11 @@ export default function DictionaryCategoryPage() {
       console.error('Toggle dict item error:', error);
     }
   };
+
+  /**
+   * 渲染词条卡片
+   * 展示词条的详细信息和操作按钮
+   */
 
   const renderItemCard = (item: Dict) => {
     return (
@@ -285,6 +324,7 @@ export default function DictionaryCategoryPage() {
 
   const hasActiveFilters = !!(filters.search || filters.isEnabled);
 
+  // 分类不存在时的提示
   if (!currentCategory) {
     return (
       <div className="mx-auto max-w-6xl">
@@ -309,7 +349,7 @@ export default function DictionaryCategoryPage() {
         <span className="font-medium text-[var(--moge-text-main)]">{currentCategory.title}</span>
       </div>
 
-      {/* 页面标题 */}
+      {/* 页面标题区 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">
@@ -317,6 +357,8 @@ export default function DictionaryCategoryPage() {
           </h1>
           <p className="mt-1 text-[var(--moge-text-sub)]">{currentCategory.description}</p>
         </div>
+
+        {/* 创建词条按钮 */}
         <div>
           <DictItemDialog
             mode="create"
