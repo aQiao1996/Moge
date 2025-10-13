@@ -16,19 +16,33 @@ import { statusConfig } from './components/constants';
 import dayjs from 'dayjs';
 import type { Outline } from '@moge/types';
 
-// 扩展Outline接口以确保id是必需的
+/**
+ * 扩展 Outline 接口以确保 id 是必需的
+ * 用于列表渲染时的类型安全
+ */
 interface OutlineWithId extends Omit<Outline, 'id'> {
   id: string;
   [key: string]: string | number | boolean | string[] | null | undefined | object | Date;
 }
 
+/**
+ * 大纲列表页组件
+ *
+ * 功能：
+ * - 展示所有大纲列表
+ * - 支持搜索、筛选(类型、时代、状态、标签)、排序
+ * - 支持创建、编辑、删除大纲
+ * - 支持列表/网格视图切换
+ * - 分页展示
+ * - 快速跳转到大纲详情和编辑页
+ */
 export default function Home() {
   const { outlines, total, loading, getOutlines, deleteOutline } = useOutlineStore();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
   const router = useRouter();
 
-  // Edit dialog state
+  // 编辑对话框状态
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingOutline, setEditingOutline] = useState<OutlineWithId | null>(null);
 
@@ -44,12 +58,12 @@ export default function Home() {
     viewMode: 'list',
   });
 
-  // todo 这些数据应该从实际的大纲数据中提取，这里先用示例数据
+  // TODO: 这些数据应该从字典或实际大纲数据中提取
   const availableTypes = ['玄幻', '都市', '历史', '科幻', '武侠'];
   const availableEras = ['现代', '古代', '未来', '民国', '架空'];
   const availableTags = ['热血', '爽文', '系统', '重生', '穿越', '修仙', '商战'];
 
-  // 筛选配置
+  // 筛选配置：支持类型、时代、状态、标签筛选
   const filterOptions: FilterOption[] = [
     {
       key: 'type',
@@ -77,14 +91,19 @@ export default function Home() {
     },
   ];
 
-  // 排序配置
+  // 排序配置：支持按创建时间、名称、类型排序
   const sortOptions: SortOption[] = [
     { value: 'createdAt', label: '创建时间' },
     { value: 'name', label: '名称' },
     { value: 'type', label: '类型' },
   ];
 
+  /**
+   * 获取大纲列表数据
+   * 根据筛选条件和分页参数从后端获取数据
+   */
   useEffect(() => {
+    // 状态映射：前端显示文本 -> 后端枚举值
     const statusMap: Record<string, string> = {
       草稿: 'DRAFT',
       已完成: 'PUBLISHED',
@@ -121,7 +140,10 @@ export default function Home() {
     filters.sortOrder,
   ]);
 
-  // 当筛选条件改变时，重置到第一页
+  /**
+   * 当筛选条件改变时，重置到第一页
+   * 避免筛选后仍停留在不存在的页码
+   */
   useEffect(() => {
     setCurrentPage(1);
   }, [
@@ -134,11 +156,19 @@ export default function Home() {
     filters.sortOrder,
   ]);
 
+  /**
+   * 处理编辑大纲
+   * 打开编辑对话框并设置当前编辑项
+   */
   const handleEdit = (outline: OutlineWithId) => {
     setEditingOutline(outline);
     setEditDialogOpen(true);
   };
 
+  /**
+   * 处理删除大纲
+   * 删除成功后自动刷新列表
+   */
   const handleDelete = async (outline: OutlineWithId) => {
     if (!outline.id) return;
 
@@ -152,6 +182,10 @@ export default function Home() {
     }
   };
 
+  /**
+   * 渲染大纲卡片
+   * 展示大纲的详细信息和操作按钮
+   */
   const renderOutlineCard = (outline: OutlineWithId) => {
     const status = statusConfig[outline.status as keyof typeof statusConfig];
     return (
@@ -165,6 +199,7 @@ export default function Home() {
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
+            {/* 大纲标题和状态标签 */}
             <div className="flex items-center gap-3">
               <h3 className="font-semibold text-[var(--moge-text-main)]">{outline.name}</h3>
               {status && (
@@ -179,11 +214,15 @@ export default function Home() {
                 </Badge>
               )}
             </div>
+
+            {/* 备注信息 */}
             {outline.remark && (
               <p className="mt-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
                 {outline.remark}
               </p>
             )}
+
+            {/* 标签列表 */}
             {outline.tags && outline.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {outline.tags.map((tag: string, index: number) => (
@@ -193,6 +232,8 @@ export default function Home() {
                 ))}
               </div>
             )}
+
+            {/* 创建时间 */}
             <div className="mt-3 flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -200,7 +241,10 @@ export default function Home() {
               </span>
             </div>
           </div>
+
+          {/* 操作按钮组 */}
           <div className="flex items-center gap-2">
+            {/* 查看内容 */}
             <Button
               size="sm"
               variant="ghost"
@@ -209,6 +253,8 @@ export default function Home() {
             >
               <FileText className="h-4 w-4" />
             </Button>
+
+            {/* 编辑基本信息 */}
             <Button
               size="sm"
               variant="ghost"
@@ -217,6 +263,8 @@ export default function Home() {
             >
               <Edit className="h-4 w-4" />
             </Button>
+
+            {/* 删除大纲 */}
             <MogeConfirmPopover
               trigger={
                 <Button
