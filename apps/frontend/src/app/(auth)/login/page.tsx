@@ -1,3 +1,13 @@
+/**
+ * 登录页面组件
+ *
+ * 功能特性：
+ * - 支持用户名/邮箱 + 密码登录
+ * - 支持 GitLab OAuth 第三方登录
+ * - 表单验证基于 Zod Schema
+ * - 登录成功后跳转到首页
+ * - 使用 NextAuth 进行认证管理
+ */
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,20 +22,30 @@ import Link from 'next/link';
 import { SiGitlab } from '@icons-pack/react-simple-icons';
 import { signIn } from 'next-auth/react';
 
+/**
+ * LoginPage 组件
+ * @returns 登录表单页面
+ */
 export default function LoginPage() {
   const router = useRouter();
   const { loading, resetError } = useAuthStore();
 
+  // 初始化表单，使用 Zod 进行验证
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
     defaultValues: { username: '1424883981@qq.com', password: '0jdt001ar' },
   });
 
+  /**
+   * 处理表单提交
+   * @param values - 登录表单数据
+   */
   const onSubmit = async (values: LoginData) => {
     toast.dismiss();
     resetError();
 
+    // 使用 NextAuth credentials 提供商进行登录
     const result = await signIn('credentials', {
       ...values,
       redirect: false,
@@ -33,6 +53,7 @@ export default function LoginPage() {
 
     if (result?.ok) {
       toast.success('登录成功');
+      // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
         router.push('/');
       }, 1000);
@@ -50,6 +71,7 @@ export default function LoginPage() {
         boxShadow: 'var(--moge-glow-card)',
       }}
     >
+      {/* 页面标题 */}
       <h2 className="text-center text-2xl font-bold" style={{ color: 'var(--moge-text-main)' }}>
         欢迎回来
       </h2>
@@ -57,6 +79,7 @@ export default function LoginPage() {
         登录后可体验 AI 小说生成
       </p>
 
+      {/* 登录表单 */}
       <HookForm
         form={form}
         fields={[
@@ -92,6 +115,7 @@ export default function LoginPage() {
         )}
       />
 
+      {/* 分隔线 */}
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center">
           <div style={{ borderColor: 'var(--moge-divider)' }} className="w-full border-t" />
@@ -103,6 +127,7 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* GitLab OAuth 登录按钮 */}
       <Button
         onClick={() => void signIn('gitlab', { callbackUrl: '/' })}
         style={{
@@ -117,6 +142,7 @@ export default function LoginPage() {
         使用 GitLab 登录
       </Button>
 
+      {/* 注册链接 */}
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
         还没有账户？
         <Link

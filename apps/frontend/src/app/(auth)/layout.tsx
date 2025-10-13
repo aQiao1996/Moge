@@ -1,17 +1,31 @@
+/**
+ * 认证页面布局组件
+ *
+ * 为登录和注册页面提供统一的视觉布局，包含：
+ * - 浮动粒子背景动画
+ * - 左侧品牌展示区（桌面端）
+ * - 右侧玻璃化表单容器
+ * - 顶部主题切换设置
+ */
 'use client';
 import type { ReactNode } from 'react';
 import { hanFont } from '../font';
 
 import dynamic from 'next/dynamic';
 
-// 异步加载
+// 异步加载浮动粒子组件，禁用 SSR 避免服务端渲染问题
 const FloatingDots = dynamic(() => import('./components/FloatingDots').then((mod) => mod.default), {
   ssr: false,
 });
+// 异步加载认证设置组件（主题切换等），禁用 SSR
 const AuthSetting = dynamic(() => import('../components/AuthSetting').then((mod) => mod.default), {
   ssr: false,
 });
 
+/**
+ * AuthLayout 组件
+ * @param children - 认证页面内容（登录或注册表单）
+ */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div

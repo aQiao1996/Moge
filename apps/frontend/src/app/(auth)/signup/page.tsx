@@ -1,3 +1,12 @@
+/**
+ * 注册页面组件
+ *
+ * 功能特性：
+ * - 支持用户名、密码、确认密码注册
+ * - 表单验证基于 Zod Schema（密码强度、确认密码匹配）
+ * - 注册成功后自动登录并跳转到首页
+ * - 如果自动登录失败，引导用户手动登录
+ */
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,23 +21,34 @@ import { signIn } from 'next-auth/react';
 import { registerApi } from '@/api/auth.api';
 import { Button } from '@/components/ui/button';
 
+/**
+ * SignupPage 组件
+ * @returns 注册表单页面
+ */
 export default function SignupPage() {
   const router = useRouter();
   const { loading, resetError } = useAuthStore();
 
+  // 初始化表单，使用 Zod 进行验证
   const form = useForm<SignupData>({
     resolver: zodResolver(signupSchema),
     mode: 'onChange',
     defaultValues: { username: '', password: '', confirm: '' },
   });
 
+  /**
+   * 处理表单提交
+   * @param values - 注册表单数据
+   */
   const onSubmit = async (values: SignupData) => {
     toast.dismiss();
     resetError();
 
+    // 调用注册 API
     await registerApi(values);
     toast.success('注册成功！正在为您登录...');
 
+    // 注册成功后自动登录
     const signInResult = await signIn('credentials', {
       username: values.username,
       password: values.password,
@@ -36,10 +56,12 @@ export default function SignupPage() {
     });
 
     if (signInResult?.ok) {
+      // 自动登录成功，跳转到首页
       setTimeout(() => {
         router.push('/');
       }, 1000);
     } else {
+      // 自动登录失败，引导用户手动登录
       toast.error(signInResult?.error || '自动登录失败, 请手动登录');
       setTimeout(() => {
         router.push('/login');
@@ -56,6 +78,7 @@ export default function SignupPage() {
       }}
       className="w-full max-w-md rounded-2xl border p-6 backdrop-blur-xl"
     >
+      {/* 页面标题 */}
       <h2 style={{ color: 'var(--moge-text-main)' }} className="text-center text-2xl font-bold">
         创建账户
       </h2>
@@ -63,6 +86,7 @@ export default function SignupPage() {
         注册后即可体验 AI 小说生成
       </p>
 
+      {/* 注册表单 */}
       <HookForm
         form={form}
         fields={[
@@ -101,6 +125,7 @@ export default function SignupPage() {
         )}
       />
 
+      {/* 登录链接 */}
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--moge-text-muted)' }}>
         已有账户？
         <Link
