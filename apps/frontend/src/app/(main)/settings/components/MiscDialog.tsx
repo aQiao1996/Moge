@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Folder, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import {
   createMiscSchema,
@@ -153,12 +154,19 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       projectTags,
     };
 
-    if (isEditMode && misc?.id) {
-      // 确保id是number类型
-      const miscId = typeof misc.id === 'string' ? parseInt(misc.id) : misc.id;
-      await updateMisc(miscId, submitData);
-    } else {
-      await createMisc(submitData);
+    try {
+      if (isEditMode && misc?.id) {
+        // 确保id是number类型
+        const miscId = typeof misc.id === 'string' ? parseInt(misc.id) : misc.id;
+        await updateMisc(miscId, submitData);
+        toast.success('辅助设定更新成功');
+      } else {
+        await createMisc(submitData);
+        toast.success('辅助设定创建成功');
+      }
+    } catch (error) {
+      console.error('提交辅助设定失败:', error);
+      throw error; // 重新抛出异常，防止对话框关闭
     }
   };
 
@@ -911,6 +919,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       defaultValues={
         isEditMode && misc
           ? {
+              id: String(misc.id),
               name: misc.name || '',
               type: misc.type || '',
               description: misc.description || '',
@@ -958,6 +967,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       item={
         isEditMode && misc
           ? {
+              id: String(misc.id),
               name: misc.name || '',
               type: misc.type || '',
               description: misc.description || '',

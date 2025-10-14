@@ -182,7 +182,7 @@ export default function MogeFormDialog<T extends FieldValues>({
       await onSubmit(values);
       setOpen(false);
     } catch (error) {
-      console.log('🚀 ~ MogeFormDialog.tsx:165 ~ handleSubmit ~ error:', error);
+      console.log('🚀 ~ MogeFormDialog.tsx:185 ~ handleSubmit ~ error:', error);
     } finally {
       setSubmitting(false);
     }
