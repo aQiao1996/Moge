@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BookOpen, Calendar, Users, Zap, Globe, Folder, Plus, Trash2, Tag } from 'lucide-react';
 import { getProjectSettings } from '@/api/projects.api';
+import SettingSelectorDialog from './SettingSelectorDialog';
 
 interface SettingItem {
   id: number;
@@ -58,6 +59,15 @@ export default function ProjectDetailDialog({
     misc: [],
   });
 
+  // 设定选择器状态
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState<{
+    key: 'characters' | 'systems' | 'worlds' | 'misc';
+    label: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    color: string;
+  } | null>(null);
+
   /**
    * 加载项目关联的设定数据
    */
@@ -94,6 +104,29 @@ export default function ProjectDetailDialog({
       return date;
     }
     return date.toISOString().split('T')[0];
+  };
+
+  /**
+   * 打开设定选择器
+   */
+  const handleOpenSelector = (
+    key: 'characters' | 'systems' | 'worlds' | 'misc',
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    color: string
+  ) => {
+    setCurrentCategory({ key, label, Icon, color });
+    setSelectorOpen(true);
+  };
+
+  /**
+   * 确认选择设定
+   */
+  const handleConfirmSelection = async (selectedIds: string[]) => {
+    // TODO: 调用 API 更新项目关联的设定
+    console.log('选中的设定 IDs:', selectedIds);
+    // 重新加载项目设定
+    await loadProjectSettings();
   };
 
   /**
@@ -163,7 +196,17 @@ export default function ProjectDetailDialog({
               已关联 {settings.length} 个{label}
             </span>
           </div>
-          <Button size="sm">
+          <Button
+            size="sm"
+            onClick={() =>
+              handleOpenSelector(
+                categoryKey as 'characters' | 'systems' | 'worlds' | 'misc',
+                label,
+                Icon,
+                color
+              )
+            }
+          >
             <Plus className="mr-2 h-4 w-4" />
             从设定库添加
           </Button>
@@ -362,6 +405,22 @@ export default function ProjectDetailDialog({
           </div>
         </Tabs>
       </DialogContent>
+
+      {/* 设定选择器弹窗 */}
+      {currentCategory && (
+        <SettingSelectorDialog
+          open={selectorOpen}
+          onOpenChange={setSelectorOpen}
+          category={currentCategory.key}
+          categoryLabel={currentCategory.label}
+          selectedIds={project[currentCategory.key] || []}
+          onConfirm={(selectedIds) => {
+            void handleConfirmSelection(selectedIds);
+          }}
+          Icon={currentCategory.Icon}
+          color={currentCategory.color}
+        />
+      )}
     </Dialog>
   );
 }
