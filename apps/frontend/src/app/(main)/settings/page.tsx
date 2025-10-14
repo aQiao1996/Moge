@@ -14,12 +14,14 @@ import {
   Settings,
   Edit,
   Trash2,
+  Eye,
 } from 'lucide-react';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import Link from 'next/link';
 import ProjectDialog from './components/ProjectDialog';
+import ProjectDetailDialog from './components/ProjectDetailDialog';
 import type { CreateProjectValues, Project as ProjectType } from '@moge/types';
 import {
   getProjects,
@@ -70,6 +72,8 @@ export default function SettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const pageSize = 6;
 
   // 筛选状态
@@ -183,6 +187,15 @@ export default function SettingsPage() {
   };
 
   /**
+   * 处理查看项目详情
+   * @param project 项目数据
+   */
+  const handleViewDetail = (project: Project) => {
+    setSelectedProject(project);
+    setDetailDialogOpen(true);
+  };
+
+  /**
    * 根据筛选条件过滤项目列表
    * @returns 过滤后的项目数组
    */
@@ -279,6 +292,14 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              title="查看详情"
+              onClick={() => handleViewDetail(project)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
             <ProjectDialog
               mode="edit"
               item={
@@ -380,6 +401,20 @@ export default function SettingsPage() {
         showPagination={filteredProjects.length > pageSize}
         gridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
         listClassName="grid gap-4"
+      />
+
+      {/* 项目详情弹窗 */}
+      <ProjectDetailDialog
+        project={
+          selectedProject
+            ? ({
+                ...selectedProject,
+                id: Number(selectedProject.id),
+              } as unknown as ProjectType)
+            : null
+        }
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
       />
     </div>
   );

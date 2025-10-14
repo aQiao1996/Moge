@@ -22,6 +22,7 @@
     "@radix-ui/react-select": "catalog:",
     "@radix-ui/react-separator": "catalog:",
     "@radix-ui/react-slot": "catalog:",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "catalog:",
     "@tailwindcss/typography": "catalog:",
     "@uiw/react-md-editor": "catalog:",
