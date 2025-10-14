@@ -4,26 +4,43 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, Users, Zap, Globe, Folder, Settings } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  Users,
+  Zap,
+  Globe,
+  Folder,
+  Settings,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
-import { useRouter } from 'next/navigation';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import Link from 'next/link';
 import ProjectDialog from './components/ProjectDialog';
-import type { CreateProjectValues } from '@moge/types';
-import { getProjects, createProject, type Project as ApiProject } from '@/api/projects.api';
+import type { CreateProjectValues, Project as ProjectType } from '@moge/types';
+import {
+  getProjects,
+  createProject,
+  updateProject,
+  deleteProject,
+  type Project as ApiProject,
+} from '@/api/projects.api';
 
 interface Project {
   id: string;
   name: string;
   type: string;
+  description?: string | null;
+  tags: string[];
+  characters: string[];
+  systems: string[];
+  worlds: string[];
+  misc: string[];
   createdAt: string;
-  settings: {
-    characters: number;
-    systems: number;
-    worlds: number;
-    misc: number;
-  };
+  updatedAt: string;
   [key: string]: string | number | boolean | string[] | null | undefined | object;
 }
 
@@ -54,7 +71,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const pageSize = 6;
-  const router = useRouter();
 
   // 筛选状态
   const [filters, setFilters] = useState<MogeFilterState>({
@@ -78,13 +94,14 @@ export default function SettingsPage() {
         id: String(item.id),
         name: item.name,
         type: item.type,
+        description: item.description,
+        tags: item.tags,
+        characters: item.characters,
+        systems: item.systems,
+        worlds: item.worlds,
+        misc: item.misc,
         createdAt: new Date(item.createdAt).toISOString().split('T')[0],
-        settings: {
-          characters: item.characters.length,
-          systems: item.systems.length,
-          worlds: item.worlds.length,
-          misc: item.misc.length,
-        },
+        updatedAt: item.updatedAt,
       }));
 
       setProjects(transformedProjects);
@@ -99,14 +116,6 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadProjects();
   }, []);
-
-  /**
-   * 处理项目卡片点击事件
-   * @param projectId 项目ID
-   */
-  const handleProjectClick = (projectId: string) => {
-    router.push(`/settings/${projectId}`);
-  };
 
   /**
    * 处理创建项目表单提交
@@ -130,6 +139,46 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('创建项目失败:', error);
       throw error;
+    }
+  };
+
+  /**
+   * 处理更新项目表单提交
+   * @param projectId 项目ID
+   * @param values 项目更新表单数据
+   */
+  const handleUpdateProject = async (projectId: number, values: CreateProjectValues) => {
+    try {
+      await updateProject(projectId, {
+        name: values.name,
+        type: values.type,
+        description: values.description,
+        tags: values.tags || [],
+        characters: values.characters?.map(String) || [],
+        systems: values.systems?.map(String) || [],
+        worlds: values.worlds?.map(String) || [],
+        misc: values.misc?.map(String) || [],
+      });
+
+      // 重新加载项目列表
+      await loadProjects();
+    } catch (error) {
+      console.error('更新项目失败:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * 处理删除项目
+   * @param project 项目数据
+   */
+  const handleDeleteProject = async (project: Project) => {
+    try {
+      await deleteProject(Number(project.id));
+      // 重新加载项目列表
+      await loadProjects();
+    } catch (error) {
+      console.error('删除项目失败:', error);
     }
   };
 
@@ -176,16 +225,19 @@ export default function SettingsPage() {
    * @returns 项目卡片JSX元素
    */
   const renderProjectCard = (project: Project) => {
-    const totalSettings = Object.values(project.settings).reduce((sum, count) => sum + count, 0);
+    const totalSettings =
+      project.characters.length +
+      project.systems.length +
+      project.worlds.length +
+      project.misc.length;
 
     return (
       <Card
         key={project.id}
-        className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
+        className="border p-6 transition-all duration-200"
         style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-        onClick={() => handleProjectClick(project.id)}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-[var(--moge-primary-400)]" />
@@ -204,27 +256,71 @@ export default function SettingsPage() {
               <div className="flex items-center gap-1">
                 <Users className="h-3 w-3 text-[var(--moge-text-muted)]" />
                 <span className="text-[var(--moge-text-sub)]">
-                  角色 {project.settings.characters}
+                  角色 {project.characters.length}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <Zap className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">系统 {project.settings.systems}</span>
+                <span className="text-[var(--moge-text-sub)]">系统 {project.systems.length}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Globe className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">世界 {project.settings.worlds}</span>
+                <span className="text-[var(--moge-text-sub)]">世界 {project.worlds.length}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Folder className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">辅助 {project.settings.misc}</span>
+                <span className="text-[var(--moge-text-sub)]">辅助 {project.misc.length}</span>
               </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              <span className="text-[var(--moge-text-sub)]">设定总数</span>
+              <span className="font-medium text-[var(--moge-text-main)]">{totalSettings}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-[var(--moge-text-sub)]">设定总数</span>
-            <span className="font-medium text-[var(--moge-text-main)]">{totalSettings}</span>
+          <div className="flex items-center gap-2">
+            <ProjectDialog
+              mode="edit"
+              item={
+                {
+                  name: project.name,
+                  type: project.type,
+                  description: project.description,
+                  tags: project.tags,
+                  characters: project.characters,
+                  systems: project.systems,
+                  worlds: project.worlds,
+                  misc: project.misc,
+                } as unknown as ProjectType
+              }
+              onSubmit={async (values) => {
+                await handleUpdateProject(Number(project.id), values);
+              }}
+              trigger={
+                <Button size="sm" variant="ghost" title="编辑">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <MogeConfirmPopover
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="删除"
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+              title="确认删除"
+              description={`此操作无法撤销，确定要删除「${project.name}」吗？`}
+              confirmText="确认删除"
+              cancelText="取消"
+              loadingText="删除中..."
+              confirmVariant="destructive"
+              onConfirm={() => handleDeleteProject(project)}
+            />
           </div>
         </div>
       </Card>
