@@ -908,13 +908,23 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       onOpenChange={onOpenChange}
       createSchema={createMiscSchema}
       updateSchema={updateMiscSchema}
-      defaultValues={{
-        name: misc?.name || '',
-        type: misc?.type || '',
-        description: misc?.description || '',
-        tags: misc?.tags || [],
-        remarks: misc?.remarks || '',
-      }}
+      defaultValues={
+        isEditMode && misc
+          ? {
+              name: misc.name || '',
+              type: misc.type || '',
+              description: misc.description || '',
+              tags: misc.tags || [],
+              remarks: misc.remarks || '',
+            }
+          : {
+              name: '',
+              type: '',
+              description: '',
+              tags: [],
+              remarks: '',
+            }
+      }
       onSubmit={onSubmit}
       fields={fields as FormFieldConfig<CreateMiscValues | UpdateMiscValues>[]}
       renderControl={renderControl}
@@ -945,7 +955,17 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
         },
       ]}
       defaultTrigger={defaultTrigger}
-      item={misc}
+      item={
+        isEditMode && misc
+          ? {
+              name: misc.name || '',
+              type: misc.type || '',
+              description: misc.description || '',
+              tags: misc.tags || [],
+              remarks: misc.remarks || '',
+            }
+          : undefined
+      }
       maxWidth="4xl"
     />
   );
