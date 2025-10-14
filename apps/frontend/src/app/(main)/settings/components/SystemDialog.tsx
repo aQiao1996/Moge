@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Zap, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
 
@@ -48,10 +48,26 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
   const isEditMode = mode === 'edit';
 
   // 动态数组状态
-  const [modules, setModules] = useState<SystemModule[]>(system?.modules || []);
-  const [levels, setLevels] = useState<LevelSystem[]>(system?.levels || []);
-  const [items, setItems] = useState<Item[]>(system?.items || []);
-  const [parameters, setParameters] = useState<Parameter[]>(system?.parameters || []);
+  const [modules, setModules] = useState<SystemModule[]>([]);
+  const [levels, setLevels] = useState<LevelSystem[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [parameters, setParameters] = useState<Parameter[]>([]);
+
+  // 当 system 数据变化时，同步更新所有数组状态
+  useEffect(() => {
+    if (system) {
+      setModules(system.modules || []);
+      setLevels(system.levels || []);
+      setItems(system.items || []);
+      setParameters(system.parameters || []);
+    } else {
+      // 清空状态（创建模式或关闭对话框时）
+      setModules([]);
+      setLevels([]);
+      setItems([]);
+      setParameters([]);
+    }
+  }, [system]);
 
   // 字段配置
   const fields: FieldConfig<FormValues>[] = [

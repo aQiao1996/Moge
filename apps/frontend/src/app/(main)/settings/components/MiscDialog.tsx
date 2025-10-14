@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Folder, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
 
@@ -56,12 +56,32 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
   const isEditMode = mode === 'edit';
 
   // 动态数组状态 - 字段名匹配数据库
-  const [inspirations, setInspirations] = useState<IdeaRecord[]>(misc?.inspirations || []);
-  const [references, setReferences] = useState<ReferenceMaterial[]>(misc?.references || []);
-  const [notes, setNotes] = useState<CreativeNote[]>(misc?.notes || []);
-  const [terminology, setTerminology] = useState<Terminology[]>(misc?.terminology || []);
-  const [templates, setTemplates] = useState<Template[]>(misc?.templates || []);
-  const [projectTags, setProjectTags] = useState<ProjectTag[]>(misc?.projectTags || []);
+  const [inspirations, setInspirations] = useState<IdeaRecord[]>([]);
+  const [references, setReferences] = useState<ReferenceMaterial[]>([]);
+  const [notes, setNotes] = useState<CreativeNote[]>([]);
+  const [terminology, setTerminology] = useState<Terminology[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [projectTags, setProjectTags] = useState<ProjectTag[]>([]);
+
+  // 当 misc 数据变化时，同步更新所有数组状态
+  useEffect(() => {
+    if (misc) {
+      setInspirations(misc.inspirations || []);
+      setReferences(misc.references || []);
+      setNotes(misc.notes || []);
+      setTerminology(misc.terminology || []);
+      setTemplates(misc.templates || []);
+      setProjectTags(misc.projectTags || []);
+    } else {
+      // 清空状态（创建模式或关闭对话框时）
+      setInspirations([]);
+      setReferences([]);
+      setNotes([]);
+      setTerminology([]);
+      setTemplates([]);
+      setProjectTags([]);
+    }
+  }, [misc]);
 
   // 基础字段配置
   const fields: FieldConfig<FormValues>[] = [

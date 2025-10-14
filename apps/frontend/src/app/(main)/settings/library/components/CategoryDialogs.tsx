@@ -44,8 +44,14 @@ export default function CategoryDialogs({
   const DialogComponent = dialogMap[category];
   if (!DialogComponent) return null;
 
-  // 获取属性键名 ('characters' → 'character')
-  const propKey = category.slice(0, -1) as 'character' | 'system' | 'world' | 'misc';
+  // 获取属性键名 ('characters' → 'character', 'misc' → 'misc')
+  const propKeyMap: Record<string, 'character' | 'system' | 'world' | 'misc'> = {
+    characters: 'character',
+    systems: 'system',
+    worlds: 'world',
+    misc: 'misc',
+  };
+  const propKey = propKeyMap[category];
 
   return (
     <>

@@ -310,6 +310,10 @@ catalogs:
 importers:
 
   .:
+    dependencies:
+      '@playwright/test':
+        specifier: ^1.56.0
+        version: 1.56.0
     devDependencies:
       '@changesets/changelog-github':
         specifier: 'catalog:'
@@ -379,7 +383,7 @@ importers:
     dependencies:
       '@langchain/community':
         specifier: 'catalog:'
-        version: 0.3.56(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@5.12.2(zod@3.25.76))(pg@8.16.3)(weaviate-client@3.8.1)
+        version: 0.3.56(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@5.12.2(zod@3.25.76))(pg@8.16.3)(playwright@1.56.0)(weaviate-client@3.8.1)
       '@langchain/core':
         specifier: 'catalog:'
         version: 0.3.76(openai@5.12.2(zod@3.25.76))
@@ -617,10 +621,10 @@ importers:
         version: 0.542.0(react@18.3.1)
       next:
         specifier: 'catalog:'
-        version: 14.2.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 14.2.32(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-auth:
         specifier: 'catalog:'
-        version: 4.24.11(next@14.2.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.24.11(next@14.2.32(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-themes:
         specifier: 'catalog:'
         version: 0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1912,6 +1916,11 @@ packages:
   '@pkgr/core@0.2.9':
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.56.0':
+    resolution: {integrity: sha512-Tzh95Twig7hUwwNe381/K3PggZBZblKUe2wv25oIpzWLr6Z0m4KgV1ZVIjnR6GM9ANEqjZD7XsZEa6JL/7YEgg==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@prisma/client@6.15.0':
     resolution: {integrity: sha512-wR2LXUbOH4cL/WToatI/Y2c7uzni76oNFND7+23ypLllBmIS8e3ZHhO+nud9iXSXKFt1SoM3fTZvHawg63emZw==}
@@ -4196,6 +4205,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -6037,6 +6051,16 @@ packages:
 
   pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
+
+  playwright-core@1.56.0:
+    resolution: {integrity: sha512-1SXl7pMfemAMSDn5rkPeZljxOCYAmQnYLBTExuh6E8USHXGSX3dx6lYZN/xPpTz1vimXmPA9CDnILvmJaB8aSQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.56.0:
+    resolution: {integrity: sha512-X5Q1b8lOdWIE4KAoHpW3SE8HvUB+ZZsUoN64ZhjnN8dOb1UpujxBtENGiZFE+9F/yhzJwYa+ca3u43FeLbboHA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
@@ -8147,7 +8171,7 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@langchain/community@0.3.56(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@5.12.2(zod@3.25.76))(pg@8.16.3)(weaviate-client@3.8.1)':
+  '@langchain/community@0.3.56(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(openai@5.12.2(zod@3.25.76))(pg@8.16.3)(playwright@1.56.0)(weaviate-client@3.8.1)':
     dependencies:
       '@langchain/core': 0.3.76(openai@5.12.2(zod@3.25.76))
       '@langchain/openai': 0.6.12(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))
@@ -8156,7 +8180,7 @@ snapshots:
       expr-eval: 2.0.2
       flat: 5.0.2
       js-yaml: 4.1.0
-      langchain: 0.2.20(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(openai@5.12.2(zod@3.25.76))
+      langchain: 0.2.20(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(openai@5.12.2(zod@3.25.76))(playwright@1.56.0)
       langsmith: 0.3.68(openai@5.12.2(zod@3.25.76))
       openai: 5.12.2(zod@3.25.76)
       uuid: 10.0.0
@@ -8166,6 +8190,7 @@ snapshots:
       jsonwebtoken: 9.0.2
       lodash: 4.17.21
       pg: 8.16.3
+      playwright: 1.56.0
       weaviate-client: 3.8.1
     transitivePeerDependencies:
       - '@gomomento/sdk-web'
@@ -8512,6 +8537,10 @@ snapshots:
     optional: true
 
   '@pkgr/core@0.2.9': {}
+
+  '@playwright/test@1.56.0':
+    dependencies:
+      playwright: 1.56.0
 
   '@prisma/client@6.15.0(prisma@6.15.0(typescript@5.7.2))(typescript@5.7.2)':
     optionalDependencies:
@@ -11035,6 +11064,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -12098,7 +12130,7 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  langchain@0.2.20(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(openai@5.12.2(zod@3.25.76)):
+  langchain@0.2.20(@langchain/google-genai@0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76))(handlebars@4.7.8)(ignore@5.3.2)(openai@5.12.2(zod@3.25.76))(playwright@1.56.0):
     dependencies:
       '@langchain/core': 0.2.36(openai@5.12.2(zod@3.25.76))
       '@langchain/openai': 0.2.11
@@ -12118,6 +12150,7 @@ snapshots:
       '@langchain/google-genai': 0.1.10(@langchain/core@0.3.76(openai@5.12.2(zod@3.25.76)))(zod@3.25.76)
       handlebars: 4.7.8
       ignore: 5.3.2
+      playwright: 1.56.0
     transitivePeerDependencies:
       - encoding
       - openai
@@ -12791,13 +12824,13 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next-auth@4.24.11(next@14.2.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next-auth@4.24.11(next@14.2.32(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@babel/runtime': 7.28.4
       '@panva/hkdf': 1.2.1
       cookie: 0.7.2
       jose: 4.15.9
-      next: 14.2.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 14.2.32(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       oauth: 0.9.15
       openid-client: 5.7.1
       preact: 10.27.1
@@ -12811,7 +12844,7 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  next@14.2.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next@14.2.32(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@next/env': 14.2.32
       '@swc/helpers': 0.5.5
@@ -12832,6 +12865,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 14.2.32
       '@next/swc-win32-ia32-msvc': 14.2.32
       '@next/swc-win32-x64-msvc': 14.2.32
+      '@playwright/test': 1.56.0
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
@@ -13192,6 +13226,14 @@ snapshots:
       confbox: 0.2.2
       exsolve: 1.0.7
       pathe: 2.0.3
+
+  playwright-core@1.56.0: {}
+
+  playwright@1.56.0:
+    dependencies:
+      playwright-core: 1.56.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pluralize@8.0.0: {}
 

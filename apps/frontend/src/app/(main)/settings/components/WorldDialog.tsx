@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Globe, Plus, X } from 'lucide-react';
 import { type ControllerRenderProps, type FieldPath } from 'react-hook-form';
 
@@ -53,24 +53,32 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
   const isEditMode = mode === 'edit';
 
   // 动态数组状态 - 后端将返回扁平字段格式的数据
-  const [geographicLocations, setGeographicLocations] = useState<GeographicLocation[]>(
-    world?.geographicLocations || []
-  );
-  const [politicalForces, setPoliticalForces] = useState<PoliticalForce[]>(
-    world?.politicalForces || []
-  );
-  const [culturalCustoms, setCulturalCustoms] = useState<CulturalCustom[]>(
-    world?.culturalCustoms || []
-  );
-  const [cultivationLevels, setCultivationLevels] = useState<CultivationLevel[]>(
-    world?.cultivationLevels || []
-  );
-  const [historicalEvents, setHistoricalEvents] = useState<HistoricalEvent[]>(
-    world?.historicalEvents || []
-  );
-  const [historicalFigures, setHistoricalFigures] = useState<HistoricalFigure[]>(
-    world?.historicalFigures || []
-  );
+  const [geographicLocations, setGeographicLocations] = useState<GeographicLocation[]>([]);
+  const [politicalForces, setPoliticalForces] = useState<PoliticalForce[]>([]);
+  const [culturalCustoms, setCulturalCustoms] = useState<CulturalCustom[]>([]);
+  const [cultivationLevels, setCultivationLevels] = useState<CultivationLevel[]>([]);
+  const [historicalEvents, setHistoricalEvents] = useState<HistoricalEvent[]>([]);
+  const [historicalFigures, setHistoricalFigures] = useState<HistoricalFigure[]>([]);
+
+  // 当 world 数据变化时，同步更新所有数组状态
+  useEffect(() => {
+    if (world) {
+      setGeographicLocations(world.geographicLocations || []);
+      setPoliticalForces(world.politicalForces || []);
+      setCulturalCustoms(world.culturalCustoms || []);
+      setCultivationLevels(world.cultivationLevels || []);
+      setHistoricalEvents(world.historicalEvents || []);
+      setHistoricalFigures(world.historicalFigures || []);
+    } else {
+      // 清空状态（创建模式或关闭对话框时）
+      setGeographicLocations([]);
+      setPoliticalForces([]);
+      setCulturalCustoms([]);
+      setCultivationLevels([]);
+      setHistoricalEvents([]);
+      setHistoricalFigures([]);
+    }
+  }, [world]);
 
   // 基础字段配置
   const fields: FieldConfig<FormValues>[] = [
