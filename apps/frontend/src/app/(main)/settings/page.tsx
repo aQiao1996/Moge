@@ -415,6 +415,7 @@ export default function SettingsPage() {
         }
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
+        onUpdate={loadProjects}
       />
     </div>
   );

@@ -6,8 +6,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import { BookOpen, Calendar, Users, Zap, Globe, Folder, Plus, Trash2, Tag } from 'lucide-react';
-import { getProjectSettings } from '@/api/projects.api';
+import {
+  getProjectSettings,
+  updateProjectCharacters,
+  updateProjectSystems,
+  updateProjectWorlds,
+  updateProjectMisc,
+} from '@/api/projects.api';
+import { toast } from 'sonner';
 import SettingSelectorDialog from './SettingSelectorDialog';
 
 interface SettingItem {
@@ -36,6 +44,7 @@ interface ProjectDetailDialogProps {
   project: ProjectData | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUpdate?: () => void | Promise<void>;
 }
 
 /**
@@ -46,6 +55,7 @@ export default function ProjectDetailDialog({
   project,
   open,
   onOpenChange,
+  onUpdate,
 }: ProjectDetailDialogProps) {
   const [settingsData, setSettingsData] = useState<{
     characters: SettingItem[];
@@ -123,10 +133,88 @@ export default function ProjectDetailDialog({
    * 确认选择设定
    */
   const handleConfirmSelection = async (selectedIds: string[]) => {
-    // TODO: 调用 API 更新项目关联的设定
-    console.log('选中的设定 IDs:', selectedIds);
-    // 重新加载项目设定
-    await loadProjectSettings();
+    if (!project || !currentCategory) return;
+
+    try {
+      const ids = selectedIds.map(Number);
+      const projectId = Number(project.id);
+
+      // 根据分类调用对应的 API
+      switch (currentCategory.key) {
+        case 'characters':
+          await updateProjectCharacters(projectId, ids);
+          break;
+        case 'systems':
+          await updateProjectSystems(projectId, ids);
+          break;
+        case 'worlds':
+          await updateProjectWorlds(projectId, ids);
+          break;
+        case 'misc':
+          await updateProjectMisc(projectId, ids);
+          break;
+      }
+
+      toast.success('设定关联更新成功');
+
+      // 重新加载项目设定
+      await loadProjectSettings();
+
+      // 通知父组件更新项目列表
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (error) {
+      console.error('更新项目设定失败:', error);
+      toast.error('更新设定关联失败，请重试');
+    }
+  };
+
+  /**
+   * 移除设定关联
+   */
+  const handleRemoveSetting = async (
+    settingId: number,
+    categoryKey: 'characters' | 'systems' | 'worlds' | 'misc'
+  ) => {
+    if (!project) return;
+
+    try {
+      const projectId = Number(project.id);
+
+      // 获取当前分类的所有 ID，移除指定的 ID
+      const currentIds = project[categoryKey] || [];
+      const newIds = currentIds.filter((id) => String(id) !== String(settingId)).map(Number);
+
+      // 根据分类调用对应的 API
+      switch (categoryKey) {
+        case 'characters':
+          await updateProjectCharacters(projectId, newIds);
+          break;
+        case 'systems':
+          await updateProjectSystems(projectId, newIds);
+          break;
+        case 'worlds':
+          await updateProjectWorlds(projectId, newIds);
+          break;
+        case 'misc':
+          await updateProjectMisc(projectId, newIds);
+          break;
+      }
+
+      toast.success('已移除设定关联');
+
+      // 重新加载项目设定
+      await loadProjectSettings();
+
+      // 通知父组件更新项目列表
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (error) {
+      console.error('移除设定关联失败:', error);
+      toast.error('移除设定关联失败，请重试');
+    }
   };
 
   /**
@@ -135,7 +223,8 @@ export default function ProjectDetailDialog({
   const renderSettingCard = (
     setting: SettingItem,
     Icon: React.ComponentType<{ className?: string }>,
-    color: string
+    color: string,
+    categoryKey: 'characters' | 'systems' | 'worlds' | 'misc'
   ) => (
     <Card
       key={setting.id}
@@ -164,14 +253,25 @@ export default function ProjectDetailDialog({
             </div>
           )}
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-red-500 hover:text-red-600"
-          title="移除关联"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <MogeConfirmPopover
+          trigger={
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-500 hover:text-red-600"
+              title="移除关联"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          }
+          title="移除设定关联"
+          description={`确定要将「${setting.name}」从项目中移除吗？`}
+          confirmText="确认移除"
+          cancelText="取消"
+          loadingText="移除中..."
+          confirmVariant="destructive"
+          onConfirm={() => handleRemoveSetting(setting.id, categoryKey)}
+        />
       </div>
     </Card>
   );
@@ -180,12 +280,12 @@ export default function ProjectDetailDialog({
    * 渲染设定分类标签页内容
    */
   const renderSettingsTab = (
-    categoryKey: string,
+    categoryKey: 'characters' | 'systems' | 'worlds' | 'misc',
     Icon: React.ComponentType<{ className?: string }>,
     color: string,
     label: string
   ) => {
-    const settings = settingsData[categoryKey as keyof typeof settingsData] || [];
+    const settings = settingsData[categoryKey] || [];
 
     return (
       <div className="space-y-4">
@@ -196,17 +296,7 @@ export default function ProjectDetailDialog({
               已关联 {settings.length} 个{label}
             </span>
           </div>
-          <Button
-            size="sm"
-            onClick={() =>
-              handleOpenSelector(
-                categoryKey as 'characters' | 'systems' | 'worlds' | 'misc',
-                label,
-                Icon,
-                color
-              )
-            }
-          >
+          <Button size="sm" onClick={() => handleOpenSelector(categoryKey, label, Icon, color)}>
             <Plus className="mr-2 h-4 w-4" />
             从设定库添加
           </Button>
@@ -226,7 +316,7 @@ export default function ProjectDetailDialog({
           </Card>
         ) : (
           <div className="grid gap-3">
-            {settings.map((setting) => renderSettingCard(setting, Icon, color))}
+            {settings.map((setting) => renderSettingCard(setting, Icon, color, categoryKey))}
           </div>
         )}
       </div>
