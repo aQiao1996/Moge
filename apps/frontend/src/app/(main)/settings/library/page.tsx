@@ -171,19 +171,6 @@ export default function SettingsLibraryPage() {
           );
         })}
       </div>
-
-      {/* 开发中提示 */}
-      <div className="mt-8">
-        <Card
-          className="border p-6 text-center"
-          style={{
-            backgroundColor: 'var(--moge-card-bg)',
-            borderColor: 'var(--moge-card-border)',
-          }}
-        >
-          <p className="text-[var(--moge-text-sub)]">具体的设定编辑功能正在开发中，敬请期待...</p>
-        </Card>
-      </div>
     </div>
   );
 }
