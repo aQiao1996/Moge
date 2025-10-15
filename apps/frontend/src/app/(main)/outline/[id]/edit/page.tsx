@@ -1,6 +1,19 @@
+/**
+ * 大纲编辑页
+ *
+ * 功能：
+ * - 编辑大纲总览内容
+ * - 编辑卷信息（标题、描述）
+ * - 编辑章节信息（标题、内容）
+ *
+ * 重构说明：
+ * - 使用策略模式管理不同类型的保存逻辑
+ * - 使用自定义 hooks 简化数据加载
+ * - 提高代码可维护性和可测试性
+ */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,203 +23,65 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
+import { useOutlineData } from '@/app/(main)/outline/hooks/useOutlineData';
+import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
+import OutlineStructureSidebar from '@/app/(main)/outline/components/OutlineStructureSidebar';
 import {
-  getOutlineDetailApi,
-  updateOutlineContentApi,
-  updateOutlineApi,
-  updateVolumeApi,
-  updateChapterApi,
-} from '@/api/outline.api';
-import type { OutlineWithStructure } from '@moge/types';
-import { statusConfig } from '../../components/constants';
-import OutlineStructureSidebar, {
-  type ChapterEditData,
-  type VolumeEditData,
+  saveEditContent,
+  type EditState,
   type EditData,
   type EditType,
-} from '../../components/OutlineStructureSidebar';
-
-interface EditState {
-  type: EditType;
-  title: string;
-  data: EditData;
-}
+  type VolumeEditData,
+  type ChapterEditData,
+} from '@/app/(main)/outline/strategies/outlineSaveStrategies';
 
 export default function OutlineEditPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [outlineData, setOutlineData] = useState<OutlineWithStructure | null>(null);
-  const [loading, setLoading] = useState(true);
+  // 数据加载
+  const { outlineData, loading, expandedVolumes, toggleVolume, setOutlineData } = useOutlineData({
+    outlineId: id,
+    autoLoad: true,
+  });
+
+  // 本地状态
   const [saving, setSaving] = useState(false);
-  const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
   const [isStructureSidebarOpen, setStructureSidebarOpen] = useState(true);
 
   // 编辑状态管理
   const [editState, setEditState] = useState<EditState>({
     type: 'overview',
     title: '大纲总览',
-    data: '',
+    data: outlineData?.content?.content || '',
   });
 
-  const loadData = async () => {
-    if (!id) return;
-
-    try {
-      setLoading(true);
-      const data = await getOutlineDetailApi(id);
-      setOutlineData(data);
-
-      // 默认编辑大纲总览
-      if (data.content?.content) {
-        setEditState({ type: 'overview', title: '大纲总览', data: data.content.content });
-      }
-
-      // 默认展开所有卷
-      const volumeIds = new Set(
-        data.volumes?.map((v) => v.id).filter((id): id is string => Boolean(id)) || []
-      );
-      setExpandedVolumes(volumeIds);
-    } catch (error) {
-      console.error('Load outline data error:', error);
-    } finally {
-      setLoading(false);
+  // 当数据加载完成后，初始化编辑状态
+  useState(() => {
+    if (outlineData?.content?.content && editState.data === '') {
+      setEditState({ type: 'overview', title: '大纲总览', data: outlineData.content.content });
     }
-  };
+  });
 
   const isGenerating = outlineData?.status === 'GENERATING';
 
-  // 保存策略接口
-  interface SaveStrategy {
-    save(id: string, editState: EditState): Promise<void>;
-    updateLocalData?(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure;
-  }
-
-  // 大纲总览保存策略
-  const overviewSaveStrategy: SaveStrategy = {
-    async save(id: string, editState: EditState) {
-      await updateOutlineContentApi(id, { content: editState.data as string });
-
-      // 如果当前状态是草稿且有内容，自动变更为已完成状态
-      if (outlineData?.status === 'DRAFT' && (editState.data as string).trim()) {
-        await updateOutlineApi(id, { status: 'PUBLISHED' });
-        setOutlineData((prev) => (prev ? { ...prev, status: 'PUBLISHED' } : null));
-      }
-    },
-  };
-
-  // 卷信息保存策略
-  const volumeSaveStrategy: SaveStrategy = {
-    async save(id: string, editState: EditState) {
-      const volumeData = editState.data as VolumeEditData;
-      if (!volumeData.id) {
-        throw new Error('卷ID缺失，无法保存');
-      }
-
-      await updateVolumeApi(id, volumeData.id, {
-        title: volumeData.title,
-        description: volumeData.description || undefined,
-      });
-    },
-
-    updateLocalData(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure {
-      const volumeData = editState.data as VolumeEditData;
-      const updatedVolumes = outlineData.volumes?.map((vol) =>
-        vol.id === volumeData.id
-          ? { ...vol, title: volumeData.title, description: volumeData.description }
-          : vol
-      );
-      return { ...outlineData, volumes: updatedVolumes };
-    },
-  };
-
-  // 章节信息保存策略
-  const chapterSaveStrategy: SaveStrategy = {
-    async save(id: string, editState: EditState) {
-      const chapterData = editState.data as ChapterEditData;
-      if (!chapterData.id) {
-        throw new Error('章节ID缺失，无法保存');
-      }
-
-      await updateChapterApi(id, chapterData.id, {
-        title: chapterData.title,
-        content: chapterData.content || undefined,
-      });
-    },
-
-    updateLocalData(outlineData: OutlineWithStructure, editState: EditState): OutlineWithStructure {
-      const chapterData = editState.data as ChapterEditData;
-
-      // 更新卷内章节
-      const updatedVolumes = outlineData.volumes?.map((vol) => ({
-        ...vol,
-        chapters: vol.chapters?.map((chapter) =>
-          chapter.id === chapterData.id
-            ? {
-                ...chapter,
-                title: chapterData.title,
-                content: chapterData.content
-                  ? { ...chapter.content, content: chapterData.content }
-                  : chapter.content,
-              }
-            : chapter
-        ),
-      }));
-
-      // 更新直接章节
-      const updatedChapters = outlineData.chapters?.map((chapter) =>
-        chapter.id === chapterData.id
-          ? {
-              ...chapter,
-              title: chapterData.title,
-              content: chapterData.content
-                ? { ...chapter.content, content: chapterData.content }
-                : chapter.content,
-            }
-          : chapter
-      );
-
-      return {
-        ...outlineData,
-        volumes: updatedVolumes,
-        chapters: updatedChapters,
-      };
-    },
-  };
-
-  // 策略映射
-  const saveStrategies: Record<EditType, SaveStrategy> = {
-    overview: overviewSaveStrategy,
-    volume: volumeSaveStrategy,
-    chapter: chapterSaveStrategy,
-  };
-
+  // 保存编辑内容
   const handleSave = async () => {
     if (!id || !outlineData || saving) return;
 
     try {
       setSaving(true);
+      const updatedData = await saveEditContent(id, editState, outlineData);
 
-      const strategy = saveStrategies[editState.type];
-      if (!strategy) {
-        throw new Error(`未支持的编辑类型: ${editState.type}`);
-      }
-
-      // 执行保存
-      await strategy.save(id, editState);
-
-      // 更新本地数据
-      if (strategy.updateLocalData) {
-        setOutlineData((prev) => {
-          if (!prev) return null;
-          return strategy.updateLocalData!(prev, editState);
-        });
+      if (updatedData) {
+        setOutlineData(updatedData);
       }
 
       toast.success('保存成功！');
     } catch (error) {
-      console.error('Save error:', error);
+      // 错误已在 saveEditContent 中处理
+      console.error('Save failed:', error);
     } finally {
       setSaving(false);
     }
@@ -214,18 +89,6 @@ export default function OutlineEditPage() {
 
   const handleBack = () => {
     router.push(`/outline/${id}`);
-  };
-
-  const toggleVolumeExpansion = (volumeId: string) => {
-    setExpandedVolumes((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(volumeId)) {
-        newSet.delete(volumeId);
-      } else {
-        newSet.add(volumeId);
-      }
-      return newSet;
-    });
   };
 
   const handleSelectEdit = (type: EditType, title: string, data: EditData) => {
@@ -236,10 +99,7 @@ export default function OutlineEditPage() {
     setEditState((prev) => ({ ...prev, data: newData }));
   };
 
-  useEffect(() => {
-    void loadData();
-  }, [id]);
-
+  // 加载状态
   if (loading) {
     return (
       <div className="container mx-auto max-w-7xl p-6">
@@ -254,6 +114,7 @@ export default function OutlineEditPage() {
     );
   }
 
+  // 数据不存在
   if (!outlineData) {
     return (
       <div className="container mx-auto max-w-7xl p-6">
@@ -314,7 +175,7 @@ export default function OutlineEditPage() {
           activeItemTitle={editState.title}
           onSelectItem={handleSelectEdit}
           expandedVolumes={expandedVolumes}
-          onToggleVolume={toggleVolumeExpansion}
+          onToggleVolume={toggleVolume}
           isOpen={isStructureSidebarOpen}
           onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
         />
@@ -334,6 +195,7 @@ export default function OutlineEditPage() {
             </div>
           ) : (
             <div className="min-h-[550px]">
+              {/* 大纲总览编辑 */}
               {editState.type === 'overview' && (
                 <MdEditor
                   value={editState.data as string}
@@ -344,6 +206,7 @@ export default function OutlineEditPage() {
                 />
               )}
 
+              {/* 卷信息编辑 */}
               {editState.type === 'volume' && (
                 <div className="space-y-4">
                   <div>
@@ -380,6 +243,7 @@ export default function OutlineEditPage() {
                 </div>
               )}
 
+              {/* 章节信息编辑 */}
               {editState.type === 'chapter' && (
                 <div className="space-y-4">
                   <div>

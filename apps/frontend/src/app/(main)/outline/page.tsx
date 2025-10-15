@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import OutlineDialog from './components/OutlineDialog';
 import { useOutlineStore } from '@/stores/outlineStore';
+import { useDictStore } from '@/stores/dictStore';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
 import { Card } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import { BookOpen, Clock, Edit, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
-import { statusConfig } from './components/constants';
+import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
 import dayjs from 'dayjs';
 import type { Outline } from '@moge/types';
 
@@ -58,10 +59,18 @@ export default function Home() {
     viewMode: 'list',
   });
 
-  // TODO: 这些数据应该从字典或实际大纲数据中提取
-  const availableTypes = ['玄幻', '都市', '历史', '科幻', '武侠'];
+  // 从字典 store 获取筛选数据
+  const { novelTypes, fetchNovelTypes } = useDictStore();
+  const availableTypes = novelTypes.map((t: { label: string }) => t.label);
+
+  // TODO: 时代和标签应该从字典或实际大纲数据中动态提取
   const availableEras = ['现代', '古代', '未来', '民国', '架空'];
   const availableTags = ['热血', '爽文', '系统', '重生', '穿越', '修仙', '商战'];
+
+  // 组件挂载时加载小说类型
+  useEffect(() => {
+    void fetchNovelTypes();
+  }, [fetchNovelTypes]);
 
   // 筛选配置：支持类型、时代、状态、标签筛选
   const filterOptions: FilterOption[] = [
