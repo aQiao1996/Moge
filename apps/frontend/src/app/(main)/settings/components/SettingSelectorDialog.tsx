@@ -15,6 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Search, Check } from 'lucide-react';
 import { getSettingsByCategory } from '@/api/settings.api';
 
+/**
+ * 设定项数据接口
+ * 表示设定库中的单个设定项
+ */
 interface SettingItem {
   id: number;
   name: string;
@@ -23,14 +27,38 @@ interface SettingItem {
   tags?: string[];
 }
 
+/**
+ * 设定选择器对话框组件属性接口
+ */
 interface SettingSelectorDialogProps {
+  /**
+   * 弹窗打开/关闭状态
+   */
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * 设定分类键名
+   */
   category: 'characters' | 'systems' | 'worlds' | 'misc';
+  /**
+   * 分类显示名称
+   */
   categoryLabel: string;
+  /**
+   * 已选中的设定 ID 列表
+   */
   selectedIds: string[];
+  /**
+   * 确认选择回调,传入选中的 ID 列表
+   */
   onConfirm: (selectedIds: string[]) => void;
+  /**
+   * 图标组件
+   */
   Icon: React.ComponentType<{ className?: string }>;
+  /**
+   * 图标颜色样式类名
+   */
   color: string;
 }
 
@@ -48,9 +76,21 @@ export default function SettingSelectorDialog({
   Icon,
   color,
 }: SettingSelectorDialogProps) {
+  /**
+   * 设定列表数据
+   */
   const [settings, setSettings] = useState<SettingItem[]>([]);
+  /**
+   * 加载状态
+   */
   const [loading, setLoading] = useState(false);
+  /**
+   * 搜索文本
+   */
   const [searchText, setSearchText] = useState('');
+  /**
+   * 临时选中的 ID 列表(用于在确认前暂存选择)
+   */
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
 
   /**
@@ -68,7 +108,9 @@ export default function SettingSelectorDialog({
     }
   };
 
-  // 当弹窗打开时加载数据并初始化选中状态
+  /**
+   * 当弹窗打开时加载数据并初始化选中状态
+   */
   useEffect(() => {
     if (open) {
       setTempSelectedIds([...selectedIds]);
@@ -79,6 +121,8 @@ export default function SettingSelectorDialog({
 
   /**
    * 切换设定的选中状态
+   *
+   * @param id 设定ID
    */
   const toggleSetting = (id: string) => {
     setTempSelectedIds((prev) => {
@@ -92,6 +136,9 @@ export default function SettingSelectorDialog({
 
   /**
    * 过滤设定列表
+   * 根据搜索文本过滤设定项
+   *
+   * @returns 过滤后的设定列表
    */
   const filteredSettings = settings.filter((setting) => {
     if (!searchText) return true;
@@ -105,6 +152,7 @@ export default function SettingSelectorDialog({
 
   /**
    * 确认选择
+   * 调用回调函数并关闭对话框
    */
   const handleConfirm = () => {
     onConfirm(tempSelectedIds);

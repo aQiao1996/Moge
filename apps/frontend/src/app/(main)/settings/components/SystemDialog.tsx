@@ -34,6 +34,9 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { createSystem, updateSystem } from '@/api/settings.api';
 
+/**
+ * 系统设定对话框组件属性接口
+ */
 interface SystemDialogProps {
   mode: 'create' | 'edit';
   system?: System & { id?: number | string };
@@ -44,16 +47,32 @@ interface SystemDialogProps {
 
 type FormValues = CreateSystemValues | UpdateSystemValues;
 
+/**
+ * 系统设定创建/编辑对话框组件
+ * 支持系统基本信息、功能模块、等级体系、道具装备、数值参数等完整功能
+ *
+ * @param mode 对话框模式 'create' | 'edit'
+ * @param system 编辑模式时的系统数据
+ * @param trigger 触发对话框的自定义元素
+ * @param open 对话框是否打开
+ * @param onOpenChange 对话框状态变化回调
+ */
 export default function SystemDialog({ mode, system, open, onOpenChange }: SystemDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 动态数组状态
+  /**
+   * 动态数组状态管理
+   * 分别管理系统的功能模块、等级体系、道具装备和数值参数
+   */
   const [modules, setModules] = useState<SystemModule[]>([]);
   const [levels, setLevels] = useState<LevelSystem[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
 
-  // 当 system 数据变化时，同步更新所有数组状态
+  /**
+   * 当 system 数据变化时,同步更新所有数组状态
+   * 在编辑模式打开或关闭对话框时触发
+   */
   useEffect(() => {
     if (system) {
       setModules(system.modules || []);
@@ -61,7 +80,7 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
       setItems(system.items || []);
       setParameters(system.parameters || []);
     } else {
-      // 清空状态（创建模式或关闭对话框时）
+      // 清空状态(创建模式或关闭对话框时)
       setModules([]);
       setLevels([]);
       setItems([]);
@@ -69,7 +88,10 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     }
   }, [system]);
 
-  // 字段配置
+  /**
+   * 表单字段配置
+   * 定义系统设定的基本信息字段
+   */
   const fields: FieldConfig<FormValues>[] = [
     { name: 'name', label: '系统名称', required: !isEditMode },
     { name: 'type', label: '系统类型', required: !isEditMode },
@@ -133,7 +155,10 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     [fields, isEditMode]
   );
 
-  // 处理提交
+  /**
+   * 处理表单提交
+   * 合并基础数据和动态数组数据后提交
+   */
   const onSubmit = async (values: FormValues) => {
     // 移除可能存在的id字段(编辑模式下form可能包含id)
     const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
@@ -155,7 +180,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     }
   };
 
-  // 功能模块管理
+  /**
+   * 功能模块管理函数
+   */
   const addModule = () => {
     setModules([
       ...modules,
@@ -173,7 +200,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     setModules(modules.filter((_, i) => i !== index));
   };
 
-  // 等级体系管理
+  /**
+   * 等级体系管理函数
+   */
   const addLevel = () => {
     setLevels([...levels, { name: '', description: '', requirement: '', benefits: '' }]);
   };
@@ -188,7 +217,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     setLevels(levels.filter((_, i) => i !== index));
   };
 
-  // 道具装备管理
+  /**
+   * 道具装备管理函数
+   */
   const addItem = () => {
     setItems([
       ...items,
@@ -206,7 +237,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     setItems(items.filter((_, i) => i !== index));
   };
 
-  // 数值参数管理
+  /**
+   * 数值参数管理函数
+   */
   const addParameter = () => {
     setParameters([...parameters, { name: '', value: '', description: '' }]);
   };
@@ -221,7 +254,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     setParameters(parameters.filter((_, i) => i !== index));
   };
 
-  // 渲染模块管理区域
+  /**
+   * 渲染功能模块管理区域
+   */
   const renderModulesSection = () => (
     <Card
       className="p-4"
@@ -288,7 +323,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     </Card>
   );
 
-  // 渲染等级体系区域
+  /**
+   * 渲染等级体系管理区域
+   */
   const renderLevelsSection = () => (
     <Card
       className="p-4"
@@ -350,7 +387,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     </Card>
   );
 
-  // 渲染道具装备区域
+  /**
+   * 渲染道具装备管理区域
+   */
   const renderItemsSection = () => (
     <Card
       className="p-4"
@@ -429,7 +468,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     </Card>
   );
 
-  // 渲染数值参数区域
+  /**
+   * 渲染数值参数管理区域
+   */
   const renderParametersSection = () => (
     <Card
       className="p-4"
@@ -490,7 +531,9 @@ export default function SystemDialog({ mode, system, open, onOpenChange }: Syste
     </Card>
   );
 
-  // 默认触发器
+  /**
+   * 默认触发器按钮
+   */
   const defaultTrigger = (
     <Button>
       <Zap className="mr-2 h-4 w-4" />

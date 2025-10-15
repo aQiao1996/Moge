@@ -39,6 +39,9 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { createWorld, updateWorld } from '@/api/settings.api';
 
+/**
+ * 世界设定对话框组件属性接口
+ */
 interface WorldDialogProps {
   mode: 'create' | 'edit';
   world?: World & { id?: number | string };
@@ -49,10 +52,24 @@ interface WorldDialogProps {
 
 type FormValues = CreateWorldValues | UpdateWorldValues;
 
+/**
+ * 世界设定创建/编辑对话框组件
+ * 支持世界观的完整定义,包括地理环境、政治势力、文化体系、修炼体系、历史脉络等
+ *
+ * @param mode 对话框模式 'create' | 'edit'
+ * @param world 编辑模式时的世界数据
+ * @param trigger 触发对话框的自定义元素
+ * @param open 对话框是否打开
+ * @param onOpenChange 对话框状态变化回调
+ */
 export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 动态数组状态 - 后端将返回扁平字段格式的数据
+  /**
+   * 动态数组状态管理
+   * 管理地理环境、政治势力、文化习俗、修炼等级、历史事件和历史人物
+   * 后端返回扁平字段格式的数据
+   */
   const [geographicLocations, setGeographicLocations] = useState<GeographicLocation[]>([]);
   const [politicalForces, setPoliticalForces] = useState<PoliticalForce[]>([]);
   const [culturalCustoms, setCulturalCustoms] = useState<CulturalCustom[]>([]);
@@ -60,7 +77,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
   const [historicalEvents, setHistoricalEvents] = useState<HistoricalEvent[]>([]);
   const [historicalFigures, setHistoricalFigures] = useState<HistoricalFigure[]>([]);
 
-  // 当 world 数据变化时，同步更新所有数组状态
+  /**
+   * 当 world 数据变化时,同步更新所有数组状态
+   */
   useEffect(() => {
     if (world) {
       setGeographicLocations(world.geographicLocations || []);
@@ -70,7 +89,7 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
       setHistoricalEvents(world.historicalEvents || []);
       setHistoricalFigures(world.historicalFigures || []);
     } else {
-      // 清空状态（创建模式或关闭对话框时）
+      // 清空状态(创建模式或关闭对话框时)
       setGeographicLocations([]);
       setPoliticalForces([]);
       setCulturalCustoms([]);
@@ -80,7 +99,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     }
   }, [world]);
 
-  // 基础字段配置
+  /**
+   * 世界设定基础字段配置
+   */
   const fields: FieldConfig<FormValues>[] = [
     { name: 'name', label: '世界名称', required: !isEditMode },
     { name: 'type', label: '世界类型', required: !isEditMode },
@@ -164,7 +185,10 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     [fields]
   );
 
-  // 处理提交
+  /**
+   * 处理表单提交
+   * 提交扁平数据和数组数据,由后端负责转换为数据库所需的 JSON 格式
+   */
   const onSubmit = async (values: FormValues) => {
     // 移除可能存在的id字段(编辑模式下form可能包含id)
     const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
@@ -190,7 +214,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     }
   };
 
-  // 地理环境管理
+  /**
+   * 地理环境管理函数
+   */
   const addGeographicLocation = () => {
     setGeographicLocations([
       ...geographicLocations,
@@ -219,7 +245,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setGeographicLocations(geographicLocations.filter((_, i) => i !== index));
   };
 
-  // 政治势力管理
+  /**
+   * 政治势力管理函数
+   */
   const addPoliticalForce = () => {
     setPoliticalForces([
       ...politicalForces,
@@ -246,7 +274,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setPoliticalForces(politicalForces.filter((_, i) => i !== index));
   };
 
-  // 文化习俗管理
+  /**
+   * 文化习俗管理函数
+   */
   const addCulturalCustom = () => {
     setCulturalCustoms([
       ...culturalCustoms,
@@ -271,7 +301,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setCulturalCustoms(culturalCustoms.filter((_, i) => i !== index));
   };
 
-  // 修炼等级管理
+  /**
+   * 修炼等级管理函数
+   */
   const addCultivationLevel = () => {
     setCultivationLevels([
       ...cultivationLevels,
@@ -301,7 +333,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setCultivationLevels(cultivationLevels.filter((_, i) => i !== index));
   };
 
-  // 历史事件管理
+  /**
+   * 历史事件管理函数
+   */
   const addHistoricalEvent = () => {
     setHistoricalEvents([
       ...historicalEvents,
@@ -327,7 +361,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setHistoricalEvents(historicalEvents.filter((_, i) => i !== index));
   };
 
-  // 历史人物管理
+  /**
+   * 历史人物管理函数
+   */
   const addHistoricalFigure = () => {
     setHistoricalFigures([
       ...historicalFigures,
@@ -353,7 +389,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     setHistoricalFigures(historicalFigures.filter((_, i) => i !== index));
   };
 
-  // 渲染地理环境区域
+  /**
+   * 渲染地理环境管理区域
+   */
   const renderGeographicSection = () => (
     <Card
       className="p-4"
@@ -444,7 +482,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     </Card>
   );
 
-  // 渲染政治势力区域
+  /**
+   * 渲染政治势力管理区域
+   */
   const renderPoliticalSection = () => (
     <Card
       className="p-4"
@@ -545,7 +585,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     </Card>
   );
 
-  // 渲染文化体系区域
+  /**
+   * 渲染文化体系管理区域
+   */
   const renderCulturalSection = () => (
     <Card
       className="p-4"
@@ -634,7 +676,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     </Card>
   );
 
-  // 渲染修炼体系区域
+  /**
+   * 渲染修炼体系管理区域
+   */
   const renderCultivationSection = () => (
     <Card
       className="p-4"
@@ -725,7 +769,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     </Card>
   );
 
-  // 渲染历史脉络区域
+  /**
+   * 渲染历史脉络区域(包含历史事件和历史人物)
+   */
   const renderHistoricalSection = () => (
     <div className="space-y-4">
       {/* 历史事件 */}
@@ -896,7 +942,9 @@ export default function WorldDialog({ mode, world, open, onOpenChange }: WorldDi
     </div>
   );
 
-  // 默认触发器
+  /**
+   * 默认触发器按钮
+   */
   const defaultTrigger = (
     <Button>
       <Globe className="mr-2 h-4 w-4" />

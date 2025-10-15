@@ -43,6 +43,9 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { createMisc, updateMisc } from '@/api/settings.api';
 
+/**
+ * 辅助设定对话框组件属性接口
+ */
 interface MiscDialogProps {
   mode: 'create' | 'edit';
   misc?: Misc & { id?: number | string };
@@ -53,10 +56,23 @@ interface MiscDialogProps {
 
 type FormValues = CreateMiscValues | UpdateMiscValues;
 
+/**
+ * 辅助设定创建/编辑对话框组件
+ * 支持灵感记录、参考资料、创作笔记、专业术语、模板库、项目标签等辅助内容管理
+ *
+ * @param mode 对话框模式 'create' | 'edit'
+ * @param misc 编辑模式时的辅助设定数据
+ * @param trigger 触发对话框的自定义元素
+ * @param open 对话框是否打开
+ * @param onOpenChange 对话框状态变化回调
+ */
 export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialogProps) {
   const isEditMode = mode === 'edit';
 
-  // 动态数组状态 - 字段名匹配数据库
+  /**
+   * 动态数组状态管理
+   * 字段名匹配数据库,包含灵感、参考资料、笔记、术语、模板和标签
+   */
   const [inspirations, setInspirations] = useState<IdeaRecord[]>([]);
   const [references, setReferences] = useState<ReferenceMaterial[]>([]);
   const [notes, setNotes] = useState<CreativeNote[]>([]);
@@ -64,7 +80,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
   const [templates, setTemplates] = useState<Template[]>([]);
   const [projectTags, setProjectTags] = useState<ProjectTag[]>([]);
 
-  // 当 misc 数据变化时，同步更新所有数组状态
+  /**
+   * 当 misc 数据变化时,同步更新所有数组状态
+   */
   useEffect(() => {
     if (misc) {
       setInspirations(misc.inspirations || []);
@@ -74,7 +92,7 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
       setTemplates(misc.templates || []);
       setProjectTags(misc.projectTags || []);
     } else {
-      // 清空状态（创建模式或关闭对话框时）
+      // 清空状态(创建模式或关闭对话框时)
       setInspirations([]);
       setReferences([]);
       setNotes([]);
@@ -84,7 +102,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     }
   }, [misc]);
 
-  // 基础字段配置
+  /**
+   * 辅助设定基础字段配置
+   */
   const fields: FieldConfig<FormValues>[] = [
     { name: 'name', label: '辅助设定名称', required: !isEditMode },
     { name: 'type', label: '辅助设定类型', required: !isEditMode },
@@ -139,7 +159,10 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     [fields]
   );
 
-  // 处理提交
+  /**
+   * 处理表单提交
+   * 合并基础字段和动态数组数据后提交
+   */
   const onSubmit = async (values: FormValues) => {
     // 移除可能存在的id字段(编辑模式下form可能包含id)
     const { id: _removedId, ...restValues } = values as FormValues & { id?: string };
@@ -170,7 +193,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     }
   };
 
-  // 灵感记录管理
+  /**
+   * 灵感记录管理函数
+   */
   const addIdeaRecord = () => {
     setInspirations([
       ...inspirations,
@@ -196,7 +221,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setInspirations(inspirations.filter((_, i) => i !== index));
   };
 
-  // 参考资料管理
+  /**
+   * 参考资料管理函数
+   */
   const addReferenceMaterial = () => {
     setReferences([
       ...references,
@@ -227,7 +254,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setReferences(references.filter((_, i) => i !== index));
   };
 
-  // 创作笔记管理
+  /**
+   * 创作笔记管理函数
+   */
   const addCreativeNote = () => {
     setNotes([
       ...notes,
@@ -252,7 +281,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setNotes(notes.filter((_, i) => i !== index));
   };
 
-  // 术语管理
+  /**
+   * 术语管理函数
+   */
   const addTerminology = () => {
     setTerminology([
       ...terminology,
@@ -278,7 +309,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setTerminology(terminology.filter((_, i) => i !== index));
   };
 
-  // 模板管理
+  /**
+   * 模板管理函数
+   */
   const addTemplate = () => {
     setTemplates([
       ...templates,
@@ -308,7 +341,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setTemplates(templates.filter((_, i) => i !== index));
   };
 
-  // 项目标签管理
+  /**
+   * 项目标签管理函数
+   */
   const addProjectTag = () => {
     setProjectTags([
       ...projectTags,
@@ -337,7 +372,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     setProjectTags(projectTags.filter((_, i) => i !== index));
   };
 
-  // 渲染灵感记录区域
+  /**
+   * 渲染灵感记录管理区域
+   */
   const renderIdeaRecordsSection = () => (
     <Card
       className="p-4"
@@ -426,7 +463,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 渲染参考资料区域
+  /**
+   * 渲染参考资料管理区域
+   */
   const renderReferenceMaterialsSection = () => (
     <Card
       className="p-4"
@@ -522,7 +561,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 渲染创作笔记区域
+  /**
+   * 渲染创作笔记管理区域
+   */
   const renderCreativeNotesSection = () => (
     <Card
       className="p-4"
@@ -611,7 +652,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 渲染术语管理区域
+  /**
+   * 渲染术语管理区域
+   */
   const renderTerminologySection = () => (
     <Card
       className="p-4"
@@ -707,7 +750,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 渲染模板库区域
+  /**
+   * 渲染模板库管理区域
+   */
   const renderTemplatesSection = () => (
     <Card
       className="p-4"
@@ -804,7 +849,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 渲染项目标签区域
+  /**
+   * 渲染项目标签管理区域
+   */
   const renderProjectTagsSection = () => (
     <Card
       className="p-4"
@@ -899,7 +946,9 @@ export default function MiscDialog({ mode, misc, open, onOpenChange }: MiscDialo
     </Card>
   );
 
-  // 默认触发器
+  /**
+   * 默认触发器按钮
+   */
   const defaultTrigger = (
     <Button>
       <Folder className="mr-2 h-4 w-4" />

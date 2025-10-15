@@ -18,6 +18,9 @@ import {
 import { toast } from 'sonner';
 import SettingSelectorDialog from './SettingSelectorDialog';
 
+/**
+ * 设定项数据接口
+ */
 interface SettingItem {
   id: number;
   name: string;
@@ -26,6 +29,9 @@ interface SettingItem {
   tags?: string[];
 }
 
+/**
+ * 项目数据接口
+ */
 interface ProjectData {
   id: string | number;
   name: string;
@@ -40,6 +46,9 @@ interface ProjectData {
   misc?: string[];
 }
 
+/**
+ * 项目详情对话框组件属性接口
+ */
 interface ProjectDetailDialogProps {
   project: ProjectData | null;
   open: boolean;
@@ -57,6 +66,9 @@ export default function ProjectDetailDialog({
   onOpenChange,
   onUpdate,
 }: ProjectDetailDialogProps) {
+  /**
+   * 设定数据,包含各分类的设定列表
+   */
   const [settingsData, setSettingsData] = useState<{
     characters: SettingItem[];
     systems: SettingItem[];
@@ -69,8 +81,13 @@ export default function ProjectDetailDialog({
     misc: [],
   });
 
-  // 设定选择器状态
+  /**
+   * 设定选择器状态管理
+   */
   const [selectorOpen, setSelectorOpen] = useState(false);
+  /**
+   * 当前操作的设定分类信息
+   */
   const [currentCategory, setCurrentCategory] = useState<{
     key: 'characters' | 'systems' | 'worlds' | 'misc';
     label: string;
@@ -80,6 +97,7 @@ export default function ProjectDetailDialog({
 
   /**
    * 加载项目关联的设定数据
+   * 从后端获取该项目关联的所有设定详情
    */
   const loadProjectSettings = async () => {
     if (!project) return;
@@ -92,7 +110,9 @@ export default function ProjectDetailDialog({
     }
   };
 
-  // 当项目或弹窗状态变化时加载数据
+  /**
+   * 当项目或弹窗状态变化时加载数据
+   */
   useEffect(() => {
     if (open && project) {
       void loadProjectSettings();
@@ -101,14 +121,21 @@ export default function ProjectDetailDialog({
 
   if (!project) return null;
 
-  // 计算设定总数
+  /**
+   * 计算项目关联的设定总数
+   */
   const totalSettings =
     (project.characters?.length || 0) +
     (project.systems?.length || 0) +
     (project.worlds?.length || 0) +
     (project.misc?.length || 0);
 
-  // 格式化日期
+  /**
+   * 格式化日期显示
+   *
+   * @param date 日期对象或字符串
+   * @returns 格式化后的日期字符串
+   */
   const formatDate = (date: string | Date) => {
     if (typeof date === 'string') {
       return date;
@@ -118,6 +145,11 @@ export default function ProjectDetailDialog({
 
   /**
    * 打开设定选择器
+   *
+   * @param key 设定分类键名
+   * @param label 设定分类显示名称
+   * @param Icon 图标组件
+   * @param color 图标颜色
    */
   const handleOpenSelector = (
     key: 'characters' | 'systems' | 'worlds' | 'misc',
@@ -131,6 +163,9 @@ export default function ProjectDetailDialog({
 
   /**
    * 确认选择设定
+   * 更新项目关联的设定列表
+   *
+   * @param selectedIds 选中的设定 ID 列表
    */
   const handleConfirmSelection = async (selectedIds: string[]) => {
     if (!project || !currentCategory) return;
@@ -172,6 +207,10 @@ export default function ProjectDetailDialog({
 
   /**
    * 移除设定关联
+   * 从项目中移除指定的设定
+   *
+   * @param settingId 要移除的设定 ID
+   * @param categoryKey 设定分类
    */
   const handleRemoveSetting = async (
     settingId: number,
@@ -219,6 +258,12 @@ export default function ProjectDetailDialog({
 
   /**
    * 渲染设定卡片
+   *
+   * @param setting 设定数据
+   * @param Icon 图标组件
+   * @param color 图标颜色
+   * @param categoryKey 设定分类
+   * @returns 设定卡片 JSX 元素
    */
   const renderSettingCard = (
     setting: SettingItem,
@@ -278,6 +323,12 @@ export default function ProjectDetailDialog({
 
   /**
    * 渲染设定分类标签页内容
+   *
+   * @param categoryKey 设定分类键名
+   * @param Icon 图标组件
+   * @param color 图标颜色
+   * @param label 设定分类显示名称
+   * @returns 标签页内容 JSX 元素
    */
   const renderSettingsTab = (
     categoryKey: 'characters' | 'systems' | 'worlds' | 'misc',

@@ -36,6 +36,9 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { createCharacter, updateCharacter, type CharacterSetting } from '@/api/settings.api';
 
+/**
+ * 角色对话框组件属性接口
+ */
 interface CharacterDialogProps {
   mode: 'create' | 'edit';
   character?: Character & { id?: string | number };
@@ -44,8 +47,22 @@ interface CharacterDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+/**
+ * 表单数据类型联合
+ * 支持创建和更新两种模式
+ */
 type FormValues = CreateCharacterValues | UpdateCharacterValues;
 
+/**
+ * 角色设定创建/编辑对话框组件
+ * 支持角色基本信息的填写、角色关系管理等功能
+ *
+ * @param mode 对话框模式 'create' | 'edit'
+ * @param character 编辑模式时的角色数据
+ * @param trigger 触发对话框的自定义元素
+ * @param open 对话框是否打开
+ * @param onOpenChange 对话框状态变化回调
+ */
 export default function CharacterDialog({
   mode,
   character,
@@ -67,7 +84,10 @@ export default function CharacterDialog({
     }
   }, [open, isEditMode, character]);
 
-  // 字段配置
+  /**
+   * 表单字段配置
+   * 定义角色设定表单的所有字段
+   */
   const fields: FieldConfig<FormValues>[] = [
     { name: 'name', label: '角色名称', required: true },
     { name: 'type', label: '角色类型', required: true },
@@ -83,17 +103,32 @@ export default function CharacterDialog({
     { name: 'remarks', label: '备注' },
   ];
 
-  // 将数字值安全转换为字符串
+  /**
+   * 将数字类型的枚举值转换为字符串
+   * 用于在 MogeSelect 组件中显示
+   *
+   * @param value 枚举值(可能是 number 或其他类型)
+   * @returns 转换后的字符串值
+   */
   const toSelectValue = (value: unknown): string => {
     if (typeof value === 'number') return String(value);
     return '';
   };
 
+  /**
+   * 渲染表单控件
+   * 根据字段名称返回对应的输入组件
+   *
+   * @param field 表单字段控制器属性
+   * @param name 字段名称
+   * @returns 对应的表单控件 JSX 元素
+   */
   const renderControl = useCallback(
     (
       field: ControllerRenderProps<FormValues, FieldPath<FormValues>>,
       name: FieldPath<FormValues>
     ) => {
+      // 处理角色类型选择
       if (name === 'type') {
         return (
           <MogeSelect
@@ -114,6 +149,7 @@ export default function CharacterDialog({
         );
       }
 
+      // 处理性别选择
       if (name === 'gender') {
         return (
           <MogeSelect
@@ -134,6 +170,7 @@ export default function CharacterDialog({
         );
       }
 
+      // 处理多行文本字段(外貌、性格、背景等)
       if (['appearance', 'personality', 'background', 'abilities', 'remark'].includes(name)) {
         const placeholders = {
           appearance: '描述角色的外貌特征、体型等...',
@@ -176,7 +213,10 @@ export default function CharacterDialog({
     []
   );
 
-  // 关系管理函数
+  /**
+   * 添加新的角色关系
+   * 向关系列表中添加一个空的关系对象
+   */
   const addRelationship = () => {
     setRelationships([
       ...relationships,
@@ -190,16 +230,34 @@ export default function CharacterDialog({
     ]);
   };
 
+  /**
+   * 更新指定索引的关系数据
+   *
+   * @param index 关系在列表中的索引
+   * @param field 要更新的字段名
+   * @param value 新的字段值
+   */
   const updateRelationship = (index: number, field: keyof Relationship, value: string) => {
     const newRelationships = [...relationships];
     newRelationships[index] = { ...newRelationships[index], [field]: value };
     setRelationships(newRelationships);
   };
 
+  /**
+   * 移除指定索引的关系
+   *
+   * @param index 要移除的关系索引
+   */
   const removeRelationship = (index: number) => {
     setRelationships(relationships.filter((_, i) => i !== index));
   };
 
+  /**
+   * 表单提交处理
+   * 调用 API 创建或更新角色设定,并显示相应的提示
+   *
+   * @param values 表单数据
+   */
   const onSubmit = async (values: FormValues) => {
     try {
       const submitData = {
@@ -228,7 +286,12 @@ export default function CharacterDialog({
     }
   };
 
-  // 渲染关系管理区域
+  /**
+   * 渲染角色关系管理区域
+   * 包含关系列表和添加、编辑、删除功能
+   *
+   * @returns 关系管理区域的 JSX 元素
+   */
   const renderRelationshipSection = () => (
     <Card
       className="p-4"

@@ -29,7 +29,10 @@ interface ProjectDialogProps {
   onSubmit?: (values: CreateProjectValues | UpdateProjectValues) => Promise<void>;
 }
 
-// 项目类型选项
+/**
+ * 项目类型选项配置
+ * 定义了小说项目可选的类型列表
+ */
 const projectTypeOptions = [
   { value: '玄幻', label: '玄幻' },
   { value: '仙侠', label: '仙侠' },
@@ -46,7 +49,10 @@ const projectTypeOptions = [
   { value: '其他', label: '其他' },
 ];
 
-// 设定库数据
+/**
+ * 设定库数据类型定义
+ * 包含角色、系统、世界和辅助设定的列表数据
+ */
 interface SettingsLibraryData {
   characters: SettingItem[];
   systems: SettingItem[];
@@ -83,7 +89,10 @@ export default function ProjectDialog({
   });
   const [loadingSettings, setLoadingSettings] = useState(false);
 
-  // 转换设定数据为选项格式
+  /**
+   * 将设定库数据转换为下拉选项格式
+   * 生成适用于 MogeMultiSelect 组件的选项数据
+   */
   const settingsOptions = useMemo(
     () => ({
       characters: settingsLibrary.characters.map((item) => ({
@@ -110,7 +119,10 @@ export default function ProjectDialog({
     [settingsLibrary]
   );
 
-  // 字段配置
+  /**
+   * 表单字段配置
+   * 定义项目对话框中所有表单字段的元数据
+   */
   const fields = useMemo<FieldConfig<CreateProjectValues>[]>(
     () => [
       { name: 'name', label: '项目名称', required: true },
@@ -164,7 +176,7 @@ export default function ProjectDialog({
         );
       }
 
-      // 设定库关联字段
+      // 设定库关联字段 - 角色设定
       if (name === 'characters') {
         return (
           <MogeMultiSelect
@@ -181,6 +193,7 @@ export default function ProjectDialog({
         );
       }
 
+      // 设定库关联字段 - 系统设定
       if (name === 'systems') {
         return (
           <MogeMultiSelect
@@ -197,6 +210,7 @@ export default function ProjectDialog({
         );
       }
 
+      // 设定库关联字段 - 世界设定
       if (name === 'worlds') {
         return (
           <MogeMultiSelect
@@ -213,6 +227,7 @@ export default function ProjectDialog({
         );
       }
 
+      // 设定库关联字段 - 辅助设定
       if (name === 'misc') {
         return (
           <MogeMultiSelect
