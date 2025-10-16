@@ -167,46 +167,12 @@
 **待完成**:
 
 - ⏳ 实现 `文稿` 模块的列表及状态管理
-
-**技术实现要点**:
-
-1. **数据库设计**：
-   - 采用 Prisma ORM，四类设定表独立存储（`character_settings`, `system_settings`, `world_settings`, `misc_settings`）
-   - Projects 表使用字符串数组存储关联的设定ID（`characters: String[]`）
-
-2. **API 架构**：
-   - 后端：NestJS Controller/Service 架构，JWT 认证，完整的 Swagger 文档
-   - 前端：统一的 API 封装，支持并行请求和错误处理
-
-3. **关联管理**：
-   - 删除保护：设定被项目关联时不允许删除，提示用户解除关联
-   - 反向查询：支持查询设定的关联项目列表
-
-4. **UI组件规范**：
-   - 统一使用 `MogeConfirmPopover` 处理删除确认
-   - 操作按钮保持可见，提供更好的用户体验
-   - 编辑功能使用 `ProjectDialog` 组件，支持创建和编辑两种模式
-   - 弹窗设计遵循响应式原则，支持滚动和自适应布局
-
-5. **项目详情弹窗实现**：
-   - **组件**: `ProjectDetailDialog` 和 `SettingSelectorDialog`
-   - **Tab 组件**: 创建了基于 Radix UI 的 Tabs 组件 (`apps/frontend/src/components/ui/tabs.tsx`)
-   - **数据加载**: 使用 `getProjectSettings` API 获取项目关联的完整设定数据
-   - **设定选择**: 支持从设定库搜索、筛选和多选设定
-   - **API 调用**:
-     - `updateProjectCharacters/Systems/Worlds/Misc` - 更新项目关联的设定
-     - 传递数字类型的 ID 数组到后端
-     - 使用 toast 提供用户反馈
-   - **数据同步机制**:
-     - 子组件修改后通过 `onUpdate` 回调通知父组件
-     - 父组件重新加载项目列表以显示最新的设定数量
-     - 确保项目卡片的设定统计实时准确
-   - **交互优化**:
-     - Tab 标签支持横向滚动，文字简洁（如"角色"而非"角色设定"）
-     - 选中设定时显示视觉反馈（背景高亮、勾选图标）
-     - 设定统计卡片采用纵向居中布局，间距宽松
-     - 移除设定使用 `MogeConfirmPopover` 确认弹窗防止误操作
-     - 设定卡片显示名称、描述、标签和移除按钮
+- ⏳ 实现 `大纲` 模块的设定关联功能
+  - 在 outline 表中添加设定关联字段（characters, systems, worlds, misc）
+  - 后端提供获取和更新关联设定的 API
+  - 前端在大纲详情页添加设定管理 Tab，支持添加/移除关联的设定
+  - AI 生成大纲时注入关联设定作为上下文
+  - 参考实现：ProjectDetailDialog.tsx 和 SettingSelectorDialog.tsx
 
 ### 4.2. 第二阶段 (核心价值) - 待开发
 
