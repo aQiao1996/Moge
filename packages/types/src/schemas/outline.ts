@@ -7,6 +7,11 @@ export const createOutlineSchema = z.object({
   conflict: z.string().optional(),
   tags: z.array(z.string()).optional(),
   remark: z.string().optional(),
+  // 关联的设定
+  characters: z.array(z.string()).optional(),
+  systems: z.array(z.string()).optional(),
+  worlds: z.array(z.string()).optional(),
+  misc: z.array(z.string()).optional(),
 });
 
 export type CreateOutlineValues = z.infer<typeof createOutlineSchema>;

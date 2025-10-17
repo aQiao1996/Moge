@@ -235,7 +235,11 @@ export default function Home() {
             {outline.tags && outline.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {outline.tags.map((tag: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
+                  <Badge
+                    key={`${outline.id}-${tag}-${index}`}
+                    variant="secondary"
+                    className="text-xs"
+                  >
                     {tag}
                   </Badge>
                 ))}

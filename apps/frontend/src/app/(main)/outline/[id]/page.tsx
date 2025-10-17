@@ -18,6 +18,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOutlineData } from '@/app/(main)/outline/hooks/useOutlineData';
 import { useOutlineGenerate } from '@/app/(main)/outline/hooks/useOutlineGenerate';
 import { useOutlineSave } from '@/app/(main)/outline/hooks/useOutlineSave';
@@ -27,6 +28,7 @@ import OutlineStructureSidebar, {
 } from '@/app/(main)/outline/components/OutlineStructureSidebar';
 import OutlineHeader from '@/app/(main)/outline/[id]/components/OutlineHeader';
 import OutlineContentViewer from '@/app/(main)/outline/[id]/components/OutlineContentViewer';
+import OutlineSettingsPanel from '@/app/(main)/outline/[id]/components/OutlineSettingsPanel';
 
 export default function OutlineViewPage() {
   const params = useParams();
@@ -166,8 +168,30 @@ export default function OutlineViewPage() {
           onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
         />
 
-        {/* 右侧内容展示区域 */}
-        <OutlineContentViewer selectedTitle={selectedTitle} selectedContent={selectedContent} />
+        {/* 右侧内容区域 */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs defaultValue="content" className="flex h-full flex-col">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="content">大纲内容</TabsTrigger>
+              <TabsTrigger value="settings">关联设定</TabsTrigger>
+            </TabsList>
+
+            {/* 大纲内容 Tab */}
+            <TabsContent value="content" className="flex-1 overflow-hidden">
+              <OutlineContentViewer
+                selectedTitle={selectedTitle}
+                selectedContent={selectedContent}
+              />
+            </TabsContent>
+
+            {/* 关联设定 Tab */}
+            <TabsContent value="settings" className="flex-1 overflow-y-auto">
+              <Card className="h-full p-6">
+                <OutlineSettingsPanel outlineId={id} onUpdate={refreshData} />
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

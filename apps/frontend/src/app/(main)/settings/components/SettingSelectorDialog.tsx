@@ -233,7 +233,11 @@ export default function SettingSelectorDialog({
                       {setting.tags && setting.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {setting.tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge
+                              key={`${setting.id}-${tag}-${index}`}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {tag}
                             </Badge>
                           ))}

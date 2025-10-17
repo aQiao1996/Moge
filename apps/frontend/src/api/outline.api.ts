@@ -31,6 +31,27 @@ interface GetOutlinesParams {
 }
 
 /**
+ * 设定项接口
+ */
+interface SettingItem {
+  id: number;
+  name: string;
+  background?: string | null;
+  description?: string | null;
+  tags?: string[];
+}
+
+/**
+ * 大纲关联设定数据接口
+ */
+interface OutlineSettingsResponse {
+  characters: SettingItem[];
+  systems: SettingItem[];
+  worlds: SettingItem[];
+  misc: SettingItem[];
+}
+
+/**
  * 创建新大纲
  * @param data 大纲数据
  * @returns 创建的大纲对象
@@ -167,5 +188,55 @@ export const updateChapterApi = async (
     `/outline/${outlineId}/chapter/${chapterId}`,
     data
   );
+  return response.data;
+};
+
+/**
+ * 获取大纲关联的设定详情
+ * @param id 大纲 ID
+ * @returns 关联的设定数据
+ */
+export const getOutlineSettingsApi = async (id: string): Promise<OutlineSettingsResponse> => {
+  const response = await httpRequest.get<OutlineSettingsResponse>(`/outline/${id}/settings`);
+  return response.data;
+};
+
+/**
+ * 更新大纲关联的角色设定
+ * @param id 大纲 ID
+ * @param characters 角色设定 ID 数组
+ */
+export const updateOutlineCharactersApi = async (id: string, characters: number[]) => {
+  const response = await httpRequest.put(`/outline/${id}/characters`, { characters });
+  return response.data;
+};
+
+/**
+ * 更新大纲关联的系统设定
+ * @param id 大纲 ID
+ * @param systems 系统设定 ID 数组
+ */
+export const updateOutlineSystemsApi = async (id: string, systems: number[]) => {
+  const response = await httpRequest.put(`/outline/${id}/systems`, { systems });
+  return response.data;
+};
+
+/**
+ * 更新大纲关联的世界设定
+ * @param id 大纲 ID
+ * @param worlds 世界设定 ID 数组
+ */
+export const updateOutlineWorldsApi = async (id: string, worlds: number[]) => {
+  const response = await httpRequest.put(`/outline/${id}/worlds`, { worlds });
+  return response.data;
+};
+
+/**
+ * 更新大纲关联的辅助设定
+ * @param id 大纲 ID
+ * @param misc 辅助设定 ID 数组
+ */
+export const updateOutlineMiscApi = async (id: string, misc: number[]) => {
+  const response = await httpRequest.put(`/outline/${id}/misc`, { misc });
   return response.data;
 };

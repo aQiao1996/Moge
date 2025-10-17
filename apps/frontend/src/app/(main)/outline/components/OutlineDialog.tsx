@@ -76,7 +76,7 @@ export default function OutlineDialog({
             </MogeSelectTrigger>
             <MogeSelectContent>
               {novelTypes.map((t) => (
-                <MogeSelectItem key={t.id} value={t.label}>
+                <MogeSelectItem key={t.id} value={t.value!}>
                   {t.label}
                 </MogeSelectItem>
               ))}

@@ -18,6 +18,7 @@
     "build:backend": "pnpm --filter @moge/backend build",
     "clean": "pnpm -r run clean",
     "reset": "pnpm clean && rm -rf node_modules && rm -rf **/node_modules && pnpm install",
+    "seed:dict": "pnpm --filter @moge/backend seed:dict",
     "prepare": "husky",
     "start:frontend": "pnpm --filter @moge/frontend start",
     "start:backend": "pnpm --filter @moge/backend start:prod"

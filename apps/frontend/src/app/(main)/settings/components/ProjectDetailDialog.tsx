@@ -291,7 +291,11 @@ export default function ProjectDetailDialog({
           {setting.tags && setting.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {setting.tags.map((tag: string, index: number) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge
+                  key={`${setting.id}-${tag}-${index}`}
+                  variant="secondary"
+                  className="text-xs"
+                >
                   {tag}
                 </Badge>
               ))}
@@ -444,7 +448,11 @@ export default function ProjectDetailDialog({
                         <span className="w-20 text-sm text-[var(--moge-text-muted)]">标签</span>
                         <div className="flex flex-1 flex-wrap gap-1">
                           {project.tags.map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
+                            <Badge
+                              key={`${project.id}-${tag}-${index}`}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               <Tag className="mr-1 h-3 w-3" />
                               {tag}
                             </Badge>

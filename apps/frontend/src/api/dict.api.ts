@@ -7,7 +7,7 @@ import type { Dict, CreateDictItemValues, UpdateDictItemValues } from '@moge/typ
  * @returns 字典项数组
  */
 export const getDictApi = (type: string) => {
-  return httpRequest.get<Dict[]>('/dict', { params: { type } });
+  return httpRequest.get<Dict[]>('/dict', { type });
 };
 
 /**

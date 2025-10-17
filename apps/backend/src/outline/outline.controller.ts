@@ -273,4 +273,138 @@ export class OutlineController {
     const userId = req.user.id;
     return this.outlineService.generateContentStream(id, userId);
   }
+
+  /**
+   * 获取大纲关联的所有设定
+   */
+  @Get(':id/settings')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '获取大纲关联的所有设定' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async getOutlineSettings(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.getOutlineSettings(id, userId);
+  }
+
+  /**
+   * 更新大纲关联的角色设定
+   */
+  @Put(':id/characters')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新大纲关联的角色设定' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '角色设定ID列表',
+    schema: {
+      type: 'object',
+      properties: {
+        characters: { type: 'array', items: { type: 'number' }, description: '角色设定ID数组' },
+      },
+      required: ['characters'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateOutlineCharacters(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { characters: number[] }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.updateOutlineCharacters(id, userId, data.characters);
+  }
+
+  /**
+   * 更新大纲关联的系统设定
+   */
+  @Put(':id/systems')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新大纲关联的系统设定' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '系统设定ID列表',
+    schema: {
+      type: 'object',
+      properties: {
+        systems: { type: 'array', items: { type: 'number' }, description: '系统设定ID数组' },
+      },
+      required: ['systems'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateOutlineSystems(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { systems: number[] }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.updateOutlineSystems(id, userId, data.systems);
+  }
+
+  /**
+   * 更新大纲关联的世界设定
+   */
+  @Put(':id/worlds')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新大纲关联的世界设定' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '世界设定ID列表',
+    schema: {
+      type: 'object',
+      properties: {
+        worlds: { type: 'array', items: { type: 'number' }, description: '世界设定ID数组' },
+      },
+      required: ['worlds'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateOutlineWorlds(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { worlds: number[] }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.updateOutlineWorlds(id, userId, data.worlds);
+  }
+
+  /**
+   * 更新大纲关联的辅助设定
+   */
+  @Put(':id/misc')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '更新大纲关联的辅助设定' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '辅助设定ID列表',
+    schema: {
+      type: 'object',
+      properties: {
+        misc: { type: 'array', items: { type: 'number' }, description: '辅助设定ID数组' },
+      },
+      required: ['misc'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async updateOutlineMisc(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { misc: number[] }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.updateOutlineMisc(id, userId, data.misc);
+  }
 }

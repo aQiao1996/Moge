@@ -136,6 +136,14 @@ model outline {
   remark    String?       @db.Text
   /// 业务生命周期状态
   status    OutlineStatus @default(DRAFT)
+  /// 关联的角色设定ID列表
+  characters  String[] @default([])
+  /// 关联的系统设定ID列表
+  systems     String[] @default([])
+  /// 关联的世界设定ID列表
+  worlds      String[] @default([])
+  /// 关联的辅助设定ID列表
+  misc        String[] @default([])
   /// 所属用户 ID
   userId    Int           @map("user_id")
   /// 创建人关联

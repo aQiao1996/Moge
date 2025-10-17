@@ -155,6 +155,10 @@ export class OutlineService extends BaseService {
         throw new NotFoundException('大纲不存在或无权限访问');
       }
 
+      // ⭐ 获取关联的设定作为上下文
+      const settings = await this.getOutlineSettings(parseInt(id, 10), userId);
+      const settingsContext = this.buildSettingsContext(settings);
+
       const model = this.aiService.getStreamingModel('moonshot');
       const prompt = this.createPromptTemplate();
       const chain = prompt.pipe(model).pipe(new StringOutputParser());
@@ -169,6 +173,7 @@ export class OutlineService extends BaseService {
           volumes: 3,
           chaptersPerVolume: 10,
           scenesPerChapter: 3,
+          settingsContext, // ⭐ 注入设定上下文
         },
         { configurable: { signal } }
       );
@@ -230,6 +235,52 @@ export class OutlineService extends BaseService {
         subject.complete();
       }
     }
+  }
+
+  /**
+   * 构建设定上下文文本
+   * 将关联的设定信息格式化为 AI 可理解的上下文
+   *
+   * @param settings 设定数据对象
+   * @returns 格式化后的设定上下文字符串
+   */
+  private buildSettingsContext(settings: {
+    characters: Array<{ name: string; background?: string | null; [key: string]: unknown }>;
+    systems: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+    worlds: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+    misc: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+  }): string {
+    const parts: string[] = [];
+
+    if (settings.characters.length > 0) {
+      parts.push('## 角色设定');
+      settings.characters.forEach((char) => {
+        parts.push(`- ${char.name}: ${char.background || '暂无背景描述'}`);
+      });
+    }
+
+    if (settings.systems.length > 0) {
+      parts.push('## 系统设定');
+      settings.systems.forEach((sys) => {
+        parts.push(`- ${sys.name}: ${sys.description || '暂无描述'}`);
+      });
+    }
+
+    if (settings.worlds.length > 0) {
+      parts.push('## 世界设定');
+      settings.worlds.forEach((world) => {
+        parts.push(`- ${world.name}: ${world.description || '暂无描述'}`);
+      });
+    }
+
+    if (settings.misc.length > 0) {
+      parts.push('## 辅助设定');
+      settings.misc.forEach((misc) => {
+        parts.push(`- ${misc.name}: ${misc.description || '暂无描述'}`);
+      });
+    }
+
+    return parts.length > 0 ? parts.join('\n') : '暂无关联设定，请根据基础信息自由发挥。';
   }
 
   private createPromptTemplate() {
@@ -878,5 +929,190 @@ export class OutlineService extends BaseService {
       this.logger.error(`[结构化存储失败] 大纲ID: ${outlineId}`, error);
       // 不抛出错误，避免影响主流程
     }
+  }
+
+  /**
+   * 获取大纲关联的所有设定详情
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @returns 关联的设定数据
+   */
+  async getOutlineSettings(outlineId: number, userId: string) {
+    // 验证大纲所有权
+    const outline = await this.findOne(outlineId, userId);
+    if (!outline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    // 并行获取所有关联的设定
+    const [characters, systems, worlds, misc] = await Promise.all([
+      this.getCharactersByIds(outline.characters || []),
+      this.getSystemsByIds(outline.systems || []),
+      this.getWorldsByIds(outline.worlds || []),
+      this.getMiscByIds(outline.misc || []),
+    ]);
+
+    return {
+      characters,
+      systems,
+      worlds,
+      misc,
+    };
+  }
+
+  /**
+   * 更新大纲关联的角色设定
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param characterIds 角色设定 ID 数组
+   */
+  async updateOutlineCharacters(outlineId: number, userId: string, characterIds: number[]) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 更新关联
+    const updated = await this.prisma.outline.update({
+      where: { id: outlineId },
+      data: {
+        characters: characterIds.map(String),
+      },
+    });
+
+    return {
+      ...updated,
+      id: updated.id.toString(),
+      userId: updated.userId.toString(),
+    };
+  }
+
+  /**
+   * 更新大纲关联的系统设定
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param systemIds 系统设定 ID 数组
+   */
+  async updateOutlineSystems(outlineId: number, userId: string, systemIds: number[]) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 更新关联
+    const updated = await this.prisma.outline.update({
+      where: { id: outlineId },
+      data: {
+        systems: systemIds.map(String),
+      },
+    });
+
+    return {
+      ...updated,
+      id: updated.id.toString(),
+      userId: updated.userId.toString(),
+    };
+  }
+
+  /**
+   * 更新大纲关联的世界设定
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param worldIds 世界设定 ID 数组
+   */
+  async updateOutlineWorlds(outlineId: number, userId: string, worldIds: number[]) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 更新关联
+    const updated = await this.prisma.outline.update({
+      where: { id: outlineId },
+      data: {
+        worlds: worldIds.map(String),
+      },
+    });
+
+    return {
+      ...updated,
+      id: updated.id.toString(),
+      userId: updated.userId.toString(),
+    };
+  }
+
+  /**
+   * 更新大纲关联的辅助设定
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param miscIds 辅助设定 ID 数组
+   */
+  async updateOutlineMisc(outlineId: number, userId: string, miscIds: number[]) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 更新关联
+    const updated = await this.prisma.outline.update({
+      where: { id: outlineId },
+      data: {
+        misc: miscIds.map(String),
+      },
+    });
+
+    return {
+      ...updated,
+      id: updated.id.toString(),
+      userId: updated.userId.toString(),
+    };
+  }
+
+  /**
+   * 根据 ID 列表获取角色设定
+   * @param ids 角色设定 ID 数组（字符串格式）
+   * @returns 角色设定列表
+   */
+  private async getCharactersByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.character_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取系统设定
+   * @param ids 系统设定 ID 数组（字符串格式）
+   * @returns 系统设定列表
+   */
+  private async getSystemsByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.system_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取世界设定
+   * @param ids 世界设定 ID 数组（字符串格式）
+   * @returns 世界设定列表
+   */
+  private async getWorldsByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.world_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取辅助设定
+   * @param ids 辅助设定 ID 数组（字符串格式）
+   * @returns 辅助设定列表
+   */
+  private async getMiscByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.misc_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
   }
 }
