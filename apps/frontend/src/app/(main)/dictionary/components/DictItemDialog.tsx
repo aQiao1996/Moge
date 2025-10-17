@@ -69,9 +69,8 @@ export default function DictItemDialog({
 
   // 字段配置：定义表单中需要显示的字段
   const fields: FieldConfig[] = [
-    { name: 'code', label: '词条编码', required: !isEditMode },
+    { name: 'value', label: '存储值', required: !isEditMode },
     { name: 'label', label: '显示标签', required: !isEditMode },
-    { name: 'value', label: '存储值' },
     { name: 'sortOrder', label: '排序序号' },
     { name: 'isEnabled', label: '启用状态' },
     { name: 'description', label: '描述' },
@@ -139,8 +138,8 @@ export default function DictItemDialog({
         );
       }
 
-      // 词条编码：英文编码
-      if (name === 'code') {
+      // 存储值：英文编码
+      if (name === 'value') {
         return (
           <MogeInput
             placeholder="英文编码，如：fantasy, urban"
@@ -158,20 +157,6 @@ export default function DictItemDialog({
         return (
           <MogeInput
             placeholder="中文显示名称，如：玄幻、都市"
-            value={(field.value as string) || ''}
-            onChange={field.onChange}
-            onBlur={field.onBlur}
-            name={field.name}
-            disabled={field.disabled}
-          />
-        );
-      }
-
-      // 存储值：可选字段
-      if (name === 'value') {
-        return (
-          <MogeInput
-            placeholder="存储值（可选），默认使用 code 值"
             value={(field.value as string) || ''}
             onChange={field.onChange}
             onBlur={field.onBlur}
@@ -238,7 +223,6 @@ export default function DictItemDialog({
       updateSchema={updateDictItemSchema}
       defaultValues={{
         categoryCode,
-        code: '',
         label: '',
         value: '',
         sortOrder: 0,

@@ -16,9 +16,8 @@ interface UpdateDictCategoryData {
 
 interface CreateDictItemData {
   categoryCode: string;
-  code: string;
   label: string;
-  value?: string;
+  value: string;
   sortOrder?: number;
   isEnabled?: boolean;
   description?: string;
@@ -26,7 +25,6 @@ interface CreateDictItemData {
 
 interface UpdateDictItemData {
   categoryCode?: string;
-  code?: string;
   label?: string;
   value?: string;
   sortOrder?: number;
@@ -143,9 +141,8 @@ export class DictService {
     return this.prisma.dict_items.create({
       data: {
         categoryCode: data.categoryCode,
-        code: data.code,
         label: data.label,
-        value: data.value || null,
+        value: data.value,
         sortOrder: data.sortOrder || 0,
         isEnabled: data.isEnabled !== undefined ? data.isEnabled : true,
         description: data.description || null,
@@ -164,7 +161,6 @@ export class DictService {
       where: { id },
       data: {
         ...data,
-        value: data.value || null,
         description: data.description || null,
       },
     });

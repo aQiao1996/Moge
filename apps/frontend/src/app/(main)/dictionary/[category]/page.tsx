@@ -139,7 +139,6 @@ export default function DictionaryCategoryPage() {
       filtered = filtered.filter(
         (item) =>
           item.label.toLowerCase().includes(filters.search.toLowerCase()) ||
-          item.code.toLowerCase().includes(filters.search.toLowerCase()) ||
           (item.value && item.value.toLowerCase().includes(filters.search.toLowerCase())) ||
           (item.description &&
             item.description.toLowerCase().includes(filters.search.toLowerCase()))
@@ -271,19 +270,11 @@ export default function DictionaryCategoryPage() {
                 {item.isEnabled ? '启用' : '禁用'}
               </Badge>
               <code className="rounded border bg-[var(--moge-bg)] px-2 py-1 text-xs text-[var(--moge-text-muted)]">
-                {item.code}
+                {item.value}
               </code>
             </div>
             {item.description && (
               <p className="mb-3 text-sm text-[var(--moge-text-sub)]">{item.description}</p>
-            )}
-            {item.value && item.value !== item.code && item.value !== item.label && (
-              <p className="mb-3 text-sm text-[var(--moge-text-sub)]">
-                <span className="text-[var(--moge-text-muted)]">存储值: </span>
-                <code className="rounded bg-[var(--moge-bg)] px-1 py-0.5 text-xs">
-                  {item.value}
-                </code>
-              </p>
             )}
             <div className="flex items-center gap-4 text-xs text-[var(--moge-text-muted)]">
               <span>更新于 {dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm')}</span>
@@ -421,7 +412,6 @@ export default function DictionaryCategoryPage() {
             ? {
                 id: editingItem.id,
                 categoryCode: editingItem.categoryCode,
-                code: editingItem.code,
                 label: editingItem.label,
                 value: editingItem.value || '',
                 sortOrder: editingItem.sortOrder,

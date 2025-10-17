@@ -30,9 +30,8 @@ interface UpdateDictCategoryDto {
 // 创建和更新的DTO接口
 interface CreateDictItemDto {
   categoryCode: string;
-  code: string;
   label: string;
-  value?: string;
+  value: string;
   sortOrder?: number;
   isEnabled?: boolean;
   description?: string;
@@ -40,7 +39,6 @@ interface CreateDictItemDto {
 
 interface UpdateDictItemDto {
   categoryCode?: string;
-  code?: string;
   label?: string;
   value?: string;
   sortOrder?: number;

@@ -95,12 +95,10 @@ model dict_items {
   id           Int             @id @default(autoincrement())
   /// 所属分类编码
   categoryCode String          @map("category_code")
-  /// 项目编码，如 'sci_fi'
-  code         String
   /// 显示标签，如 '科幻'
   label        String
-  /// 存储值
-  value        String?
+  /// 存储值（既是编码也是存储值），如 'sci_fi'
+  value        String
   /// 描述信息
   description  String?
   /// 排序
@@ -114,7 +112,7 @@ model dict_items {
   /// 所属分类
   category     dict_categories @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
 
-  @@unique([categoryCode, code])
+  @@unique([categoryCode, value])
 }
 
 // * ==================== 小说大纲 ====================

@@ -14,9 +14,8 @@ export const dictCategorySchema = z.object({
 export const dictItemSchema = z.object({
   id: z.number(),
   categoryCode: z.string().min(1, '请选择所属分类'),
-  code: z.string().min(1, '请输入项目编码'),
   label: z.string().min(1, '请输入显示标签'),
-  value: z.string().optional(),
+  value: z.string().min(1, '请输入存储值'),
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
   description: z.string().optional(),
@@ -37,9 +36,8 @@ export const updateDictCategorySchema = createDictCategorySchema.partial();
 // 创建字典项的schema
 export const createDictItemSchema = z.object({
   categoryCode: z.string().min(1, '请选择所属分类'),
-  code: z.string().min(1, '请输入项目编码'),
   label: z.string().min(1, '请输入显示标签'),
-  value: z.string().optional(),
+  value: z.string().min(1, '请输入存储值'),
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
   description: z.string().optional(),
