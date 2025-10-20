@@ -23,15 +23,17 @@ export default function OutlineContentViewer({
   selectedContent,
 }: OutlineContentViewerProps) {
   return (
-    <Card className="flex-1 overflow-y-auto p-6">
-      <div className="mb-4">
+    <Card className="flex h-full flex-col overflow-hidden p-6">
+      <div className="mb-4 flex-shrink-0">
         <h2 className="text-xl font-semibold">{selectedTitle || '选择内容查看'}</h2>
       </div>
 
       {selectedContent ? (
-        <MdViewer md={selectedContent} />
+        <div className="flex-1 overflow-y-auto">
+          <MdViewer md={selectedContent} />
+        </div>
       ) : (
-        <div className="flex h-[550px] flex-col items-center justify-center text-center">
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="space-y-4">
             <p className="text-muted-foreground">
               {selectedTitle ? '该部分内容为空' : '请从左侧选择要查看的内容'}
