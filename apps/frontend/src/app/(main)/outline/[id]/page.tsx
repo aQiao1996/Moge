@@ -29,11 +29,30 @@ import OutlineStructureSidebar, {
 import OutlineHeader from '@/app/(main)/outline/[id]/components/OutlineHeader';
 import OutlineContentViewer from '@/app/(main)/outline/[id]/components/OutlineContentViewer';
 import OutlineSettingsPanel from '@/app/(main)/outline/[id]/components/OutlineSettingsPanel';
+import { useDictStore } from '@/stores/dictStore';
 
 export default function OutlineViewPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+
+  // 字典数据
+  const { novelTypes, fetchNovelTypes } = useDictStore();
+
+  // 加载小说类型
+  useEffect(() => {
+    void fetchNovelTypes();
+  }, [fetchNovelTypes]);
+
+  /**
+   * 根据小说类型的 value 获取对应的 label
+   * @param typeValue 类型值（如 'fantasy'）
+   * @returns 类型标签（如 '玄幻'）
+   */
+  const getTypeLabel = (typeValue: string): string => {
+    const type = novelTypes.find((t) => t.value === typeValue);
+    return type ? type.label : typeValue;
+  };
 
   // 数据加载
   const { outlineData, loading, expandedVolumes, toggleVolume, refreshData } = useOutlineData({
@@ -138,6 +157,7 @@ export default function OutlineViewPage() {
       <OutlineHeader
         outlineData={outlineData}
         statusConfig={statusConfig}
+        typeLabel={getTypeLabel(outlineData.type || '')}
         selectedContent={selectedContent}
         selectedTitle={selectedTitle}
         isGenerating={isGenerating}

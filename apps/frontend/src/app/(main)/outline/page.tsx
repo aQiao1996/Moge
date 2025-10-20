@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import OutlineDialog from './components/OutlineDialog';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useDictStore } from '@/stores/dictStore';
@@ -63,6 +63,16 @@ export default function Home() {
   const { novelTypes, fetchNovelTypes } = useDictStore();
   const availableTypes = novelTypes.map((t: { label: string }) => t.label);
 
+  /**
+   * 根据小说类型的 value 获取对应的 label
+   * @param typeValue 类型值（如 'fantasy'）
+   * @returns 类型标签（如 '玄幻'）
+   */
+  const getTypeLabel = (typeValue: string): string => {
+    const type = novelTypes.find((t) => t.value === typeValue);
+    return type ? type.label : typeValue;
+  };
+
   // TODO: 时代和标签应该从字典或实际大纲数据中动态提取
   const availableEras = ['现代', '古代', '未来', '民国', '架空'];
   const availableTags = ['热血', '爽文', '系统', '重生', '穿越', '修仙', '商战'];
@@ -71,6 +81,13 @@ export default function Home() {
   useEffect(() => {
     void fetchNovelTypes();
   }, [fetchNovelTypes]);
+
+  // 将 filters.type (label) 转换为 value，使用 useMemo 缓存
+  const typeValue = useMemo(() => {
+    if (!filters.type) return undefined;
+    const type = novelTypes.find((t) => t.label === filters.type);
+    return type?.value || undefined;
+  }, [filters.type, novelTypes]);
 
   // 筛选配置：支持类型、时代、状态、标签筛选
   const filterOptions: FilterOption[] = [
@@ -123,7 +140,7 @@ export default function Home() {
       pageNum: currentPage,
       pageSize,
       search: filters.search || undefined,
-      type: (filters.type as string) || undefined,
+      type: typeValue,
       era: (filters.era as string) || undefined,
       status: (() => {
         if (!filters.status) return undefined;
@@ -138,10 +155,10 @@ export default function Home() {
     void getOutlines(params);
   }, [
     getOutlines,
+    typeValue,
     currentPage,
     pageSize,
     filters.search,
-    filters.type,
     filters.era,
     filters.status,
     filters.tags,
@@ -216,7 +233,7 @@ export default function Home() {
                   {status.text}
                 </Badge>
               )}
-              <Badge className="text-xs">{outline.type}</Badge>
+              <Badge className="text-xs">{getTypeLabel(outline.type || '')}</Badge>
               {outline.era && (
                 <Badge variant="outline" className="text-xs">
                   {outline.era}
