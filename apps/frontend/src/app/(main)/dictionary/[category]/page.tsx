@@ -380,8 +380,8 @@ export default function DictionaryCategoryPage() {
       </div>
 
       {/* 词条列表 - 可滚动区域 */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-1">
-        <div className="mx-auto max-w-6xl">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-6xl px-1">
           <MogeList
             items={paginatedItems.map((item) => ({ ...item, id: item.id.toString() }))}
             total={filteredItems.length}

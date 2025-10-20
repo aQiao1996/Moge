@@ -92,111 +92,126 @@ export default function DictionaryPage() {
   const totalItems = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      {/* 页面标题区 */}
-      <div className="mb-8">
-        <div className="mb-4 flex items-center gap-3">
-          <Database className="h-8 w-8 text-[var(--moge-primary)]" />
-          <div>
-            <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">字典管理</h1>
-            <p className="mt-2 text-[var(--moge-text-sub)]">
-              管理全局数据字典和基础配置，为创作提供标准化数据支撑
-            </p>
+    <div className="flex h-full flex-col">
+      <div className="mx-auto w-full max-w-6xl flex-shrink-0">
+        {/* 页面标题区 */}
+        <div className="mb-8">
+          <div className="mb-4 flex items-center gap-3">
+            <Database className="h-8 w-8 text-[var(--moge-primary)]" />
+            <div>
+              <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">字典管理</h1>
+              <p className="mt-2 text-[var(--moge-text-sub)]">
+                管理全局数据字典和基础配置，为创作提供标准化数据支撑
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* 统计概览卡片 */}
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* 分类总数 */}
+          <Card
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--moge-card-bg)',
+              borderColor: 'var(--moge-card-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--moge-text-muted)]">分类总数</p>
+                <p className="text-2xl font-bold text-[var(--moge-text-main)]">
+                  {loading ? '-' : totalCategories}
+                </p>
+              </div>
+              <Database className="h-8 w-8 text-[var(--moge-primary)]" />
+            </div>
+          </Card>
+
+          {/* 词条总数 */}
+          <Card
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--moge-card-bg)',
+              borderColor: 'var(--moge-card-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--moge-text-muted)]">词条总数</p>
+                <p className="text-2xl font-bold text-[var(--moge-text-main)]">
+                  {loading ? '-' : totalItems.toLocaleString()}
+                </p>
+              </div>
+              <Tags className="h-8 w-8 text-blue-500" />
+            </div>
+          </Card>
+
+          {/* 启用词条数 */}
+          <Card
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--moge-card-bg)',
+              borderColor: 'var(--moge-card-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--moge-text-muted)]">启用词条</p>
+                <p className="text-2xl font-bold text-[var(--moge-text-main)]">
+                  {loading ? '-' : totalItems > 0 ? totalItems.toLocaleString() : '0'}
+                </p>
+              </div>
+              <FileText className="h-8 w-8 text-orange-500" />
+            </div>
+          </Card>
         </div>
       </div>
 
-      {/* 统计概览卡片 */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* 分类总数 */}
-        <Card
-          className="p-4"
-          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--moge-text-muted)]">分类总数</p>
-              <p className="text-2xl font-bold text-[var(--moge-text-main)]">
-                {loading ? '-' : totalCategories}
-              </p>
-            </div>
-            <Database className="h-8 w-8 text-[var(--moge-primary)]" />
-          </div>
-        </Card>
+      {/* 分类卡片列表 - 可滚动区域 */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-6xl px-1">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {dictionaryCategories.map((category) => {
+              const Icon = category.icon;
+              const count = categoryCounts[category.key] || 0;
 
-        {/* 词条总数 */}
-        <Card
-          className="p-4"
-          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--moge-text-muted)]">词条总数</p>
-              <p className="text-2xl font-bold text-[var(--moge-text-main)]">
-                {loading ? '-' : totalItems.toLocaleString()}
-              </p>
-            </div>
-            <Tags className="h-8 w-8 text-blue-500" />
-          </div>
-        </Card>
-
-        {/* 启用词条数 */}
-        <Card
-          className="p-4"
-          style={{ backgroundColor: 'var(--moge-card-bg)', borderColor: 'var(--moge-card-border)' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[var(--moge-text-muted)]">启用词条</p>
-              <p className="text-2xl font-bold text-[var(--moge-text-main)]">
-                {loading ? '-' : totalItems > 0 ? totalItems.toLocaleString() : '0'}
-              </p>
-            </div>
-            <FileText className="h-8 w-8 text-orange-500" />
-          </div>
-        </Card>
-      </div>
-
-      {/* 分类卡片列表 */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {dictionaryCategories.map((category) => {
-          const Icon = category.icon;
-          const count = categoryCounts[category.key] || 0;
-
-          return (
-            <Link key={category.key} href={`/dictionary/${category.key}`}>
-              <Card
-                className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
-                style={{
-                  backgroundColor: 'var(--moge-card-bg)',
-                  borderColor: 'var(--moge-card-border)',
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-3 flex items-center gap-3">
-                      <Icon className={`h-6 w-6 ${category.color}`} />
-                      <h3 className="font-semibold text-[var(--moge-text-main)]">
-                        {category.title}
-                      </h3>
-                    </div>
-                    <p className="mb-4 text-sm leading-relaxed text-[var(--moge-text-sub)]">
-                      {category.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs text-[var(--moge-text-muted)]">
-                          {loading ? '加载中...' : `${count} 个词条`}
-                        </span>
+              return (
+                <Link key={category.key} href={`/dictionary/${category.key}`}>
+                  <Card
+                    className="cursor-pointer border p-6 transition-all duration-200 hover:shadow-[var(--moge-glow-card)]"
+                    style={{
+                      backgroundColor: 'var(--moge-card-bg)',
+                      borderColor: 'var(--moge-card-border)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="mb-3 flex items-center gap-3">
+                          <Icon className={`h-6 w-6 ${category.color}`} />
+                          <h3 className="font-semibold text-[var(--moge-text-main)]">
+                            {category.title}
+                          </h3>
+                        </div>
+                        <p className="mb-4 text-sm leading-relaxed text-[var(--moge-text-sub)]">
+                          {category.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs text-[var(--moge-text-muted)]">
+                              {loading ? '加载中...' : `${count} 个词条`}
+                            </span>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-[var(--moge-text-muted)]" />
+                        </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-[var(--moge-text-muted)]" />
                     </div>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
