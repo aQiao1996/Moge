@@ -60,8 +60,11 @@ export default function Home() {
   });
 
   // 从字典 store 获取筛选数据
-  const { novelTypes, fetchNovelTypes } = useDictStore();
+  const { novelTypes, novelEras, novelTags, fetchNovelTypes, fetchNovelEras, fetchNovelTags } =
+    useDictStore();
   const availableTypes = novelTypes.map((t: { label: string }) => t.label);
+  const availableEras = novelEras.map((e: { label: string }) => e.label);
+  const availableTags = novelTags.map((tag: { label: string }) => tag.label);
 
   /**
    * 根据小说类型的 value 获取对应的 label
@@ -73,14 +76,12 @@ export default function Home() {
     return type ? type.label : typeValue;
   };
 
-  // TODO: 时代和标签应该从字典或实际大纲数据中动态提取
-  const availableEras = ['现代', '古代', '未来', '民国', '架空'];
-  const availableTags = ['热血', '爽文', '系统', '重生', '穿越', '修仙', '商战'];
-
-  // 组件挂载时加载小说类型
+  // 组件挂载时加载小说类型、时代和标签
   useEffect(() => {
     void fetchNovelTypes();
-  }, [fetchNovelTypes]);
+    void fetchNovelEras();
+    void fetchNovelTags();
+  }, [fetchNovelTypes, fetchNovelEras, fetchNovelTags]);
 
   // 将 filters.type (label) 转换为 value，使用 useMemo 缓存
   const typeValue = useMemo(() => {

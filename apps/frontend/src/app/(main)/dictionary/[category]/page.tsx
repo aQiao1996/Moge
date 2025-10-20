@@ -27,6 +27,12 @@ const dictionaryCategories = {
     color: 'text-blue-500',
     icon: 'Book',
   },
+  novel_eras: {
+    title: '小说时代',
+    description: '管理小说的时代背景分类，如现代、古代、未来、民国、架空等',
+    color: 'text-yellow-500',
+    icon: 'Clock',
+  },
   novel_tags: {
     title: '小说标签',
     description: '管理小说标签库，按题材、风格、情节、角色等维度分类',

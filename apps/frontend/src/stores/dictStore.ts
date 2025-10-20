@@ -14,6 +14,7 @@ import {
  */
 interface DictState {
   novelTypes: Dict[];
+  novelEras: Dict[];
   novelTags: Dict[];
   terminology: Dict[];
   templates: Dict[];
@@ -21,6 +22,8 @@ interface DictState {
   loading: boolean;
   error: string | null;
   fetchNovelTypes: () => Promise<void>;
+  fetchNovelEras: () => Promise<void>;
+  fetchNovelTags: () => Promise<void>;
   fetchDictByType: (type: string) => Promise<Dict[]>;
   fetchStatistics: () => Promise<Record<string, number>>;
   createDictItem: (data: CreateDictItemValues) => Promise<Dict>;
@@ -35,6 +38,7 @@ interface DictState {
  */
 export const useDictStore = create<DictState>((set, get) => ({
   novelTypes: [],
+  novelEras: [],
   novelTags: [],
   terminology: [],
   templates: [],
@@ -58,6 +62,48 @@ export const useDictStore = create<DictState>((set, get) => ({
       set({ novelTypes: response.data, loading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch novel types';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+    }
+  },
+
+  /**
+   * 获取小说时代数据
+   * 如果已有数据则不重复请求，实现缓存机制
+   */
+  fetchNovelEras: async () => {
+    // 如果已经有数据了,就不再重复请求
+    if (get().novelEras.length > 0) {
+      return;
+    }
+
+    set({ loading: true, error: null });
+    try {
+      const response = await getDictApi('novel_eras');
+      set({ novelEras: response.data, loading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch novel eras';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+    }
+  },
+
+  /**
+   * 获取小说标签数据
+   * 如果已有数据则不重复请求，实现缓存机制
+   */
+  fetchNovelTags: async () => {
+    // 如果已经有数据了,就不再重复请求
+    if (get().novelTags.length > 0) {
+      return;
+    }
+
+    set({ loading: true, error: null });
+    try {
+      const response = await getDictApi('novel_tags');
+      set({ novelTags: response.data, loading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch novel tags';
       set({ error: errorMessage, loading: false });
       console.error(errorMessage);
     }

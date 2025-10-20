@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Database, Tags, Book, Terminal, FileText } from 'lucide-react';
+import { ArrowRight, Database, Tags, Book, Terminal, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
 
 /**
  * 字典分类配置
- * 定义了字典管理模块支持的四种分类及其展示信息
+ * 定义了字典管理模块支持的分类及其展示信息
  */
 const dictionaryCategories = [
   {
@@ -17,6 +17,13 @@ const dictionaryCategories = [
     description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
     icon: Book,
     color: 'text-blue-500',
+  },
+  {
+    key: 'novel_eras',
+    title: '小说时代',
+    description: '管理小说的时代背景分类，如现代、古代、未来、民国、架空等',
+    icon: Clock,
+    color: 'text-yellow-500',
   },
   {
     key: 'novel_tags',
