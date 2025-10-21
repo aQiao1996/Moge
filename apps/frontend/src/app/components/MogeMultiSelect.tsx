@@ -160,7 +160,13 @@ const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps
             </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+          sideOffset={5}
+          style={{ zIndex: 9999 }}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div className="flex items-center border-b px-3">
             <input
               placeholder="搜索..."
@@ -177,7 +183,11 @@ const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps
               </>
             )}
           </div>
-          <div className="max-h-60 overflow-auto p-1">
+          <div
+            className="max-h-60 overflow-y-auto p-1"
+            style={{ overscrollBehavior: 'contain' }}
+            onWheel={(e) => e.stopPropagation()}
+          >
             {loading ? (
               <div className="text-muted-foreground py-6 text-center text-sm">加载中...</div>
             ) : filteredOptions.length === 0 ? (

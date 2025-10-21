@@ -27,6 +27,7 @@ import {
   MogeSelectTrigger,
   MogeSelectValue,
 } from '@/app/components/MogeSelect';
+import { MogeMultiSelect } from '@/app/components/MogeMultiSelect';
 import { Button } from '@/components/ui/button';
 
 interface OutlineDialogProps {
@@ -47,7 +48,8 @@ export default function OutlineDialog({
   onOpenChange,
 }: OutlineDialogProps) {
   const { createOutline, updateOutline } = useOutlineStore();
-  const { novelTypes, fetchNovelTypes } = useDictStore();
+  const { novelTypes, novelEras, novelTags, fetchNovelTypes, fetchNovelEras, fetchNovelTags } =
+    useDictStore();
 
   const isEditMode = mode === 'edit';
 
@@ -56,6 +58,7 @@ export default function OutlineDialog({
     { name: 'name', label: '小说名称', required: !isEditMode },
     { name: 'type', label: '小说类型', required: !isEditMode },
     { name: 'era', label: '故事时代' },
+    { name: 'tags', label: '小说标签' },
     { name: 'conflict', label: '核心冲突' },
     { name: 'remark', label: '备注' },
   ];
@@ -72,7 +75,7 @@ export default function OutlineDialog({
         return (
           <MogeSelect onValueChange={field.onChange} value={field.value as string}>
             <MogeSelectTrigger>
-              <MogeSelectValue placeholder="请选择" />
+              <MogeSelectValue placeholder="请选择小说类型" />
             </MogeSelectTrigger>
             <MogeSelectContent>
               {novelTypes.map((t) => (
@@ -82,6 +85,34 @@ export default function OutlineDialog({
               ))}
             </MogeSelectContent>
           </MogeSelect>
+        );
+      }
+
+      if (name === 'era') {
+        return (
+          <MogeSelect onValueChange={field.onChange} value={field.value as string}>
+            <MogeSelectTrigger>
+              <MogeSelectValue placeholder="请选择故事时代" />
+            </MogeSelectTrigger>
+            <MogeSelectContent>
+              {novelEras.map((e) => (
+                <MogeSelectItem key={e.id} value={e.label}>
+                  {e.label}
+                </MogeSelectItem>
+              ))}
+            </MogeSelectContent>
+          </MogeSelect>
+        );
+      }
+
+      if (name === 'tags') {
+        return (
+          <MogeMultiSelect
+            options={novelTags.map((tag) => ({ value: tag.label, label: tag.label }))}
+            value={field.value as string[]}
+            onChange={field.onChange}
+            placeholder="选择标签"
+          />
         );
       }
 
@@ -97,14 +128,9 @@ export default function OutlineDialog({
         );
       }
 
-      return (
-        <MogeInput
-          placeholder={name === 'era' ? '例：近未来 2150 年' : '会说话的核弹'}
-          {...field}
-        />
-      );
+      return <MogeInput placeholder="会说话的核弹" {...field} />;
     },
-    [novelTypes]
+    [novelTypes, novelEras, novelTags]
   );
 
   const onSubmit = async (values: FormValues) => {
@@ -143,7 +169,11 @@ export default function OutlineDialog({
       renderControl={renderControl}
       defaultTrigger={defaultTrigger}
       item={outline}
-      onOpen={() => void fetchNovelTypes()}
+      onOpen={() => {
+        void fetchNovelTypes();
+        void fetchNovelEras();
+        void fetchNovelTags();
+      }}
     />
   );
 }
