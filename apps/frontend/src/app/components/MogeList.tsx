@@ -108,9 +108,11 @@ export default function MogeList<T extends MogeListItem>({
   }
 
   return (
-    <div className="space-y-4">
-      {/* 列表或网格视图 */}
-      <div className={viewMode === 'grid' ? gridClassName : listClassName}>
+    <div className="flex min-h-0 flex-1 flex-col space-y-4">
+      {/* 列表或网格视图 - 带滚动 */}
+      <div
+        className={`min-h-0 flex-1 overflow-y-auto ${viewMode === 'grid' ? gridClassName : listClassName}`}
+      >
         {items.map(renderItem)}
       </div>
 
