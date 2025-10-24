@@ -341,9 +341,9 @@ export class OutlineService extends BaseService {
   }
 
   async create(userId: string, data: CreateOutlineValues) {
-    const { name, type, era, conflict, tags, remark } = data;
+    const { name, type, era, conflict, tags, remark, characters, systems, worlds, misc } = data;
 
-    // 用户输入敏感词检查 - 使用创作模式，允许文学创作用词
+    // 用户输入敏感词检查 - 使用创作模式，允许文学创��用词
     const inputText = `${name} ${type} ${era} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
     const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
       inputText,
@@ -363,6 +363,10 @@ export class OutlineService extends BaseService {
         conflict,
         tags,
         remark,
+        characters: characters || [],
+        systems: systems || [],
+        worlds: worlds || [],
+        misc: misc || [],
         user: {
           connect: {
             id: parseInt(userId),
