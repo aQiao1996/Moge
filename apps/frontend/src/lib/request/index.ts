@@ -13,6 +13,13 @@ export interface ClientHandlers {
 let globalHandlers: ClientHandlers = {};
 
 /**
+ * 401错误处理状态
+ * 用于防止在短时间内多次触发认证错误处理
+ */
+let isHandling401 = false;
+let handle401Timer: NodeJS.Timeout | null = null;
+
+/**
  * 设置全局客户端处理器
  * @param h 客户端处理器配置
  */
@@ -184,14 +191,52 @@ const errorHandler = (error: unknown, silent?: boolean): never => {
     const res = error.response;
     if (res) {
       // 对于所有HTTP错误，都使用后端返回的具体错误信息
-      const errorMessage = res.message || `HTTP ${res.code} 错误`;
+      let errorMessage = res.message || `HTTP ${res.code} 错误`;
+
+      // 针对401错误的特殊处理
+      if (res.code === 401) {
+        // 将英文错误消息转换为中文
+        if (errorMessage.toLowerCase().includes('unauthorized')) {
+          errorMessage = '登录已过期，请重新登录';
+        } else if (
+          errorMessage.toLowerCase().includes('token') &&
+          errorMessage.toLowerCase().includes('expired')
+        ) {
+          errorMessage = '登录已过期，请重新登录';
+        } else if (errorMessage.toLowerCase().includes('invalid token')) {
+          errorMessage = '登录凭证无效，请重新登录';
+        }
+
+        // 防抖处理: 在500ms内只处理一次401错误
+        if (!isHandling401) {
+          isHandling401 = true;
+
+          // 只显示一次错误提示
+          globalHandlers.notify?.(errorMessage, 'error');
+
+          // 只触发一次认证失败回调
+          globalHandlers.onAuthError?.();
+
+          // 500ms后重置标志,允许下次401错误处理
+          if (handle401Timer) {
+            clearTimeout(handle401Timer);
+          }
+          handle401Timer = setTimeout(() => {
+            isHandling401 = false;
+            handle401Timer = null;
+          }, 500);
+        }
+
+        // 创建包含具体错误信息的Error对象
+        const errorObj = new Error(errorMessage);
+        (errorObj as ApiError).response = res;
+        throw errorObj;
+      }
+
+      // 处理其他HTTP错误
       switch (res.code) {
         case 400:
           globalHandlers.notify?.(errorMessage, 'error');
-          break;
-        case 401:
-          globalHandlers.notify?.(errorMessage, 'error');
-          globalHandlers.onAuthError?.(); // 触发认证失败回调
           break;
         case 403:
           globalHandlers.notify?.(errorMessage, 'error');
