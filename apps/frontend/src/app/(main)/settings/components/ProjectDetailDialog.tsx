@@ -201,7 +201,6 @@ export default function ProjectDetailDialog({
       }
     } catch (error) {
       console.error('更新项目设定失败:', error);
-      toast.error('更新设定关联失败，请重试');
     }
   };
 
@@ -252,7 +251,6 @@ export default function ProjectDetailDialog({
       }
     } catch (error) {
       console.error('移除设定关联失败:', error);
-      toast.error('移除设定关联失败，请重试');
     }
   };
 

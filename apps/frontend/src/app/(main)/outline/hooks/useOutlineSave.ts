@@ -63,7 +63,6 @@ export function useOutlineSave({
         toast.success('保存成功！');
         onSuccess?.();
       } catch (error) {
-        toast.error('保存失败，请重试');
         console.error('Save content error:', error);
         throw error;
       } finally {

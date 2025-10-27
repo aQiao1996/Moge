@@ -200,7 +200,6 @@ export async function saveEditContent(
     return outlineData;
   } catch (error) {
     console.error('Save error:', error);
-    toast.error('保存失败，请重试');
     throw error;
   }
 }

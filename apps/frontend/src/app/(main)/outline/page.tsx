@@ -203,7 +203,6 @@ export default function Home() {
       await deleteOutline(outline.id);
       toast.success('删除成功');
     } catch (error) {
-      toast.error('删除失败');
       console.error('Delete outline error:', error);
       throw error; // 重新抛出错误，让 MogeConfirmPopover 处理
     }
