@@ -201,6 +201,7 @@ export default function OutlineViewPage() {
               <OutlineContentViewer
                 selectedTitle={selectedTitle}
                 selectedContent={selectedContent}
+                isGenerating={isGenerating}
               />
             </TabsContent>
 

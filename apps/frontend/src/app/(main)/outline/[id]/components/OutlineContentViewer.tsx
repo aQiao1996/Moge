@@ -5,9 +5,11 @@
  * - 显示选中的内容
  * - 支持 Markdown 渲染
  * - 显示空状态提示
+ * - 生成时自动滚动到底部
  */
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import MdViewer from '@/app/components/MdViewer';
 
@@ -16,12 +18,24 @@ interface OutlineContentViewerProps {
   selectedTitle: string;
   /** 选中的内容 */
   selectedContent: string;
+  /** 是否正在生成（用于自动滚动） */
+  isGenerating?: boolean;
 }
 
 export default function OutlineContentViewer({
   selectedTitle,
   selectedContent,
+  isGenerating = false,
 }: OutlineContentViewerProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // 生成时自动滚动到底部
+  useEffect(() => {
+    if (isGenerating && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [selectedContent, isGenerating]);
+
   return (
     <Card className="flex h-full flex-col overflow-hidden p-6">
       <div className="mb-4 flex-shrink-0">
@@ -29,7 +43,7 @@ export default function OutlineContentViewer({
       </div>
 
       {selectedContent ? (
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <MdViewer md={selectedContent} />
         </div>
       ) : (
