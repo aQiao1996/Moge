@@ -186,6 +186,7 @@ export default function OutlineViewPage() {
           onToggleVolume={toggleVolume}
           isOpen={isStructureSidebarOpen}
           onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
+          onRefresh={() => void refreshData()}
         />
 
         {/* 右侧内容区域 */}

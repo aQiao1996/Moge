@@ -407,4 +407,138 @@ export class OutlineController {
     const userId = req.user.id;
     return this.outlineService.updateOutlineMisc(id, userId, data.misc);
   }
+
+  /**
+   * 创建新卷
+   */
+  @Post(':id/volume')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '创建新卷' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '卷信息',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: '卷标题' },
+        description: { type: 'string', description: '卷描述' },
+      },
+      required: ['title'],
+    },
+  })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async createVolume(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { title: string; description?: string }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.createVolume(id, userId, data);
+  }
+
+  /**
+   * 创建直接章节（无卷）
+   */
+  @Post(':id/chapter')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '创建直接章节（无卷）' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiBody({
+    description: '章节信息',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: '章节标题' },
+        content: { type: 'string', description: '章节内容' },
+      },
+      required: ['title'],
+    },
+  })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async createChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { title: string; content?: string }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.createChapter(id, userId, data);
+  }
+
+  /**
+   * 在指定卷下创建章节
+   */
+  @Post(':id/volume/:volumeId/chapter')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '在指定卷下创建章节' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiParam({ name: 'volumeId', description: '卷ID' })
+  @ApiBody({
+    description: '章节信息',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: '章节标题' },
+        content: { type: 'string', description: '章节内容' },
+      },
+      required: ['title'],
+    },
+  })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async createChapterInVolume(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('volumeId', ParseIntPipe) volumeId: number,
+    @Request() req: AuthenticatedRequest,
+    @Body() data: { title: string; content?: string }
+  ) {
+    const userId = req.user.id;
+    return this.outlineService.createChapterInVolume(id, volumeId, userId, data);
+  }
+
+  /**
+   * 删除卷
+   */
+  @Delete(':id/volume/:volumeId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '删除卷（会同时删除卷下的所有章节）' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiParam({ name: 'volumeId', description: '卷ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async deleteVolume(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('volumeId', ParseIntPipe) volumeId: number,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const userId = req.user.id;
+    await this.outlineService.deleteVolume(id, volumeId, userId);
+    return { message: '删除成功' };
+  }
+
+  /**
+   * 删除章节
+   */
+  @Delete(':id/chapter/:chapterId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '删除章节' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiParam({ name: 'chapterId', description: '章节ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 403, description: '无权访问' })
+  async deleteChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const userId = req.user.id;
+    await this.outlineService.deleteChapter(id, chapterId, userId);
+    return { message: '删除成功' };
+  }
 }

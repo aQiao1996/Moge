@@ -1119,4 +1119,294 @@ export class OutlineService extends BaseService {
       },
     });
   }
+
+  /**
+   * 创建新卷
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param data 卷信息
+   */
+  async createVolume(
+    outlineId: number,
+    userId: string,
+    data: { title: string; description?: string }
+  ) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 敏感词检查
+    const inputText = `${data.title} ${data.description || ''}`;
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
+    }
+
+    // 获取当前最大的 sortOrder
+    const maxSortOrder = await this.prisma.outline_volume.findFirst({
+      where: { outlineId },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+
+    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+
+    const volume = await this.prisma.outline_volume.create({
+      data: {
+        outlineId,
+        title: data.title,
+        description: data.description,
+        sortOrder,
+      },
+    });
+
+    return {
+      ...volume,
+      id: volume.id.toString(),
+      outlineId: volume.outlineId.toString(),
+    };
+  }
+
+  /**
+   * 创建直接章节（无卷）
+   * @param outlineId 大纲 ID
+   * @param userId 用户 ID
+   * @param data 章节信息
+   */
+  async createChapter(
+    outlineId: number,
+    userId: string,
+    data: { title: string; content?: string }
+  ) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 敏感词检查
+    const inputText = `${data.title} ${data.content || ''}`;
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
+    }
+
+    // 获取当前最大的 sortOrder（仅针对直接章节）
+    const maxSortOrder = await this.prisma.outline_chapter.findFirst({
+      where: { outlineId, volumeId: null },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+
+    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+
+    const chapter = await this.prisma.outline_chapter.create({
+      data: {
+        outlineId,
+        title: data.title,
+        sortOrder,
+      },
+    });
+
+    // 如果有内容，创建章节内容
+    type ChapterContentType = {
+      id: number;
+      chapterId: number;
+      content: string;
+      version: number;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    let chapterContent: ChapterContentType | null = null;
+    if (data.content) {
+      chapterContent = await this.prisma.outline_chapter_content.create({
+        data: {
+          chapterId: chapter.id,
+          content: data.content,
+          version: 1,
+        },
+      });
+    }
+
+    return {
+      ...chapter,
+      id: chapter.id.toString(),
+      outlineId: chapter.outlineId?.toString() || null,
+      volumeId: null,
+      content: chapterContent
+        ? {
+            id: chapterContent.id.toString(),
+            chapterId: chapterContent.chapterId.toString(),
+            content: chapterContent.content,
+            version: chapterContent.version,
+            createdAt: chapterContent.createdAt,
+            updatedAt: chapterContent.updatedAt,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * 在指定卷下创建章节
+   * @param outlineId 大纲 ID
+   * @param volumeId 卷 ID
+   * @param userId 用户 ID
+   * @param data 章节信息
+   */
+  async createChapterInVolume(
+    outlineId: number,
+    volumeId: number,
+    userId: string,
+    data: { title: string; content?: string }
+  ) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 验证卷是否属于该大纲
+    const volume = await this.prisma.outline_volume.findFirst({
+      where: { id: volumeId, outlineId },
+    });
+
+    if (!volume) {
+      throw new NotFoundException('卷不存在或不属于该大纲');
+    }
+
+    // 敏感词检查
+    const inputText = `${data.title} ${data.content || ''}`;
+    const sensitiveCheckResult = this.sensitiveFilter.checkDetailed(
+      inputText,
+      FilterLevel.CREATIVE
+    );
+    if (sensitiveCheckResult.hasSensitive) {
+      throw new BadRequestException(
+        `输入内容包含不当词汇：${sensitiveCheckResult.sensitiveWords.join('、')}，请修改后重试`
+      );
+    }
+
+    // 获取当前卷内最大的 sortOrder
+    const maxSortOrder = await this.prisma.outline_chapter.findFirst({
+      where: { volumeId },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+
+    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+
+    const chapter = await this.prisma.outline_chapter.create({
+      data: {
+        volumeId,
+        title: data.title,
+        sortOrder,
+      },
+    });
+
+    // 如果有内容，创建章节内容
+    type ChapterContentType = {
+      id: number;
+      chapterId: number;
+      content: string;
+      version: number;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    let chapterContent: ChapterContentType | null = null;
+    if (data.content) {
+      chapterContent = await this.prisma.outline_chapter_content.create({
+        data: {
+          chapterId: chapter.id,
+          content: data.content,
+          version: 1,
+        },
+      });
+    }
+
+    return {
+      ...chapter,
+      id: chapter.id.toString(),
+      outlineId: null,
+      volumeId: chapter.volumeId?.toString() || null,
+      content: chapterContent
+        ? {
+            id: chapterContent.id.toString(),
+            chapterId: chapterContent.chapterId.toString(),
+            content: chapterContent.content,
+            version: chapterContent.version,
+            createdAt: chapterContent.createdAt,
+            updatedAt: chapterContent.updatedAt,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * 删除卷（会同时删除卷下的所有章节）
+   * @param outlineId 大纲 ID
+   * @param volumeId 卷 ID
+   * @param userId 用户 ID
+   */
+  async deleteVolume(outlineId: number, volumeId: number, userId: string) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 验证卷是否属于该大纲
+    const volume = await this.prisma.outline_volume.findFirst({
+      where: { id: volumeId, outlineId },
+    });
+
+    if (!volume) {
+      throw new NotFoundException('卷不存在或不属于该大纲');
+    }
+
+    // 删除卷（级联删除章节会由数据库处理）
+    await this.prisma.outline_volume.delete({
+      where: { id: volumeId },
+    });
+
+    this.logger.debug(`[删除卷] 大纲ID: ${outlineId}, 卷ID: ${volumeId}`);
+  }
+
+  /**
+   * 删除章节
+   * @param outlineId 大纲 ID
+   * @param chapterId 章节 ID
+   * @param userId 用户 ID
+   */
+  async deleteChapter(outlineId: number, chapterId: number, userId: string) {
+    // 验证大纲所有权
+    await this.findOne(outlineId, userId);
+
+    // 验证章节是否属于该大纲
+    const chapter = await this.prisma.outline_chapter.findFirst({
+      where: {
+        id: chapterId,
+        OR: [
+          { outlineId },
+          {
+            volume: {
+              outlineId,
+            },
+          },
+        ],
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('章节不存在或不属于该大纲');
+    }
+
+    // 删除章节（级联删除内容会由数据库处理）
+    await this.prisma.outline_chapter.delete({
+      where: { id: chapterId },
+    });
+
+    this.logger.debug(`[删除章节] 大纲ID: ${outlineId}, 章节ID: ${chapterId}`);
+  }
 }

@@ -41,10 +41,11 @@ export default function OutlineEditPage() {
   const id = params.id as string;
 
   // 数据加载
-  const { outlineData, loading, expandedVolumes, toggleVolume, setOutlineData } = useOutlineData({
-    outlineId: id,
-    autoLoad: true,
-  });
+  const { outlineData, loading, expandedVolumes, toggleVolume, setOutlineData, refreshData } =
+    useOutlineData({
+      outlineId: id,
+      autoLoad: true,
+    });
 
   // 本地状态
   const [saving, setSaving] = useState(false);
@@ -178,6 +179,7 @@ export default function OutlineEditPage() {
           onToggleVolume={toggleVolume}
           isOpen={isStructureSidebarOpen}
           onToggle={() => setStructureSidebarOpen(!isStructureSidebarOpen)}
+          onRefresh={() => void refreshData()}
         />
 
         {/* 右侧编辑区域 */}
