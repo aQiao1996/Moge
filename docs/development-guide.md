@@ -171,16 +171,31 @@
   - 初始化脚本：提供 `init-novel-eras.ts` 和 `init-novel-tags.ts` 脚本用于环境初始化
   - 页面布局优化：修复字典管理首页和分类详情页的滚动问题，确保内容超出时正确显示滚动条
   - 类型显示优化：大纲列表页正确显示小说类型的 label 而非 value
+- ✅ 实现 `大纲` 模块的设定关联功能
+  - 数据库设计：在 outline 表中添加设定关联字段（characters, systems, worlds, misc）
+  - 后端 API：提供获取和更新关联设定的完整接口
+  - 前端集成：在大纲详情页添加"关联设定" Tab，展示四大设定分类
+  - 设定管理：支持从设定库添加/移除关联的设定，操作后自动刷新
+  - AI 增强：生成大纲时自动注入关联设定作为上下文，提升内容一致性
+  - 上下文构建：实现 `buildSettingsContext` 方法，将设定格式化为 AI 可理解的文本
+- ✅ 实现 `大纲` 模块的结构化编辑功能
+  - 后端架构：在 `outline.service.ts` 中新增 5 个方法（创建卷、创建章节、创建卷内章节、删除卷、删除章节）
+  - API 端点：提供完整的 RESTful API，支持 POST 创建和 DELETE 删除操作
+  - 自动排序：创建时自动计算 sortOrder，确保新项目排在末尾
+  - 敏感词检查：创建和编辑时使用创作模式检查敏感词，平衡内容安全和创作自由
+  - 级联删除：删除卷时自动删除该卷下的所有章节（数据库级联约束）
+  - 前端组件：创建 `CreateItemDialog` 和 `DeleteConfirmDialog` 两个对话框组件
+  - 自动序号：创建时自动生成中文序号（第一卷、第二卷等），使用 `numberToChinese` 转换函数
+  - 确认机制：删除操作使用确认对话框，明确提示删除卷会连带删除章节
+  - 数据刷新：创建/删除后自动调用 `refreshData` 刷新大纲结构
+  - 自动展开：创建新卷后自动展开该卷，提升用户体验
+  - 侧边栏优化：修复编辑结构侧边栏的滚动问题，使用 `flex flex-col` 和 `overflow-y-auto` 确保内容可滚动
+  - 类型安全：遵循 TypeScript 类型规范，避免使用 `as any`，明确定义 `ChapterContentType` 类型
+  - 代码质量：通过 `pnpm run lint` 和 `pnpm run typecheck` 检查，符合项目规范
 
 **待完成**:
 
 - ⏳ 实现 `文稿` 模块的列表及状态管理
-- ⏳ 实现 `大纲` 模块的设定关联功能
-  - 在 outline 表中添加设定关联字段（characters, systems, worlds, misc）
-  - 后端提供获取和更新关联设定的 API
-  - 前端在大纲详情页添加设定管理 Tab，支持添加/移除关联的设定
-  - AI 生成大纲时注入关联设定作为上下文
-  - 参考实现：ProjectDetailDialog.tsx 和 SettingSelectorDialog.tsx
 
 ### 4.2. 第二阶段 (核心价值) - 待开发
 
