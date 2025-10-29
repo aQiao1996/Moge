@@ -13,7 +13,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,11 +34,41 @@ import {
   type VolumeEditData,
   type ChapterEditData,
 } from '@/app/(main)/outline/strategies/outlineSaveStrategies';
+import { useDictStore } from '@/stores/dictStore';
 
 export default function OutlineEditPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+
+  // 字典数据
+  const { novelTypes, novelEras, fetchNovelTypes, fetchNovelEras } = useDictStore();
+
+  // 加载字典数据
+  useEffect(() => {
+    void fetchNovelTypes();
+    void fetchNovelEras();
+  }, [fetchNovelTypes, fetchNovelEras]);
+
+  /**
+   * 根据小说类型的 value 获取对应的 label
+   * @param typeValue 类型值（如 'fantasy'）
+   * @returns 类型标签（如 '玄幻'）
+   */
+  const getTypeLabel = (typeValue: string): string => {
+    const type = novelTypes.find((t) => t.value === typeValue);
+    return type ? type.label : typeValue;
+  };
+
+  /**
+   * 根据小说时代的 value 获取对应的 label
+   * @param eraValue 时代值（如 'modern'）
+   * @returns 时代标签（如 '现代'）
+   */
+  const getEraLabel = (eraValue: string): string => {
+    const era = novelEras.find((e) => e.value === eraValue);
+    return era ? era.label : eraValue;
+  };
 
   // 数据加载
   const { outlineData, loading, expandedVolumes, toggleVolume, setOutlineData, refreshData } =
@@ -143,7 +173,8 @@ export default function OutlineEditPage() {
           <div>
             <h1 className="text-2xl font-bold">{outlineData.name}</h1>
             <p className="text-muted-foreground text-sm">
-              {outlineData.type} · {outlineData.era} · {status?.text || outlineData.status}
+              {getTypeLabel(outlineData.type || '')} · {getEraLabel(outlineData.era || '')} ·{' '}
+              {status?.text || outlineData.status}
             </p>
           </div>
         </div>
