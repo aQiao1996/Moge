@@ -19,6 +19,8 @@ interface OutlineHeaderProps {
   statusConfig: Record<string, { text: string; variant: string }>;
   /** 类型标签（用于显示） */
   typeLabel?: string;
+  /** 时代标签（用于显示） */
+  eraLabel?: string;
   /** 当前选中的内容 */
   selectedContent: string;
   /** 当前选中的标题 */
@@ -41,6 +43,7 @@ export default function OutlineHeader({
   outlineData,
   statusConfig,
   typeLabel,
+  eraLabel,
   selectedContent,
   selectedTitle,
   isGenerating,
@@ -62,7 +65,7 @@ export default function OutlineHeader({
         <div>
           <h1 className="text-2xl font-bold">{outlineData.name}</h1>
           <p className="text-muted-foreground text-sm">
-            {typeLabel || outlineData.type} · {outlineData.era} · {status.text}
+            {typeLabel || outlineData.type} · {eraLabel || outlineData.era} · {status.text}
           </p>
         </div>
       </div>

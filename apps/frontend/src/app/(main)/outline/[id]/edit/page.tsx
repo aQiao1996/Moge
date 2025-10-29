@@ -35,6 +35,7 @@ import {
   type ChapterEditData,
 } from '@/app/(main)/outline/strategies/outlineSaveStrategies';
 import { useDictStore } from '@/stores/dictStore';
+import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 
 export default function OutlineEditPage() {
   const params = useParams();
@@ -49,26 +50,6 @@ export default function OutlineEditPage() {
     void fetchNovelTypes();
     void fetchNovelEras();
   }, [fetchNovelTypes, fetchNovelEras]);
-
-  /**
-   * 根据小说类型的 value 获取对应的 label
-   * @param typeValue 类型值（如 'fantasy'）
-   * @returns 类型标签（如 '玄幻'）
-   */
-  const getTypeLabel = (typeValue: string): string => {
-    const type = novelTypes.find((t) => t.value === typeValue);
-    return type ? type.label : typeValue;
-  };
-
-  /**
-   * 根据小说时代的 value 获取对应的 label
-   * @param eraValue 时代值（如 'modern'）
-   * @returns 时代标签（如 '现代'）
-   */
-  const getEraLabel = (eraValue: string): string => {
-    const era = novelEras.find((e) => e.value === eraValue);
-    return era ? era.label : eraValue;
-  };
 
   // 数据加载
   const { outlineData, loading, expandedVolumes, toggleVolume, setOutlineData, refreshData } =
@@ -173,8 +154,8 @@ export default function OutlineEditPage() {
           <div>
             <h1 className="text-2xl font-bold">{outlineData.name}</h1>
             <p className="text-muted-foreground text-sm">
-              {getTypeLabel(outlineData.type || '')} · {getEraLabel(outlineData.era || '')} ·{' '}
-              {status?.text || outlineData.status}
+              {getDictLabel(novelTypes, outlineData.type)} ·{' '}
+              {getDictLabel(novelEras, outlineData.era)} · {status?.text || outlineData.status}
             </p>
           </div>
         </div>

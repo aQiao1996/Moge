@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
+import { getDictLabel, getDictValue } from '@/app/(main)/outline/utils/dictUtils';
 import dayjs from 'dayjs';
 import type { Outline } from '@moge/types';
 
@@ -66,16 +67,6 @@ export default function Home() {
   const availableEras = novelEras.map((e: { label: string }) => e.label);
   const availableTags = novelTags.map((tag: { label: string }) => tag.label);
 
-  /**
-   * 根据小说类型的 value 获取对应的 label
-   * @param typeValue 类型值（如 'fantasy'）
-   * @returns 类型标签（如 '玄幻'）
-   */
-  const getTypeLabel = (typeValue: string): string => {
-    const type = novelTypes.find((t) => t.value === typeValue);
-    return type ? type.label : typeValue;
-  };
-
   // 组件挂载时加载小说类型、时代和标签
   useEffect(() => {
     void fetchNovelTypes();
@@ -85,10 +76,13 @@ export default function Home() {
 
   // 将 filters.type (label) 转换为 value，使用 useMemo 缓存
   const typeValue = useMemo(() => {
-    if (!filters.type) return undefined;
-    const type = novelTypes.find((t) => t.label === filters.type);
-    return type?.value || undefined;
+    return getDictValue(novelTypes, filters.type as string);
   }, [filters.type, novelTypes]);
+
+  // 将 filters.era (label) 转换为 value，使用 useMemo 缓存
+  const eraValue = useMemo(() => {
+    return getDictValue(novelEras, filters.era as string);
+  }, [filters.era, novelEras]);
 
   // 筛选配置：支持类型、时代、状态、标签筛选
   const filterOptions: FilterOption[] = [
@@ -142,7 +136,7 @@ export default function Home() {
       pageSize,
       search: filters.search || undefined,
       type: typeValue,
-      era: (filters.era as string) || undefined,
+      era: eraValue,
       status: (() => {
         if (!filters.status) return undefined;
         const statusValue = filters.status as string;
@@ -157,10 +151,10 @@ export default function Home() {
   }, [
     getOutlines,
     typeValue,
+    eraValue,
     currentPage,
     pageSize,
     filters.search,
-    filters.era,
     filters.status,
     filters.tags,
     filters.sortBy,
@@ -233,10 +227,10 @@ export default function Home() {
                   {status.text}
                 </Badge>
               )}
-              <Badge className="text-xs">{getTypeLabel(outline.type || '')}</Badge>
+              <Badge className="text-xs">{getDictLabel(novelTypes, outline.type)}</Badge>
               {outline.era && (
                 <Badge variant="outline" className="text-xs">
-                  {outline.era}
+                  {getDictLabel(novelEras, outline.era)}
                 </Badge>
               )}
             </div>
