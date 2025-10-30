@@ -17,37 +17,39 @@ datasource db {
 
 // * ==================== 用户表 ====================
 model users {
-  id              Int        @id @default(autoincrement())
+  id                Int                  @id @default(autoincrement())
   /// 用户登录账号，全局唯一
-  username        String     @unique
+  username          String               @unique
   /// 用户邮箱，第三方登录时使用，全局唯一
-  email           String?    @unique
+  email             String?              @unique
   /// 邮箱验证通过的时间，未验证则为空
-  emailVerifiedAt DateTime?  @map("email_verified_at")
+  emailVerifiedAt   DateTime?            @map("email_verified_at")
   /// bcrypt 哈希后的密码；OAuth 用户此处为空
-  passwordHash    String?    @map("password_hash")
+  passwordHash      String?              @map("password_hash")
   /// 昵称
-  name            String?
+  name              String?
   /// 头像 URL
-  avatarUrl       String?    @map("avatar_url")
+  avatarUrl         String?              @map("avatar_url")
   /// 记录创建时间
-  createdAt       DateTime   @default(now()) @map("created_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
   /// 记录更新时间
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
   /// 该用户绑定的所有第三方账号
-  accounts        accounts[]
+  accounts          accounts[]
   /// 所属的所有大纲
-  outlines        outline[]
+  outlines          outline[]
   /// 所属的所有项目
-  projects        projects[]
+  projects          projects[]
   /// 所属的所有角色设定
   characterSettings character_settings[]
   /// 所属的所有系统设定
-  systemSettings  system_settings[]
+  systemSettings    system_settings[]
   /// 所属的所有世界设定
-  worldSettings   world_settings[]
+  worldSettings     world_settings[]
   /// 所属的所有辅助设定
-  miscSettings    misc_settings[]
+  miscSettings      misc_settings[]
+  /// 所属的所有文稿
+  manuscripts       manuscripts[]
 }
 
 // * ==================== 第三方账号关联表 ====================
@@ -119,43 +121,43 @@ model dict_items {
 
 /// 小说大纲表
 model outline {
-  id        Int           @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   /// 小说名称
-  name      String
+  name       String
   /// 小说类型（存 label）
-  type      String
+  type       String
   /// 故事时代背景
-  era       String?
+  era        String?
   /// 核心冲突描述
-  conflict  String?       @db.Text
+  conflict   String?           @db.Text
   /// 标签数组（Pg text[]）
-  tags      String[]      @default([])
+  tags       String[]          @default([])
   /// 备注信息
-  remark    String?       @db.Text
+  remark     String?           @db.Text
   /// 业务生命周期状态
-  status    OutlineStatus @default(DRAFT)
+  status     OutlineStatus     @default(DRAFT)
   /// 关联的角色设定ID列表
-  characters  String[] @default([])
+  characters String[]          @default([])
   /// 关联的系统设定ID列表
-  systems     String[] @default([])
+  systems    String[]          @default([])
   /// 关联的世界设定ID列表
-  worlds      String[] @default([])
+  worlds     String[]          @default([])
   /// 关联的辅助设定ID列表
-  misc        String[] @default([])
+  misc       String[]          @default([])
   /// 所属用户 ID
-  userId    Int           @map("user_id")
+  userId     Int               @map("user_id")
   /// 创建人关联
-  user      users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       users             @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// 记录创建时间
-  createdAt DateTime      @default(now()) @map("created_at")
+  createdAt  DateTime          @default(now()) @map("created_at")
   /// 记录更新时间
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
   /// 大纲内容（一对一）
-  content   outline_content?
+  content    outline_content?
   /// 所属的卷
-  volumes   outline_volume[]
+  volumes    outline_volume[]
   /// 无卷的直接章节（序章、后记等）
-  chapters  outline_chapter[]
+  chapters   outline_chapter[]
 
   @@index([userId, status])
   @@index([createdAt])
@@ -163,42 +165,42 @@ model outline {
 
 /// 大纲内容表
 model outline_content {
-  id        Int      @id @default(autoincrement())
+  id        Int                       @id @default(autoincrement())
   /// 所属大纲ID
-  outlineId Int      @unique @map("outline_id")
+  outlineId Int                       @unique @map("outline_id")
   /// Markdown全文内容
-  content   String   @db.Text
+  content   String                    @db.Text
   /// 内容版本号
-  version   Int      @default(1)
+  version   Int                       @default(1)
   /// 创建时间
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime                  @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime                  @updatedAt @map("updated_at")
   /// 所属大纲
-  outline   outline  @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  outline   outline                   @relation(fields: [outlineId], references: [id], onDelete: Cascade)
   /// 版本历史
   versions  outline_content_version[]
 }
 
 /// 卷表
 model outline_volume {
-  id        Int     @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   /// 所属大纲ID
-  outlineId Int     @map("outline_id")
+  outlineId   Int               @map("outline_id")
   /// 卷名，如"第一卷 风起云涌"
-  title     String
+  title       String
   /// 卷描述
-  description String? @db.Text
+  description String?           @db.Text
   /// 卷排序（使用十进制避免并发冲突）
-  sortOrder Decimal @map("sort_order") @db.Decimal(10, 5)
+  sortOrder   Decimal           @map("sort_order") @db.Decimal(10, 5)
   /// 创建时间
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
   /// 所属大纲
-  outline   outline  @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  outline     outline           @relation(fields: [outlineId], references: [id], onDelete: Cascade)
   /// 卷下的章节
-  chapters  outline_chapter[]
+  chapters    outline_chapter[]
 
   @@index([outlineId, sortOrder])
 }
@@ -206,23 +208,23 @@ model outline_volume {
 /// 章节表（元数据）
 /// 注意：需在数据库迁移时添加 CHECK 约束：CHECK (outline_id IS NOT NULL OR volume_id IS NOT NULL)
 model outline_chapter {
-  id        Int            @id @default(autoincrement())
+  id        Int                      @id @default(autoincrement())
   /// 所属大纲ID（用于无卷章节，如序章、后记）
-  outlineId Int?           @map("outline_id")
+  outlineId Int?                     @map("outline_id")
   /// 所属卷ID（用于正文章节）
-  volumeId  Int?           @map("volume_id")
+  volumeId  Int?                     @map("volume_id")
   /// 章名，如"第一章 初入江湖"
   title     String
   /// 章节在卷内或大纲内的排序（使用十进制避免并发冲突）
-  sortOrder Decimal        @map("sort_order") @db.Decimal(10, 5)
+  sortOrder Decimal                  @map("sort_order") @db.Decimal(10, 5)
   /// 创建时间
-  createdAt DateTime       @default(now()) @map("created_at")
+  createdAt DateTime                 @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt DateTime       @updatedAt @map("updated_at")
+  updatedAt DateTime                 @updatedAt @map("updated_at")
   /// 所属大纲（无卷章节）
-  outline   outline?       @relation(fields: [outlineId], references: [id], onDelete: Cascade)
+  outline   outline?                 @relation(fields: [outlineId], references: [id], onDelete: Cascade)
   /// 所属卷
-  volume    outline_volume? @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  volume    outline_volume?          @relation(fields: [volumeId], references: [id], onDelete: Cascade)
   /// 章节内容（一对一）
   content   outline_chapter_content?
 
@@ -233,34 +235,34 @@ model outline_chapter {
 
 /// 章节内容表
 model outline_chapter_content {
-  id        Int     @id @default(autoincrement())
+  id        Int                               @id @default(autoincrement())
   /// 所属章节ID
-  chapterId Int     @unique @map("chapter_id")
+  chapterId Int                               @unique @map("chapter_id")
   /// 章节内容
-  content   String  @db.Text
+  content   String                            @db.Text
   /// 内容版本号
-  version   Int     @default(1)
+  version   Int                               @default(1)
   /// 创建时间
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime                          @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime                          @updatedAt @map("updated_at")
   /// 所属章节
-  chapter   outline_chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapter   outline_chapter                   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   /// 版本历史
   versions  outline_chapter_content_version[]
 }
 
 /// 章节内容版本历史表
 model outline_chapter_content_version {
-  id        Int     @id @default(autoincrement())
+  id            Int                     @id @default(autoincrement())
   /// 所属章节内容ID
-  contentId Int     @map("content_id")
+  contentId     Int                     @map("content_id")
   /// 版本号
-  version   Int
+  version       Int
   /// 该版本的内容
-  content   String  @db.Text
+  content       String                  @db.Text
   /// 版本创建时间
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt     DateTime                @default(now()) @map("created_at")
   /// 所属章节内容
   contentRecord outline_chapter_content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
@@ -270,15 +272,15 @@ model outline_chapter_content_version {
 
 /// 大纲内容版本历史表
 model outline_content_version {
-  id        Int      @id @default(autoincrement())
+  id             Int             @id @default(autoincrement())
   /// 所属大纲内容ID
-  contentId Int      @map("content_id")
+  contentId      Int             @map("content_id")
   /// 版本号
-  version   Int
+  version        Int
   /// 该版本的内容
-  content   String   @db.Text
+  content        String          @db.Text
   /// 版本创建时间
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
   /// 所属大纲内容
   outlineContent outline_content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
@@ -288,11 +290,11 @@ model outline_content_version {
 
 /// 大纲业务状态枚举
 enum OutlineStatus {
-  DRAFT       // 草稿 - 刚创建
-  GENERATING  // 生成中 - AI生成过程中
-  GENERATED   // 已生成 - AI生成完成但未保存
-  PUBLISHED   // 已发布 - 用户确认保存
-  DISCARDED   // 已放弃 - 软删除
+  DRAFT // 草稿 - 刚创建
+  GENERATING // 生成中 - AI生成过程中
+  GENERATED // 已生成 - AI生成完成但未保存
+  PUBLISHED // 已发布 - 用户确认保存
+  DISCARDED // 已放弃 - 软删除
 }
 
 // * ==================== 设定集系统 ====================
@@ -331,44 +333,44 @@ model projects {
 
 /// 角色设定表
 model character_settings {
-  id                Int      @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   /// 角色名称
-  name              String
+  name          String
   /// 角色类型（0-主角, 1-重要配角, 2-普通配角, 3-反派, 4-路人）
-  type              Int?
+  type          Int?
   /// 性别（1-男, 2-女, 3-其他）
-  gender            Int?
+  gender        Int?
   /// 年龄
-  age               String?
+  age           String?
   /// 身高
-  height            String?
+  height        String?
   /// 外貌描述
-  appearance        String?  @db.Text
+  appearance    String?  @db.Text
   /// 性格特点
-  personality       String?  @db.Text
+  personality   String?  @db.Text
   /// 出身背景
-  background        String?  @db.Text
+  background    String?  @db.Text
   /// 职业身份
-  occupation        String?
+  occupation    String?
   /// 实力等级
-  powerLevel        String?
+  powerLevel    String?
   /// 特殊能力
-  abilities         String?  @db.Text
+  abilities     String?  @db.Text
   /// 角色关系（JSON数组）
   /// 格式: [{relatedCharacter, customRelatedCharacter, relationshipType, customRelationshipType, relationshipDesc}]
-  relationships     Json?
+  relationships Json?
   /// 标签
-  tags              String[] @default([])
+  tags          String[] @default([])
   /// 备注
-  remarks           String?  @db.Text
+  remarks       String?  @db.Text
   /// 所属用户ID
-  userId            Int      @map("user_id")
+  userId        Int      @map("user_id")
   /// 创建时间
-  createdAt         DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   /// 所属用户
-  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
@@ -376,41 +378,41 @@ model character_settings {
 
 /// 系统设定表
 model system_settings {
-  id              Int      @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   /// 系统名称
-  name            String
+  name        String
   /// 系统类型
-  type            String?
+  type        String?
   /// 系统描述
-  description     String?  @db.Text
+  description String?  @db.Text
   /// 功能模块（JSON数组）
   /// 格式: [{name, description, mechanism, trigger, limitation}]
-  modules         Json?
+  modules     Json?
   /// 等级体系（JSON数组）
-  levels          Json?
+  levels      Json?
   /// 道具装备（JSON数组）
   /// 格式: [{name, category, description, attributes, obtainMethod}]
-  items           Json?
+  items       Json?
   /// 数值参数（JSON数组）
-  parameters      Json?
+  parameters  Json?
   /// 运作规则
-  rules           String?  @db.Text
+  rules       String?  @db.Text
   /// 触发条件
-  triggers        String?  @db.Text
+  triggers    String?  @db.Text
   /// 限制约束
-  constraints     String?  @db.Text
+  constraints String?  @db.Text
   /// 标签
-  tags            String[] @default([])
+  tags        String[] @default([])
   /// 备注
-  remarks         String?  @db.Text
+  remarks     String?  @db.Text
   /// 所属用户ID
-  userId          Int      @map("user_id")
+  userId      Int      @map("user_id")
   /// 创建时间
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
   /// 所属用户
-  user            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
@@ -418,37 +420,37 @@ model system_settings {
 
 /// 世界设定表
 model world_settings {
-  id                Int      @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   /// 世界名称
-  name              String
+  name        String
   /// 世界类型
-  type              String?
+  type        String?
   /// 时代背景
-  era               String?
+  era         String?
   /// 世界描述
-  description       String?  @db.Text
+  description String?  @db.Text
   /// 地理环境（JSON数组）
-  geography         Json?
+  geography   Json?
   /// 政治势力（JSON数组）
-  politics          Json?
+  politics    Json?
   /// 文化体系（JSON数组）
-  culture           Json?
+  culture     Json?
   /// 修炼/力量体系（JSON数组）
-  powerSystem       Json?    @map("power_system")
+  powerSystem Json?    @map("power_system")
   /// 历史脉络（JSON对象）
-  history           Json?
+  history     Json?
   /// 标签
-  tags              String[] @default([])
+  tags        String[] @default([])
   /// 备注
-  remarks           String?  @db.Text
+  remarks     String?  @db.Text
   /// 所属用户ID
-  userId            Int      @map("user_id")
+  userId      Int      @map("user_id")
   /// 创建时间
-  createdAt         DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
   /// 所属用户
-  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
@@ -456,38 +458,212 @@ model world_settings {
 
 /// 辅助设定表
 model misc_settings {
-  id              Int      @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   /// 设定名称
-  name            String
+  name         String
   /// 设定类型
-  type            String?
+  type         String?
   /// 设定描述
-  description     String?  @db.Text
+  description  String?  @db.Text
   /// 灵感记录（JSON数组）
-  inspirations    Json?
+  inspirations Json?
   /// 参考资料（JSON数组）
-  references      Json?
+  references   Json?
   /// 创作笔记（JSON数组）
-  notes           Json?
+  notes        Json?
   /// 专业术语（JSON数组）
-  terminology     Json?
+  terminology  Json?
   /// 模板库（JSON数组）
-  templates       Json?
+  templates    Json?
   /// 项目标签（JSON数组）
-  projectTags     Json?    @map("project_tags")
+  projectTags  Json?    @map("project_tags")
   /// 标签
-  tags            String[] @default([])
+  tags         String[] @default([])
   /// 备注
-  remarks         String?  @db.Text
+  remarks      String?  @db.Text
   /// 所属用户ID
-  userId          Int      @map("user_id")
+  userId       Int      @map("user_id")
   /// 创建时间
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
   /// 所属用户
-  user            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
+}
+
+// * ==================== 文稿系统 ====================
+
+/// 文稿表
+model manuscripts {
+  id                  Int                  @id @default(autoincrement())
+  /// 文稿名称
+  name                String
+  /// 文稿描述
+  description         String?              @db.Text
+  /// 小说类型
+  type                String?
+  /// 标签数组
+  tags                String[]             @default([])
+  /// 业务状态
+  status              ManuscriptStatus     @default(DRAFT)
+  /// 关联的大纲ID（仅用于记录来源，不是外键，大纲删除不影响文稿）
+  outlineId           Int?                 @map("outline_id")
+  /// 关联的设定集项目ID（优先使用，如果存在则忽略下面四个数组）
+  projectId           Int?                 @map("project_id")
+  /// 关联的角色设定ID列表（仅当projectId为空时使用）
+  characters          String[]             @default([])
+  /// 关联的系统设定ID列表（仅当projectId为空时使用）
+  systems             String[]             @default([])
+  /// 关联的世界设定ID列表（仅当projectId为空时使用）
+  worlds              String[]             @default([])
+  /// 关联的辅助设定ID列表（仅当projectId为空时使用）
+  misc                String[]             @default([])
+  /// 总字数（冗余字段，保存内容时自动计算更新）
+  totalWords          Int                  @default(0) @map("total_words")
+  /// 已发布字数（所有已发布章节的字数之和）
+  publishedWords      Int                  @default(0) @map("published_words")
+  /// 目标字数（用户设定的创作目标）
+  targetWords         Int?                 @map("target_words")
+  /// 封面图URL
+  coverUrl            String?              @map("cover_url")
+  /// 最后编辑的章节ID（用于快速定位到上次编辑位置）
+  lastEditedChapterId Int?                 @map("last_edited_chapter_id")
+  /// 最后编辑时间
+  lastEditedAt        DateTime?            @map("last_edited_at")
+  /// 软删除时间（为空表示未删除）
+  deletedAt           DateTime?            @map("deleted_at")
+  /// 所属用户ID
+  userId              Int                  @map("user_id")
+  /// 创建时间
+  createdAt           DateTime             @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  /// 所属用户
+  user                users                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 所属的卷
+  volumes             manuscript_volume[]
+  /// 无卷的直接章节（序章、后记等）
+  chapters            manuscript_chapter[]
+
+  @@index([userId, status])
+  @@index([userId, deletedAt]) // 用于查询未删除的文稿
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([totalWords])
+  @@index([lastEditedAt])
+}
+
+/// 文稿卷表
+model manuscript_volume {
+  id           Int                  @id @default(autoincrement())
+  /// 所属文稿ID
+  manuscriptId Int                  @map("manuscript_id")
+  /// 卷名，如"第一卷 风起云涌"
+  title        String
+  /// 卷描述
+  description  String?              @db.Text
+  /// 卷排序（使用十进制避免并发冲突）
+  sortOrder    Decimal              @map("sort_order") @db.Decimal(10, 5)
+  /// 卷字数（冗余字段）
+  wordCount    Int                  @default(0) @map("word_count")
+  /// 创建时间
+  createdAt    DateTime             @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  /// 所属文稿
+  manuscript   manuscripts          @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  /// 卷下的章节
+  chapters     manuscript_chapter[]
+
+  @@index([manuscriptId, sortOrder])
+}
+
+/// 文稿章节表（元数据）
+/// 注意：需在数据库迁移时添加 CHECK 约束：CHECK (manuscript_id IS NOT NULL OR volume_id IS NOT NULL)
+model manuscript_chapter {
+  id           Int                         @id @default(autoincrement())
+  /// 所属文稿ID（用于无卷章节，如序章、后记）
+  manuscriptId Int?                        @map("manuscript_id")
+  /// 所属卷ID（用于正文章节）
+  volumeId     Int?                        @map("volume_id")
+  /// 章名，如"第一章 初入江湖"
+  title        String
+  /// 章节在卷内或文稿内的排序（使用十进制避免并发冲突）
+  sortOrder    Decimal                     @map("sort_order") @db.Decimal(10, 5)
+  /// 章节字数（冗余字段）
+  wordCount    Int                         @default(0) @map("word_count")
+  /// 章节状态（草稿/已发布）
+  status       ChapterStatus               @default(DRAFT)
+  /// 发布时间（首次发布时间）
+  publishedAt  DateTime?                   @map("published_at")
+  /// 创建时间
+  createdAt    DateTime                    @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime                    @updatedAt @map("updated_at")
+  /// 所属文稿（无卷章节）
+  manuscript   manuscripts?                @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  /// 所属卷
+  volume       manuscript_volume?          @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  /// 章节内容（一对一）
+  content      manuscript_chapter_content?
+
+  @@index([manuscriptId, sortOrder])
+  @@index([volumeId, sortOrder])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+/// 文稿章节内容表
+model manuscript_chapter_content {
+  id        Int                                  @id @default(autoincrement())
+  /// 所属章节ID
+  chapterId Int                                  @unique @map("chapter_id")
+  /// 章节内容（Markdown）
+  content   String                               @db.Text
+  /// 内容版本号
+  version   Int                                  @default(1)
+  /// 创建时间
+  createdAt DateTime                             @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime                             @updatedAt @map("updated_at")
+  /// 所属章节
+  chapter   manuscript_chapter                   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  /// 版本历史
+  versions  manuscript_chapter_content_version[]
+}
+
+/// 文稿章节内容版本历史表
+model manuscript_chapter_content_version {
+  id            Int                        @id @default(autoincrement())
+  /// 所属章节内容ID
+  contentId     Int                        @map("content_id")
+  /// 版本号
+  version       Int
+  /// 该版本的内容
+  content       String                     @db.Text
+  /// 版本创建时间
+  createdAt     DateTime                   @default(now()) @map("created_at")
+  /// 所属章节内容
+  contentRecord manuscript_chapter_content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, version])
+  @@index([contentId, version])
+}
+
+/// 文稿业务状态枚举
+enum ManuscriptStatus {
+  DRAFT // 草稿 - 构思中
+  IN_PROGRESS // 进行中 - 正在创作
+  COMPLETED // 已完结 - 创作完成
+  PUBLISHED // 已发布 - 发布到平台
+  ABANDONED // 已放弃 - 软删除
+}
+
+/// 章节状态枚举
+enum ChapterStatus {
+  DRAFT // 草稿 - 未发布
+  PUBLISHED // 已发布
 }
