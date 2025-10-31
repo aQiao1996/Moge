@@ -287,21 +287,36 @@
 
 **待完成**:
 
-- ⏳ 实现 `文稿` 模块 (Phase 1: 基础功能)
-  - 数据库设计：manuscripts、manuscript_volumes、manuscript_chapters、manuscript_chapter_content 表
-  - 后端 API：文稿 CRUD、卷章结构管理、章节内容编辑、字数统计
-  - 前端页面：文稿列表页、文稿详情页、章节编辑器
-  - 核心功能：文稿项目管理、卷章树形结构、Markdown 编辑器、自动保存
+- ✅ 实现 `文稿` 模块 (Phase 1: 基础功能) - 后端完成 ✅ 前端部分完成 ⏳
+  - ✅ 数据库设计：manuscripts、manuscript_volume、manuscript_chapter、manuscript_chapter_content、manuscript_chapter_content_version 表
+  - ✅ 类型定义：在 `packages/types/src/schemas/manuscript.ts` 中定义完整的 Zod schema 和类型
+  - ✅ 后端 API：
+    - ✅ Manuscripts Module (NestJS): Controller、Service、DTO
+    - ✅ 文稿 CRUD：创建、查询、更新、软删除
+    - ✅ 从大纲创建文稿：自动复制卷章结构
+    - ✅ 卷管理：创建、更新、删除卷
+    - ✅ 章节管理：创建、更新、删除章节
+    - ✅ 内容管理：保存内容、获取内容、版本历史
+    - ✅ 章节发布：标记章节为已发布状态
+    - ✅ 字数统计：自动计算和更新 totalWords、publishedWords
+    - ✅ 设定关联：支持 projectId 优先级和独立设定数组
+    - ✅ 类型检查：通过后端 TypeScript 类型检查
+  - ⏳ 前端实现：
+    - ✅ API 客户端：完整的 API 封装 (manuscripts/api/client.ts)
+    - ✅ 文稿列表页：展示文稿卡片、字数统计、进度条、操作按钮
+    - ⏳ 文稿详情页：展示卷章树形结构、统计信息、快速操作
+    - ⏳ 创建文稿对话框：支持空白创建和从大纲创建
+    - ⏳ 章节编辑器：Markdown 编辑器、自动保存、字数统计
+    - ⏳ 卷章管理：树形展示、拖拽排序、快捷操作
 - ⏳ 实现 `文稿` 模块 (Phase 2: AI 增强)
   - AI 续写功能
   - 设定上下文注入
   - AI 润色/扩写
-  - 从大纲一键创建文稿
 - ⏳ 实现 `文稿` 模块 (Phase 3: 高级功能)
   - @ 引用系统集成
   - 导出功能 (TXT/EPUB/DOCX)
-  - 版本历史
-  - 统计分析面板
+  - 版本历史查看和回滚
+  - 统计分析面板（字数趋势图、写作习惯分析）
 - ⏳ 实现 `工作台` 模块
   - 最近项目列表
   - 统计概览卡片

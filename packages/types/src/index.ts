@@ -25,3 +25,4 @@ export * from './schemas/world';
 export * from './schemas/misc';
 export * from './schemas/dictionary';
 export * from './schemas/project';
+export * from './schemas/manuscript';
