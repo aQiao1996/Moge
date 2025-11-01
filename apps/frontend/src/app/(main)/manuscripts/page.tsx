@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookText, Clock, Edit, FileText, Trash2, Plus } from 'lucide-react';
+import { BookText, Clock, Edit, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { getManuscripts, deleteManuscript, type Manuscript } from './api/client';
 import type { ManuscriptStatus } from '@moge/types';
+import ManuscriptDialog from './components/ManuscriptDialog';
 
 dayjs.extend(relativeTime);
 
@@ -225,7 +226,9 @@ export default function ManuscriptsPage() {
               cancelText="取消"
               loadingText="删除中..."
               confirmVariant="destructive"
-              onConfirm={() => handleDelete(manuscript)}
+              onConfirm={() => {
+                void handleDelete(manuscript);
+              }}
             />
           </div>
         </div>
@@ -240,10 +243,12 @@ export default function ManuscriptsPage() {
           <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">文稿</h1>
           <p className="mt-1 text-sm text-[var(--moge-text-sub)]">管理你的创作文稿</p>
         </div>
-        <Button onClick={() => router.push('/manuscripts/create')} className="gap-2">
-          <Plus className="h-4 w-4" />
-          新建文稿
-        </Button>
+        <ManuscriptDialog
+          mode="create"
+          onSuccess={() => {
+            void loadManuscripts();
+          }}
+        />
       </div>
 
       {/* 文稿列表 */}
