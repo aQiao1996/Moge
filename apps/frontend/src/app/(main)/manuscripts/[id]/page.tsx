@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { getManuscript, type Manuscript } from '../api/client';
 import type { ManuscriptStatus } from '@moge/types';
+import ChapterTree from '../components/ChapterTree';
 
 dayjs.extend(relativeTime);
 
@@ -297,10 +298,12 @@ export default function ManuscriptDetailPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* TODO: 实现章节树形展示组件 */}
-                  <p className="text-sm text-[var(--moge-text-muted)]">卷章树形展示组件待实现...</p>
-                </div>
+                <ChapterTree
+                  manuscript={manuscript}
+                  onRefresh={() => {
+                    void loadManuscript();
+                  }}
+                />
               )}
             </Card>
           </TabsContent>
