@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Save, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
+import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
 import {
   getManuscript,
   getChapterContent,
@@ -41,6 +42,7 @@ export default function ManuscriptEditPage() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [wordCount, setWordCount] = useState(0);
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   // 自动保存定时器
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,6 +160,13 @@ export default function ManuscriptEditPage() {
     router.push(`/manuscripts/${id}`);
   };
 
+  /**
+   * 处理切换章节
+   */
+  const handleSelectChapter = (newChapterId: string) => {
+    router.push(`/manuscripts/${id}/edit?chapter=${newChapterId}`);
+  };
+
   const getCurrentChapter = () => {
     if (!manuscript || !chapterId) return null;
 
@@ -250,16 +259,28 @@ export default function ManuscriptEditPage() {
         </div>
       </div>
 
-      {/* 编辑器区域 */}
-      <Card className="flex-1 overflow-hidden p-6">
-        <MdEditor
-          value={content}
-          onChange={handleContentChange}
-          placeholder="开始创作你的章节内容..."
-          height={600}
-          className="border-0"
+      {/* 主要内容区域 */}
+      <div className="flex flex-1 flex-col gap-6 overflow-hidden lg:flex-row">
+        {/* 左侧侧边栏 */}
+        <ManuscriptEditSidebar
+          manuscript={manuscript}
+          currentChapterId={chapterId}
+          onSelectChapter={handleSelectChapter}
+          isOpen={isSidebarOpen}
+          onToggle={() => setSidebarOpen(!isSidebarOpen)}
         />
-      </Card>
+
+        {/* 右侧编辑器区域 */}
+        <Card className="flex-1 overflow-hidden p-6">
+          <MdEditor
+            value={content}
+            onChange={handleContentChange}
+            placeholder="开始创作你的章节内容..."
+            height={600}
+            className="border-0"
+          />
+        </Card>
+      </div>
     </div>
   );
 }
