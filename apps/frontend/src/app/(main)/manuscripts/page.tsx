@@ -13,6 +13,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { getManuscripts, deleteManuscript, type Manuscript } from './api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ManuscriptDialog from './components/ManuscriptDialog';
+import { useDictStore } from '@/stores/dictStore';
+import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 
 dayjs.extend(relativeTime);
 
@@ -43,6 +45,16 @@ export default function ManuscriptsPage() {
   const router = useRouter();
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 从字典 store 获取小说类型数据
+  const { novelTypes, fetchNovelTypes } = useDictStore();
+
+  /**
+   * 组件挂载时加载小说类型
+   */
+  useEffect(() => {
+    void fetchNovelTypes();
+  }, [fetchNovelTypes]);
 
   /**
    * 加载文稿列表
@@ -115,7 +127,9 @@ export default function ManuscriptsPage() {
                   {status.text}
                 </Badge>
               )}
-              {manuscript.type && <Badge className="text-xs">{manuscript.type}</Badge>}
+              {manuscript.type && (
+                <Badge className="text-xs">{getDictLabel(novelTypes, manuscript.type)}</Badge>
+              )}
             </div>
 
             {/* 描述信息 */}
