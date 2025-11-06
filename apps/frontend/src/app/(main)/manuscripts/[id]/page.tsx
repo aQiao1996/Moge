@@ -31,6 +31,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { getManuscript, type Manuscript } from '../api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ChapterTree from '../components/ChapterTree';
+import { useDictStore } from '@/stores/dictStore';
+import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 
 dayjs.extend(relativeTime);
 
@@ -55,6 +57,16 @@ export default function ManuscriptDetailPage() {
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 从字典 store 获取小说类型数据
+  const { novelTypes, fetchNovelTypes } = useDictStore();
+
+  /**
+   * 组件挂载时加载小说类型
+   */
+  useEffect(() => {
+    void fetchNovelTypes();
+  }, [fetchNovelTypes]);
 
   /**
    * 加载文稿数据
@@ -186,7 +198,7 @@ export default function ManuscriptDetailPage() {
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">
+                <h1 className="text-2xl font-bold text-[var(--moge-text-main)]">
                   {manuscript.name}
                 </h1>
                 {status && (
@@ -194,7 +206,9 @@ export default function ManuscriptDetailPage() {
                     {status.text}
                   </Badge>
                 )}
-                {manuscript.type && <Badge className="text-xs">{manuscript.type}</Badge>}
+                {manuscript.type && (
+                  <Badge className="text-xs">{getDictLabel(novelTypes, manuscript.type)}</Badge>
+                )}
               </div>
               {manuscript.description && (
                 <p className="mt-1 text-sm text-[var(--moge-text-sub)]">{manuscript.description}</p>
