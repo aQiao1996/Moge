@@ -319,11 +319,27 @@
       - ✅ ChapterTree 集成：在卷和章节列表中添加编辑按钮（Edit2 图标）
       - ✅ 点击编辑按钮打开对应的编辑对话框，数据回显
       - ✅ 编辑成功后自动刷新数据，显示成功提示
+    - ✅ UI 优化：文稿列表页和详情页类型显示 label 而非 value，移除 font-han 字体类
     - ⏳ 拖拽排序功能：卷的拖拽排序、章节的拖拽排序
-- ⏳ 实现 `文稿` 模块 (Phase 2: AI 增强)
-  - AI 续写功能
-  - 设定上下文注入
-  - AI 润色/扩写
+- ✅ 实现 `文稿` 模块 (Phase 2: AI 增强) - 已完成 ✅
+  - ✅ AI 辅助面板 UI：
+    - ✅ AIAssistPanel 组件：支持 AI 续写、润色、扩写三个功能标签
+    - ✅ 自定义提示词输入
+    - ✅ 生成结果展示和插入功能
+    - ✅ 集成到章节编辑器页面：添加 AI 辅助切换按钮，支持面板显示/隐藏
+    - ✅ 布局优化：编辑器与 AI 面板并排显示，AI 面板宽度固定 384px
+  - ✅ 后端 AI 接口：
+    - ✅ 构建设定上下文方法（buildSettingsContext）：格式化设定为 AI 可理解的文本
+    - ✅ AI 续写接口（continueChapter）：根据已有内容和设定续写后续情节
+    - ✅ AI 润色接口（polishText）：优化文字表达，修正语法错误
+    - ✅ AI 扩写接口（expandText）：扩充场景描写，丰富细节
+    - ✅ 设定上下文注入：自动获取关联设定作为 AI 上下文
+    - ✅ 权限验证和错误处理
+  - ✅ 前端 AI 集成：
+    - ✅ 封装 AI API 调用（manuscripts/api/client.ts）：aiContinueChapter、aiPolishText、aiExpandText
+    - ✅ 集成真实 API 到 AIAssistPanel 组件
+    - ✅ 传递 chapterId 参数到 AI 面板
+    - ✅ 错误处理和加载状态优化
 - ⏳ 实现 `文稿` 模块 (Phase 3: 高级功能)
   - @ 引用系统集成
   - 导出功能 (TXT/EPUB/DOCX)

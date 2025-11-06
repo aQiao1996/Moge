@@ -18,6 +18,9 @@ import {
   CreateChapterDto,
   UpdateChapterDto,
   SaveChapterContentDto,
+  AIContinueDto,
+  AIPolishDto,
+  AIExpandDto,
 } from './manuscripts.dto';
 import type { User } from '@moge/types';
 
@@ -211,5 +214,61 @@ export class ManuscriptsController {
   ) {
     const userId = Number(req.user.id);
     return this.manuscriptsService.getManuscriptSettings(id, userId);
+  }
+
+  /**
+   * AI 续写章节
+   */
+  @Post('chapters/:chapterId/ai/continue')
+  async aiContinue(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() dto: AIContinueDto
+  ) {
+    const userId = Number(req.user.id);
+    const result = await this.manuscriptsService.continueChapter(
+      chapterId,
+      userId,
+      dto.customPrompt
+    );
+    return { text: result };
+  }
+
+  /**
+   * AI 润色文本
+   */
+  @Post('chapters/:chapterId/ai/polish')
+  async aiPolish(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() dto: AIPolishDto
+  ) {
+    const userId = Number(req.user.id);
+    const result = await this.manuscriptsService.polishText(
+      chapterId,
+      userId,
+      dto.text,
+      dto.customPrompt
+    );
+    return { text: result };
+  }
+
+  /**
+   * AI 扩写文本
+   */
+  @Post('chapters/:chapterId/ai/expand')
+  async aiExpand(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() dto: AIExpandDto
+  ) {
+    const userId = Number(req.user.id);
+    const result = await this.manuscriptsService.expandText(
+      chapterId,
+      userId,
+      dto.text,
+      dto.customPrompt
+    );
+    return { text: result };
   }
 }

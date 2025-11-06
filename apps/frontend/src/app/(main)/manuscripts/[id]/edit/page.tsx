@@ -13,10 +13,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Save, Clock } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
 import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
+import AIAssistPanel from '../../components/AIAssistPanel';
 import {
   getManuscript,
   getChapterContent,
@@ -43,6 +44,8 @@ export default function ManuscriptEditPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isAIPanelOpen, setAIPanelOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
 
   // 自动保存定时器
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,6 +164,39 @@ export default function ManuscriptEditPage() {
   };
 
   /**
+   * 处理 AI 续写
+   */
+  const handleAIContinue = (generatedText: string) => {
+    setContent((prev) => prev + '\n\n' + generatedText);
+  };
+
+  /**
+   * 处理 AI 润色
+   */
+  const handleAIPolish = (polishedText: string) => {
+    // 如果有选中的文本，替换选中部分；否则替换全部内容
+    if (selectedText) {
+      setContent((prev) => prev.replace(selectedText, polishedText));
+      setSelectedText('');
+    } else {
+      setContent(polishedText);
+    }
+  };
+
+  /**
+   * 处理 AI 扩写
+   */
+  const handleAIExpand = (expandedText: string) => {
+    // 如果有选中的文本，替换选中部分；否则追加到末尾
+    if (selectedText) {
+      setContent((prev) => prev.replace(selectedText, expandedText));
+      setSelectedText('');
+    } else {
+      setContent((prev) => prev + '\n\n' + expandedText);
+    }
+  };
+
+  /**
    * 处理切换章节
    */
   const handleSelectChapter = (newChapterId: string) => {
@@ -251,6 +287,12 @@ export default function ManuscriptEditPage() {
             </div>
           )}
 
+          {/* AI 辅助按钮 */}
+          <Button variant="outline" onClick={() => setAIPanelOpen(!isAIPanelOpen)}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            {isAIPanelOpen ? '隐藏 AI' : 'AI 辅助'}
+          </Button>
+
           {/* 保存按钮 */}
           <Button onClick={() => void handleSave()} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
@@ -271,15 +313,32 @@ export default function ManuscriptEditPage() {
         />
 
         {/* 右侧编辑器区域 */}
-        <Card className="flex-1 overflow-hidden p-6">
-          <MdEditor
-            value={content}
-            onChange={handleContentChange}
-            placeholder="开始创作你的章节内容..."
-            height={600}
-            className="border-0"
-          />
-        </Card>
+        <div className="flex flex-1 gap-6 overflow-hidden">
+          {/* 编辑器 */}
+          <Card className={`flex-1 overflow-hidden p-6 ${isAIPanelOpen ? '' : 'flex-1'}`}>
+            <MdEditor
+              value={content}
+              onChange={handleContentChange}
+              placeholder="开始创作你的章节内容..."
+              height={600}
+              className="border-0"
+            />
+          </Card>
+
+          {/* AI 辅助面板 */}
+          {isAIPanelOpen && (
+            <div className="w-96 flex-shrink-0">
+              <AIAssistPanel
+                chapterId={Number(chapterId)}
+                content={content}
+                selectedText={selectedText}
+                onContinue={handleAIContinue}
+                onPolish={handleAIPolish}
+                onExpand={handleAIExpand}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

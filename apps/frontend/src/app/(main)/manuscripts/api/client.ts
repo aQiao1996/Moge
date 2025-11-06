@@ -132,6 +132,37 @@ export async function publishChapter(chapterId: number) {
   return post<ManuscriptChapter>(`/manuscripts/chapters/${chapterId}/publish`);
 }
 
+// ==================== AI APIs ====================
+
+/**
+ * AI 续写章节
+ */
+export async function aiContinueChapter(chapterId: number, customPrompt?: string) {
+  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/continue`, {
+    customPrompt,
+  });
+}
+
+/**
+ * AI 润色文本
+ */
+export async function aiPolishText(chapterId: number, text: string, customPrompt?: string) {
+  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/polish`, {
+    text,
+    customPrompt,
+  });
+}
+
+/**
+ * AI 扩写文本
+ */
+export async function aiExpandText(chapterId: number, text: string, customPrompt?: string) {
+  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/expand`, {
+    text,
+    customPrompt,
+  });
+}
+
 // Re-export types for convenience
 export type {
   Manuscript,

@@ -187,3 +187,36 @@ export class SaveChapterContentDto {
   @IsString()
   content: string;
 }
+
+/**
+ * AI 续写 DTO
+ */
+export class AIContinueDto {
+  @IsOptional()
+  @IsString()
+  customPrompt?: string;
+}
+
+/**
+ * AI 润色 DTO
+ */
+export class AIPolishDto {
+  @IsString()
+  text: string;
+
+  @IsOptional()
+  @IsString()
+  customPrompt?: string;
+}
+
+/**
+ * AI 扩写 DTO
+ */
+export class AIExpandDto {
+  @IsString()
+  text: string;
+
+  @IsOptional()
+  @IsString()
+  customPrompt?: string;
+}

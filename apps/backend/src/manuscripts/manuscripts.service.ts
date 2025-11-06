@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateManuscriptDto,
@@ -10,13 +10,21 @@ import {
   SaveChapterContentDto,
 } from './manuscripts.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { AIService } from '../ai/ai.service';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { StringOutputParser } from '@langchain/core/output_parsers';
 
 /**
  * 文稿服务
  */
 @Injectable()
 export class ManuscriptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ManuscriptsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AIService
+  ) {}
 
   /**
    * 创建文稿
@@ -591,20 +599,332 @@ export class ManuscriptsService {
         throw new NotFoundException(`Project with id ${manuscript.projectId} not found`);
       }
 
+      // 并行获取所有关联的设定详情
+      const [characters, systems, worlds, misc] = await Promise.all([
+        this.getCharactersByIds(project.characters || []),
+        this.getSystemsByIds(project.systems || []),
+        this.getWorldsByIds(project.worlds || []),
+        this.getMiscByIds(project.misc || []),
+      ]);
+
       return {
-        characters: project.characters,
-        systems: project.systems,
-        worlds: project.worlds,
-        misc: project.misc,
+        characters,
+        systems,
+        worlds,
+        misc,
       };
     } else {
       // 直接使用文稿的设定数组
+      const [characters, systems, worlds, misc] = await Promise.all([
+        this.getCharactersByIds(manuscript.characters || []),
+        this.getSystemsByIds(manuscript.systems || []),
+        this.getWorldsByIds(manuscript.worlds || []),
+        this.getMiscByIds(manuscript.misc || []),
+      ]);
+
       return {
-        characters: manuscript.characters,
-        systems: manuscript.systems,
-        worlds: manuscript.worlds,
-        misc: manuscript.misc,
+        characters,
+        systems,
+        worlds,
+        misc,
       };
     }
+  }
+
+  /**
+   * 构建设定上下文文本
+   * 将关联的设定信息格式化为 AI 可理解的上下文
+   */
+  private buildSettingsContext(settings: {
+    characters: Array<{ name: string; background?: string | null; [key: string]: unknown }>;
+    systems: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+    worlds: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+    misc: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
+  }): string {
+    const parts: string[] = [];
+
+    if (settings.characters.length > 0) {
+      parts.push('## 角色设定');
+      settings.characters.forEach((char) => {
+        parts.push(`- ${char.name}: ${char.background || '暂无背景描述'}`);
+      });
+    }
+
+    if (settings.systems.length > 0) {
+      parts.push('## 系统设定');
+      settings.systems.forEach((sys) => {
+        parts.push(`- ${sys.name}: ${sys.description || '暂无描述'}`);
+      });
+    }
+
+    if (settings.worlds.length > 0) {
+      parts.push('## 世界设定');
+      settings.worlds.forEach((world) => {
+        parts.push(`- ${world.name}: ${world.description || '暂无描述'}`);
+      });
+    }
+
+    if (settings.misc.length > 0) {
+      parts.push('## 辅助设定');
+      settings.misc.forEach((misc) => {
+        parts.push(`- ${misc.name}: ${misc.description || '暂无描述'}`);
+      });
+    }
+
+    return parts.length > 0 ? parts.join('\n') : '暂无关联设定，请根据已有内容自由发挥。';
+  }
+
+  /**
+   * AI 续写章节内容
+   */
+  async continueChapter(chapterId: number, userId: number, customPrompt?: string): Promise<string> {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+        content: true,
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    // 获取设定上下文
+    const settings = await this.getManuscriptSettings(manuscript.id, userId);
+    const settingsContext = this.buildSettingsContext(settings);
+
+    // 获取当前章节内容
+    const currentContent = chapter.content?.content || '';
+
+    // 构建 AI 提示词
+    const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是根据已有的章节内容和相关设定，续写后续内容。
+
+## 续写要求：
+1. 保持与已有内容的文风一致
+2. 情节发展要合理自然
+3. 充分利用已有的角色、世界观等设定
+4. 避免突兀的转折和逻辑矛盾
+5. 续写内容应在 500-1000 字左右
+
+## 相关设定：
+${settingsContext}`;
+
+    const userPrompt = `## 已有章节内容：
+${currentContent.substring(Math.max(0, currentContent.length - 2000))}
+
+${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+请根据以上内容续写后续情节。`;
+
+    try {
+      this.logger.debug(`[AI 续写] 章节ID: ${chapterId}, 用户ID: ${userId}`);
+
+      const model = this.aiService.getStreamingModel('moonshot');
+      const prompt = ChatPromptTemplate.fromMessages([
+        ['system', systemPrompt],
+        ['human', userPrompt],
+      ]);
+      const chain = prompt.pipe(model).pipe(new StringOutputParser());
+
+      const result = await chain.invoke({});
+
+      this.logger.debug(`[AI 续写完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`[AI 续写失败] 章节ID: ${chapterId}`, error);
+      throw new BadRequestException('AI 续写失败，请稍后重试');
+    }
+  }
+
+  /**
+   * AI 润色文本
+   */
+  async polishText(
+    chapterId: number,
+    userId: number,
+    text: string,
+    customPrompt?: string
+  ): Promise<string> {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    // 构建 AI 提示词
+    const systemPrompt = `你是一位专业的文字编辑。你的任务是对提供的文本进行润色，提升文字表达质量。
+
+## 润色要求：
+1. 优化语言表达，使其更加流畅优美
+2. 修正语法错误和错别字
+3. 增强场景描写的画面感
+4. 保持原文的核心意思和情节不变
+5. 保持原文的文风特点`;
+
+    const userPrompt = `## 待润色文本：
+${text}
+
+${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+请对以上文本进行润色，直接输出润色后的结果，不要添加任何解释说明。`;
+
+    try {
+      this.logger.debug(
+        `[AI 润色] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
+      );
+
+      const model = this.aiService.getStreamingModel('moonshot');
+      const prompt = ChatPromptTemplate.fromMessages([
+        ['system', systemPrompt],
+        ['human', userPrompt],
+      ]);
+      const chain = prompt.pipe(model).pipe(new StringOutputParser());
+
+      const result = await chain.invoke({});
+
+      this.logger.debug(`[AI 润色完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`[AI 润色失败] 章节ID: ${chapterId}`, error);
+      throw new BadRequestException('AI 润色失败，请稍后重试');
+    }
+  }
+
+  /**
+   * AI 扩写文本
+   */
+  async expandText(
+    chapterId: number,
+    userId: number,
+    text: string,
+    customPrompt?: string
+  ): Promise<string> {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    // 获取设定上下文
+    const settings = await this.getManuscriptSettings(manuscript.id, userId);
+    const settingsContext = this.buildSettingsContext(settings);
+
+    // 构建 AI 提示词
+    const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是对简短的文本进行扩写，丰富细节描写。
+
+## 扩写要求：
+1. 扩充场景描写，增强画面感和代入感
+2. 丰富人物的心理活动和情绪变化
+3. 添加合理的对话和互动
+4. 保持情节的核心不变
+5. 扩写后的内容应为原文的 2-3 倍长度
+
+## 相关设定：
+${settingsContext}`;
+
+    const userPrompt = `## 待扩写文本：
+${text}
+
+${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+请对以上文本进行扩写，直接输出扩写后的结果，不要添加任何解释说明。`;
+
+    try {
+      this.logger.debug(
+        `[AI 扩写] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
+      );
+
+      const model = this.aiService.getStreamingModel('moonshot');
+      const prompt = ChatPromptTemplate.fromMessages([
+        ['system', systemPrompt],
+        ['human', userPrompt],
+      ]);
+      const chain = prompt.pipe(model).pipe(new StringOutputParser());
+
+      const result = await chain.invoke({});
+
+      this.logger.debug(`[AI 扩写完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`[AI 扩写失败] 章节ID: ${chapterId}`, error);
+      throw new BadRequestException('AI 扩写失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 根据 ID 列表获取角色设定
+   */
+  private async getCharactersByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.character_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取系统设定
+   */
+  private async getSystemsByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.system_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取世界设定
+   */
+  private async getWorldsByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.world_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
+  }
+
+  /**
+   * 根据 ID 列表获取辅助设定
+   */
+  private async getMiscByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return this.prisma.misc_settings.findMany({
+      where: {
+        id: { in: ids.map(Number) },
+      },
+    });
   }
 }
