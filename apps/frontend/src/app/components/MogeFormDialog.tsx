@@ -78,6 +78,7 @@ export interface MogeFormDialogProps<T extends FieldValues> {
   updateSchema: ZodSchema<T>; // 编辑模式下的Zod校验schema
   defaultValues?: Partial<T>; // 表单的默认值
   onSubmit: (values: T) => Promise<void>; // 表单提交回调
+  formRef?: React.MutableRefObject<UseFormReturn<T> | null>; // 表单实例引用,允许父组件访问表单方法
 
   // 字段配置
   fields: FormFieldConfig<T>[]; // 表单字段配置数组
@@ -137,6 +138,7 @@ export default function MogeFormDialog<T extends FieldValues>({
   item,
   onOpen,
   onClose,
+  formRef,
 }: MogeFormDialogProps<T>) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -154,6 +156,13 @@ export default function MogeFormDialog<T extends FieldValues>({
     ) as unknown as ReturnType<typeof zodResolver>,
     defaultValues: defaultValues as unknown as DefaultValues<T>,
   }) as UseFormReturn<T>;
+
+  // 将 form 实例暴露给父组件
+  useEffect(() => {
+    if (formRef) {
+      formRef.current = form;
+    }
+  }, [form, formRef]);
 
   // 处理打开/关闭事件
   const handleOpenChange = (newOpen: boolean) => {

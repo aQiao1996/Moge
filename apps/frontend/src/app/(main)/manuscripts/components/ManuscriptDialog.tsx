@@ -10,7 +10,7 @@
 'use client';
 
 import { useCallback, useState, useRef, useEffect } from 'react';
-import type { ControllerRenderProps, FieldPath } from 'react-hook-form';
+import type { ControllerRenderProps, FieldPath, UseFormReturn } from 'react-hook-form';
 import { FilePlus, Edit, Users, Zap, Globe, Folder } from 'lucide-react';
 import {
   createManuscriptSchema,
@@ -90,12 +90,51 @@ export default function ManuscriptDialog({
   // 使用 useRef 保存当前字段的 onChange 回调
   const fieldOnChangeRef = useRef<((value: string[]) => void) | null>(null);
 
+  // 使用 useRef 保存 form 实例
+  const formRef = useRef<UseFormReturn<CreateManuscriptValues | UpdateManuscriptValues> | null>(
+    null
+  );
+
+  // 跟踪已选择的大纲ID
+  const [selectedOutlineId, setSelectedOutlineId] = useState<string | undefined>(
+    outlineId ? String(outlineId) : undefined
+  );
+
   // 加载大纲列表(用于从大纲创建模式)
   useEffect(() => {
     if (isFromOutline) {
       void getOutlines({ pageNum: 1, pageSize: 100 });
     }
   }, [isFromOutline, getOutlines]);
+
+  // 当选择大纲后,自动填充大纲中的信息
+  useEffect(() => {
+    if (isFromOutline && selectedOutlineId && formRef.current) {
+      const selectedOutline = outlines.find((o) => o.id === selectedOutlineId);
+      if (selectedOutline) {
+        // 自动填充大纲中已有的字段
+        formRef.current.setValue('name', selectedOutline.name);
+        if (selectedOutline.type) {
+          formRef.current.setValue('type', selectedOutline.type);
+        }
+        if (selectedOutline.tags && selectedOutline.tags.length > 0) {
+          formRef.current.setValue('tags', selectedOutline.tags);
+        }
+        if (selectedOutline.characters && selectedOutline.characters.length > 0) {
+          formRef.current.setValue('characters', selectedOutline.characters);
+        }
+        if (selectedOutline.systems && selectedOutline.systems.length > 0) {
+          formRef.current.setValue('systems', selectedOutline.systems);
+        }
+        if (selectedOutline.worlds && selectedOutline.worlds.length > 0) {
+          formRef.current.setValue('worlds', selectedOutline.worlds);
+        }
+        if (selectedOutline.misc && selectedOutline.misc.length > 0) {
+          formRef.current.setValue('misc', selectedOutline.misc);
+        }
+      }
+    }
+  }, [isFromOutline, selectedOutlineId, outlines]);
 
   // 字段配置
   const fields: FieldConfig[] = [
@@ -122,7 +161,10 @@ export default function ManuscriptDialog({
       if (name === 'outlineId' && isFromOutline) {
         return (
           <MogeSelect
-            onValueChange={(value) => field.onChange(Number(value))}
+            onValueChange={(value) => {
+              field.onChange(Number(value));
+              setSelectedOutlineId(value);
+            }}
             value={field.value ? String(field.value) : undefined}
           >
             <MogeSelectTrigger>
@@ -226,8 +268,14 @@ export default function ManuscriptDialog({
         if (!manuscript.id) return;
         await updateManuscript(manuscript.id, values as UpdateManuscriptValues);
         toast.success('更新成功');
-      } else if (isFromOutline && outlineId) {
-        await createManuscriptFromOutline(outlineId);
+      } else if (isFromOutline) {
+        // 从表单values中获取outlineId，如果没有则使用props传入的outlineId
+        const selectedOutlineId = (values as CreateManuscriptValues).outlineId || outlineId;
+        if (!selectedOutlineId) {
+          toast.error('请选择大纲');
+          return;
+        }
+        await createManuscriptFromOutline(selectedOutlineId);
         toast.success('创建成功');
       } else {
         await createManuscript(values as CreateManuscriptValues);
@@ -269,7 +317,7 @@ export default function ManuscriptDialog({
           isEditMode
             ? '修改文稿信息'
             : isFromOutline
-              ? '选择大纲并填写信息后点击创建'
+              ? '选择大纲后将自动填充名称、类型、标签等信息'
               : '填写信息后点击创建即可生成文稿'
         }
         open={open}
@@ -294,6 +342,7 @@ export default function ManuscriptDialog({
         renderControl={renderControl}
         defaultTrigger={defaultTrigger}
         item={manuscript}
+        formRef={formRef}
         onOpen={() => {
           void fetchNovelTypes();
           void fetchNovelTags();

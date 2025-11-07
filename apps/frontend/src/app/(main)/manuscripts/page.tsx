@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookText, Clock, Edit, FileText, Trash2 } from 'lucide-react';
+import { BookText, Clock, Edit, FileText, Trash2, FilePlus, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
@@ -45,6 +51,8 @@ export default function ManuscriptsPage() {
   const router = useRouter();
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<'create' | 'from-outline'>('create');
 
   // 从字典 store 获取小说类型数据
   const { novelTypes, fetchNovelTypes } = useDictStore();
@@ -257,13 +265,47 @@ export default function ManuscriptsPage() {
           <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">文稿</h1>
           <p className="mt-1 text-sm text-[var(--moge-text-sub)]">管理你的创作文稿</p>
         </div>
-        <ManuscriptDialog
-          mode="create"
-          onSuccess={() => {
-            void loadManuscripts();
-          }}
-        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="gap-2 shadow-[var(--moge-glow-btn)]">
+              <FilePlus className="h-4 w-4" />
+              新建文稿
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                setCreateMode('create');
+                setCreateDialogOpen(true);
+              }}
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              空白创建
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setCreateMode('from-outline');
+                setCreateDialogOpen(true);
+              }}
+            >
+              <BookText className="mr-2 h-4 w-4" />
+              从大纲创建
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* 创建文稿对话框 */}
+      <ManuscriptDialog
+        mode={createMode}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={() => {
+          void loadManuscripts();
+          setCreateDialogOpen(false);
+        }}
+      />
 
       {/* 文稿列表 */}
       {loading ? (
