@@ -28,9 +28,10 @@ import {
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { getManuscript, type Manuscript } from '../api/client';
+import { getManuscript, createVolume, createChapter, type Manuscript } from '../api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ChapterTree from '../components/ChapterTree';
+import CreateItemDialog from '@/app/(main)/outline/components/CreateItemDialog';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 
@@ -57,6 +58,8 @@ export default function ManuscriptDetailPage() {
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [loading, setLoading] = useState(true);
+  const [createVolumeDialogOpen, setCreateVolumeDialogOpen] = useState(false);
+  const [createChapterDialogOpen, setCreateChapterDialogOpen] = useState(false);
 
   // 从字典 store 获取小说类型数据
   const { novelTypes, fetchNovelTypes } = useDictStore();
@@ -102,6 +105,47 @@ export default function ManuscriptDetailPage() {
    */
   const handleEdit = () => {
     router.push(`/manuscripts/${id}/edit`);
+  };
+
+  /**
+   * 处理创建卷
+   */
+  const handleCreateVolume = async (data: { title: string; description?: string }) => {
+    if (!manuscript) return;
+
+    try {
+      await createVolume({
+        manuscriptId: manuscript.id,
+        title: data.title,
+        description: data.description,
+      });
+      toast.success('创建卷成功');
+      await loadManuscript();
+    } catch (error) {
+      console.error('Create volume error:', error);
+      toast.error('创建卷失败');
+      throw error;
+    }
+  };
+
+  /**
+   * 处理创建章节(无卷章节)
+   */
+  const handleCreateChapter = async (data: { title: string; description?: string }) => {
+    if (!manuscript) return;
+
+    try {
+      await createChapter({
+        manuscriptId: manuscript.id,
+        title: data.title,
+      });
+      toast.success('创建章节成功');
+      await loadManuscript();
+    } catch (error) {
+      console.error('Create chapter error:', error);
+      toast.error('创建章节失败');
+      throw error;
+    }
   };
 
   /**
@@ -291,11 +335,21 @@ export default function ManuscriptDetailPage() {
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-[var(--moge-text-main)]">卷章结构</h2>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setCreateVolumeDialogOpen(true)}
+                  >
                     <FolderPlus className="h-4 w-4" />
                     新建卷
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setCreateChapterDialogOpen(true)}
+                  >
                     <FilePlus className="h-4 w-4" />
                     新建章节
                   </Button>
@@ -351,6 +405,24 @@ export default function ManuscriptDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* 创建卷对话框 */}
+      <CreateItemDialog
+        open={createVolumeDialogOpen}
+        onOpenChange={setCreateVolumeDialogOpen}
+        type="volume"
+        onConfirm={handleCreateVolume}
+        volumeCount={manuscript?.volumes?.length || 0}
+      />
+
+      {/* 创建章节对话框 */}
+      <CreateItemDialog
+        open={createChapterDialogOpen}
+        onOpenChange={setCreateChapterDialogOpen}
+        type="chapter"
+        onConfirm={handleCreateChapter}
+        chapterCount={manuscript?.chapters?.length || 0}
+      />
     </div>
   );
 }
