@@ -101,10 +101,24 @@ export default function ManuscriptDetailPage() {
   };
 
   /**
-   * 处理编辑
+   * 处理继续编辑 - 跳转到最后编辑的章节或第一个章节
    */
   const handleEdit = () => {
-    router.push(`/manuscripts/${id}/edit`);
+    if (!manuscript) return;
+
+    // 如果有最后编辑的章节,直接跳转到编辑器
+    if (manuscript.lastEditedChapterId) {
+      router.push(`/manuscripts/${id}/edit?chapter=${manuscript.lastEditedChapterId}`);
+    } else {
+      // 否则找到第一个章节
+      const firstChapter = manuscript.chapters?.[0] || manuscript.volumes?.[0]?.chapters?.[0];
+      if (firstChapter?.id) {
+        router.push(`/manuscripts/${id}/edit?chapter=${firstChapter.id}`);
+      } else {
+        // 如果没有章节,显示提示
+        toast.error('请先创建章节');
+      }
+    }
   };
 
   /**
@@ -262,7 +276,7 @@ export default function ManuscriptDetailPage() {
           <div className="flex items-center gap-2">
             <Button onClick={handleEdit} className="gap-2">
               <Edit className="h-4 w-4" />
-              编辑文稿
+              继续编辑
             </Button>
           </div>
         </div>

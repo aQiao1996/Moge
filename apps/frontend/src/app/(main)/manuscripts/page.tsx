@@ -220,12 +220,29 @@ export default function ManuscriptsPage() {
               <FileText className="h-4 w-4" />
             </Button>
 
-            {/* 编辑 */}
+            {/* 编辑 - 跳转到最后编辑的章节或第一个章节 */}
             <Button
               size="sm"
               variant="ghost"
-              title="编辑文稿"
-              onClick={() => router.push(`/manuscripts/${manuscript.id}`)}
+              title="继续编辑"
+              onClick={() => {
+                // 如果有最后编辑的章节,直接跳转到编辑器
+                if (manuscript.lastEditedChapterId) {
+                  router.push(
+                    `/manuscripts/${manuscript.id}/edit?chapter=${manuscript.lastEditedChapterId}`
+                  );
+                } else {
+                  // 否则找到第一个章节
+                  const firstChapter =
+                    manuscript.chapters?.[0] || manuscript.volumes?.[0]?.chapters?.[0];
+                  if (firstChapter?.id) {
+                    router.push(`/manuscripts/${manuscript.id}/edit?chapter=${firstChapter.id}`);
+                  } else {
+                    // 如果没有章节,跳转到详情页
+                    router.push(`/manuscripts/${manuscript.id}`);
+                  }
+                }
+              }}
             >
               <Edit className="h-4 w-4" />
             </Button>
