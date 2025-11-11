@@ -220,3 +220,23 @@ export class AIExpandDto {
   @IsString()
   customPrompt?: string;
 }
+
+/**
+ * 批量更新卷排序 DTO
+ */
+export class ReorderVolumesDto {
+  @IsArray()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  volumeIds: number[];
+}
+
+/**
+ * 批量更新章节排序 DTO
+ */
+export class ReorderChaptersDto {
+  @IsArray()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  chapterIds: number[];
+}

@@ -537,7 +537,7 @@ export class ManuscriptsService {
   }
 
   /**
-   * 重新计算文稿总字数和已发布字数
+   * 重新计算文稿总字数、已发布字数以及各卷字数
    */
   private async recalculateManuscriptTotalWords(manuscriptId: number) {
     const manuscript = await this.prisma.manuscripts.findUnique({
@@ -567,16 +567,26 @@ export class ManuscriptsService {
       }
     });
 
-    // 卷内章节
-    manuscript.volumes.forEach((vol) => {
+    // 卷内章节，并更新每卷的字数统计
+    for (const vol of manuscript.volumes) {
+      let volumeWordCount = 0;
+
       vol.chapters.forEach((ch) => {
         totalWords += ch.wordCount;
+        volumeWordCount += ch.wordCount;
         if (ch.status === 'PUBLISHED') {
           publishedWords += ch.wordCount;
         }
       });
-    });
 
+      // 更新卷的字数统计
+      await this.prisma.manuscript_volume.update({
+        where: { id: vol.id },
+        data: { wordCount: volumeWordCount },
+      });
+    }
+
+    // 更新文稿总字数
     await this.prisma.manuscripts.update({
       where: { id: manuscriptId },
       data: { totalWords, publishedWords },
@@ -926,5 +936,99 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         id: { in: ids.map(Number) },
       },
     });
+  }
+
+  /**
+   * 批量更新卷排序
+   * @param volumeIds 卷 ID 数组,按新的排序顺序排列
+   * @param userId 用户 ID
+   */
+  async reorderVolumes(volumeIds: number[], userId: number) {
+    if (!volumeIds || volumeIds.length === 0) {
+      throw new BadRequestException('Volume IDs cannot be empty');
+    }
+
+    // 验证所有卷的权限
+    const volumes = await this.prisma.manuscript_volume.findMany({
+      where: {
+        id: { in: volumeIds },
+      },
+      include: {
+        manuscript: true,
+      },
+    });
+
+    if (volumes.length !== volumeIds.length) {
+      throw new NotFoundException('Some volumes not found');
+    }
+
+    // 验证权限
+    for (const volume of volumes) {
+      if (volume.manuscript.userId !== userId) {
+        throw new BadRequestException('You do not have permission to reorder these volumes');
+      }
+    }
+
+    // 批量更新 sortOrder
+    const updatePromises = volumeIds.map((volumeId, index) => {
+      return this.prisma.manuscript_volume.update({
+        where: { id: volumeId },
+        data: { sortOrder: new Decimal(index + 1) },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return { success: true };
+  }
+
+  /**
+   * 批量更新章节排序
+   * @param chapterIds 章节 ID 数组,按新的排序顺序排列
+   * @param userId 用户 ID
+   */
+  async reorderChapters(chapterIds: number[], userId: number) {
+    if (!chapterIds || chapterIds.length === 0) {
+      throw new BadRequestException('Chapter IDs cannot be empty');
+    }
+
+    // 验证所有章节的权限
+    const chapters = await this.prisma.manuscript_chapter.findMany({
+      where: {
+        id: { in: chapterIds },
+      },
+      include: {
+        manuscript: true,
+        volume: {
+          include: {
+            manuscript: true,
+          },
+        },
+      },
+    });
+
+    if (chapters.length !== chapterIds.length) {
+      throw new NotFoundException('Some chapters not found');
+    }
+
+    // 验证权限
+    for (const chapter of chapters) {
+      const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+      if (!manuscript || manuscript.userId !== userId) {
+        throw new BadRequestException('You do not have permission to reorder these chapters');
+      }
+    }
+
+    // 批量更新 sortOrder
+    const updatePromises = chapterIds.map((chapterId, index) => {
+      return this.prisma.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: { sortOrder: new Decimal(index + 1) },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return { success: true };
   }
 }

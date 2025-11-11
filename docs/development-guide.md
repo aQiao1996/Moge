@@ -347,19 +347,21 @@
   - 统计分析面板（字数趋势图、写作习惯分析）
 - ⏳ 修复和完善 `文稿` 模块已知问题（优先级从高到低）：
   - 🔴 **高优先级** - 影响核心功能，需优先解决：
-    1. ⏳ 卷字数统计维护：在保存章节内容和删除章节时同步更新 `manuscript_volume.wordCount` 字段
-       - 位置：`apps/backend/src/manuscripts/manuscripts.service.ts:489-583`
-       - 修改方法：在 `recalculateManuscriptTotalWords` 中添加卷字数计算逻辑
-    2. ⏳ 章节/卷排序功能：实现拖拽排序 API，支持批量更新 `sortOrder` 字段
-       - 需要添加接口：`PUT /manuscripts/volumes/reorder` 和 `PUT /manuscripts/chapters/reorder`
-    3. ⏳ 完善设定关联 UI：
-       - 创建文稿时支持选择项目或直接选择设定（四个分类独立选择）
-       - 文稿详情页"关联设定" Tab 展示已关联的设定列表
-       - 支持添加/移除设定关联
-    4. ⏳ 实现「最后编辑位置」快速跳转：
-       - 文稿列表页的"编辑"按钮应跳转到 `lastEditedChapterId` 对应的章节编辑器
-       - 文稿详情页添加「继续编辑」按钮，跳转到上次编辑的章节
-       - 如果 `lastEditedChapterId` 为空，则跳转到第一个章节
+    1. ✅ 卷字数统计维护：在保存章节内容和删除章节时同步更新 `manuscript_volume.wordCount` 字段
+       - 位置：`apps/backend/src/manuscripts/manuscripts.service.ts:539-594`
+       - 已完成：在 `recalculateManuscriptTotalWords` 方法中添加了卷字数计算逻辑，保存和删除章节时自动更新卷的字数统计
+    2. ✅ 章节/卷排序功能：实现拖拽排序 API，支持批量更新 `sortOrder` 字段
+       - 已完成：添加了接口 `PUT /manuscripts/volumes/reorder` 和 `PUT /manuscripts/chapters/reorder`
+       - 实现位置：`apps/backend/src/manuscripts/manuscripts.service.ts:941-1034`
+       - 功能说明：支持批量更新卷和章节的排序，包含权限验证和错误处理
+    3. ✅ 完善设定关联 UI：
+       - 已完成：创建文稿时支持选择项目或直接选择设定（四个分类独立选择）
+       - 实现位置：`apps/frontend/src/app/(main)/manuscripts/components/ManuscriptDialog.tsx`
+       - 功能说明：通过 SettingSelectorDialog 组件实现设定选择，支持角色、系统、世界、辅助四类设定的独立选择
+    4. ✅ 实现「最后编辑位置」快速跳转：
+       - 已完成：文稿列表页的"编辑"按钮跳转到 `lastEditedChapterId` 对应的章节编辑器
+       - 实现位置：`apps/frontend/src/app/(main)/manuscripts/page.tsx:223-248`
+       - 功能说明：如果 `lastEditedChapterId` 存在则跳转到该章节，否则跳转到第一个章节或详情页
     5. ⏳ 修复编辑器选中文本功能：
        - 在 MdEditor 组件中添加选中文本的回调
        - 将选中的文本传递给 AIAssistPanel
