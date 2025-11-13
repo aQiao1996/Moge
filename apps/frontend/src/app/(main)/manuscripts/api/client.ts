@@ -88,6 +88,13 @@ export async function deleteVolume(volumeId: number) {
   return del<void>(`/manuscripts/volumes/${volumeId}`);
 }
 
+/**
+ * 批量更新卷排序
+ */
+export async function reorderVolumes(volumeIds: number[]) {
+  return put<{ success: boolean }>('/manuscripts/volumes/reorder', { volumeIds });
+}
+
 // ==================== Chapter APIs ====================
 
 /**
@@ -130,6 +137,13 @@ export async function saveChapterContent(chapterId: number, data: SaveChapterCon
  */
 export async function publishChapter(chapterId: number) {
   return post<ManuscriptChapter>(`/manuscripts/chapters/${chapterId}/publish`);
+}
+
+/**
+ * 批量更新章节排序
+ */
+export async function reorderChapters(chapterIds: number[]) {
+  return put<{ success: boolean }>('/manuscripts/chapters/reorder', { chapterIds });
 }
 
 // ==================== AI APIs ====================

@@ -319,6 +319,7 @@ export default function ManuscriptEditPage() {
             <MdEditor
               value={content}
               onChange={handleContentChange}
+              onTextSelect={setSelectedText}
               placeholder="开始创作你的章节内容..."
               height={600}
               className="border-0"
