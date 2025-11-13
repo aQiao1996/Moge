@@ -240,3 +240,13 @@ export class ReorderChaptersDto {
   @Type(() => Number)
   chapterIds: number[];
 }
+
+/**
+ * 批量发布章节 DTO
+ */
+export class BatchPublishChaptersDto {
+  @IsArray()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  chapterIds: number[];
+}

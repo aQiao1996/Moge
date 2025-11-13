@@ -23,6 +23,7 @@ import {
   AIExpandDto,
   ReorderVolumesDto,
   ReorderChaptersDto,
+  BatchPublishChaptersDto,
 } from './manuscripts.dto';
 import type { User } from '@moge/types';
 
@@ -204,6 +205,30 @@ export class ManuscriptsController {
   ) {
     const userId = Number(req.user.id);
     return this.manuscriptsService.publishChapter(chapterId, userId);
+  }
+
+  /**
+   * 取消发布章节
+   */
+  @Post('chapters/:chapterId/unpublish')
+  async unpublishChapter(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.unpublishChapter(chapterId, userId);
+  }
+
+  /**
+   * 批量发布章节
+   */
+  @Post('chapters/batch-publish')
+  async batchPublishChapters(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: BatchPublishChaptersDto
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.batchPublishChapters(dto.chapterIds, userId);
   }
 
   /**

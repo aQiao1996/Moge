@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Save, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import MdEditor from '@/app/components/MdEditor';
 import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
@@ -22,6 +22,8 @@ import {
   getManuscript,
   getChapterContent,
   saveChapterContent,
+  publishChapter,
+  unpublishChapter,
   type Manuscript,
 } from '../../api/client';
 import dayjs from 'dayjs';
@@ -203,6 +205,38 @@ export default function ManuscriptEditPage() {
     router.push(`/manuscripts/${id}/edit?chapter=${newChapterId}`);
   };
 
+  /**
+   * 处理发布章节
+   */
+  const handlePublish = async () => {
+    if (!chapterId) return;
+
+    try {
+      await publishChapter(Number(chapterId));
+      toast.success('章节已发布');
+      void loadManuscript(); // 刷新数据
+    } catch (error) {
+      console.error('Publish chapter error:', error);
+      toast.error('发布失败');
+    }
+  };
+
+  /**
+   * 处理取消发布章节
+   */
+  const handleUnpublish = async () => {
+    if (!chapterId) return;
+
+    try {
+      await unpublishChapter(Number(chapterId));
+      toast.success('已取消发布');
+      void loadManuscript(); // 刷新数据
+    } catch (error) {
+      console.error('Unpublish chapter error:', error);
+      toast.error('取消发布失败');
+    }
+  };
+
   const getCurrentChapter = () => {
     if (!manuscript || !chapterId) return null;
 
@@ -292,6 +326,19 @@ export default function ManuscriptEditPage() {
             <Sparkles className="mr-2 h-4 w-4" />
             {isAIPanelOpen ? '隐藏 AI' : 'AI 辅助'}
           </Button>
+
+          {/* 发布/取消发布按钮 */}
+          {currentChapter.status === 'PUBLISHED' ? (
+            <Button variant="outline" onClick={() => void handleUnpublish()}>
+              <EyeOff className="mr-2 h-4 w-4" />
+              取消发布
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => void handlePublish()}>
+              <Eye className="mr-2 h-4 w-4" />
+              发布章节
+            </Button>
+          )}
 
           {/* 保存按钮 */}
           <Button onClick={() => void handleSave()} disabled={saving}>

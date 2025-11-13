@@ -528,6 +528,99 @@ export class ManuscriptsService {
   }
 
   /**
+   * 取消发布章节
+   */
+  async unpublishChapter(chapterId: number, userId: number) {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    const updatedChapter = await this.prisma.manuscript_chapter.update({
+      where: { id: chapterId },
+      data: {
+        status: 'DRAFT',
+      },
+    });
+
+    // 重新计算已发布字数
+    await this.recalculateManuscriptTotalWords(manuscript.id);
+
+    return updatedChapter;
+  }
+
+  /**
+   * 批量发布章节
+   */
+  async batchPublishChapters(chapterIds: number[], userId: number) {
+    if (!chapterIds || chapterIds.length === 0) {
+      throw new BadRequestException('Chapter IDs cannot be empty');
+    }
+
+    // 验证所有章节的权限
+    const chapters = await this.prisma.manuscript_chapter.findMany({
+      where: {
+        id: { in: chapterIds },
+      },
+      include: {
+        manuscript: true,
+        volume: {
+          include: {
+            manuscript: true,
+          },
+        },
+      },
+    });
+
+    if (chapters.length !== chapterIds.length) {
+      throw new NotFoundException('Some chapters not found');
+    }
+
+    // 验证权限并收集 manuscriptId
+    const manuscriptIds = new Set<number>();
+    for (const chapter of chapters) {
+      const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+      if (!manuscript || manuscript.userId !== userId) {
+        throw new BadRequestException('You do not have permission to publish these chapters');
+      }
+      manuscriptIds.add(manuscript.id);
+    }
+
+    // 批量更新章节状态
+    const updatePromises = chapterIds.map((chapterId) => {
+      const chapter = chapters.find((ch) => ch.id === chapterId);
+      return this.prisma.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          status: 'PUBLISHED',
+          publishedAt: chapter?.publishedAt || new Date(),
+        },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    // 重新计算所有相关文稿的字数
+    for (const manuscriptId of manuscriptIds) {
+      await this.recalculateManuscriptTotalWords(manuscriptId);
+    }
+
+    return { success: true, count: chapterIds.length };
+  }
+
+  /**
    * 计算字数（中文字符）
    */
   private calculateWordCount(content: string): number {

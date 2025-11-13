@@ -140,6 +140,22 @@ export async function publishChapter(chapterId: number) {
 }
 
 /**
+ * 取消发布章节
+ */
+export async function unpublishChapter(chapterId: number) {
+  return post<ManuscriptChapter>(`/manuscripts/chapters/${chapterId}/unpublish`);
+}
+
+/**
+ * 批量发布章节
+ */
+export async function batchPublishChapters(chapterIds: number[]) {
+  return post<{ success: boolean; count: number }>('/manuscripts/chapters/batch-publish', {
+    chapterIds,
+  });
+}
+
+/**
  * 批量更新章节排序
  */
 export async function reorderChapters(chapterIds: number[]) {

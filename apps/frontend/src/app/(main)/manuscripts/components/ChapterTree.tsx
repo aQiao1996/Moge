@@ -24,6 +24,7 @@ import {
   Folder,
   Edit2,
   GripVertical,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -70,6 +71,7 @@ interface SortableVolumeProps {
       id?: number | string;
       title?: string;
       wordCount?: number;
+      status?: 'DRAFT' | 'PUBLISHED';
     }>;
   };
   isExpanded: boolean;
@@ -214,6 +216,7 @@ interface SortableChapterProps {
     id?: number | string;
     title?: string;
     wordCount?: number;
+    status?: 'DRAFT' | 'PUBLISHED';
   };
   onChapterClick: (chapterId: string) => void;
   onEditChapter: (chapterId: string, title: string) => void;
@@ -254,6 +257,11 @@ function SortableChapter({
       >
         <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
         <span className="truncate">{chapter.title}</span>
+        {chapter.status === 'PUBLISHED' && (
+          <span title="已发布">
+            <Eye className="text-primary ml-2 h-3.5 w-3.5" />
+          </span>
+        )}
         <span className="text-muted-foreground ml-auto text-xs">{chapter.wordCount || 0} 字</span>
       </Button>
 
