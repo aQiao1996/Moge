@@ -101,19 +101,24 @@ const MdEditor = forwardRef<MdEditorRef, MdEditorProps>(
     }, [onTextSelect]);
 
     // 使用useMemo缓存编辑器属性,避免不必要的重渲染
-    const editorProps = useMemo(
-      () => ({
+    const editorProps = useMemo(() => {
+      const props: Record<string, unknown> = {
         value,
         onChange: (val?: string) => {
           onChange(val ?? '');
         },
         placeholder,
-        height,
         preview,
         'data-color-mode': colorMode,
-      }),
-      [value, onChange, placeholder, height, preview, colorMode]
-    );
+      };
+
+      // 只有当 height 存在时才添加
+      if (height) {
+        props.height = height;
+      }
+
+      return props;
+    }, [value, onChange, placeholder, height, preview, colorMode]);
 
     return (
       <div

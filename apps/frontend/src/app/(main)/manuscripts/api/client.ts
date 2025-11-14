@@ -168,29 +168,33 @@ export async function reorderChapters(chapterIds: number[]) {
  * AI 续写章节
  */
 export async function aiContinueChapter(chapterId: number, customPrompt?: string) {
-  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/continue`, {
-    customPrompt,
-  });
+  return post<{ text: string }>(
+    `/manuscripts/chapters/${chapterId}/ai/continue`,
+    { customPrompt },
+    { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
+  );
 }
 
 /**
  * AI 润色文本
  */
 export async function aiPolishText(chapterId: number, text: string, customPrompt?: string) {
-  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/polish`, {
-    text,
-    customPrompt,
-  });
+  return post<{ text: string }>(
+    `/manuscripts/chapters/${chapterId}/ai/polish`,
+    { text, customPrompt },
+    { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
+  );
 }
 
 /**
  * AI 扩写文本
  */
 export async function aiExpandText(chapterId: number, text: string, customPrompt?: string) {
-  return post<{ text: string }>(`/manuscripts/chapters/${chapterId}/ai/expand`, {
-    text,
-    customPrompt,
-  });
+  return post<{ text: string }>(
+    `/manuscripts/chapters/${chapterId}/ai/expand`,
+    { text, customPrompt },
+    { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
+  );
 }
 
 // Re-export types for convenience

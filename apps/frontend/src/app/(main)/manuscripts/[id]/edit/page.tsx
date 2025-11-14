@@ -28,8 +28,10 @@ import {
 } from '../../api/client';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/zh-cn';
 
 dayjs.extend(relativeTime);
+dayjs.locale('zh-cn');
 
 export default function ManuscriptEditPage() {
   const params = useParams();
@@ -292,9 +294,9 @@ export default function ManuscriptEditPage() {
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden p-6">
+    <div className="mx-auto flex h-full max-w-7xl flex-col p-6">
       {/* 头部 */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-shrink-0 items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -349,7 +351,7 @@ export default function ManuscriptEditPage() {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="flex flex-1 flex-col gap-6 overflow-hidden lg:flex-row">
+      <div className="flex flex-1 gap-6 overflow-auto lg:flex-row">
         {/* 左侧侧边栏 */}
         <ManuscriptEditSidebar
           manuscript={manuscript}
@@ -360,15 +362,15 @@ export default function ManuscriptEditPage() {
         />
 
         {/* 右侧编辑器区域 */}
-        <div className="flex flex-1 gap-6 overflow-hidden">
+        <div className="flex flex-1 gap-6">
           {/* 编辑器 */}
-          <Card className={`flex-1 overflow-hidden p-6 ${isAIPanelOpen ? '' : 'flex-1'}`}>
+          <Card className="flex min-h-[600px] flex-1 flex-col p-6">
             <MdEditor
               value={content}
               onChange={handleContentChange}
               onTextSelect={setSelectedText}
               placeholder="开始创作你的章节内容..."
-              height={600}
+              height={500}
               className="border-0"
             />
           </Card>
