@@ -50,10 +50,12 @@ export default function ManuscriptEditPage() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isAIPanelOpen, setAIPanelOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // 自动保存定时器
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef(content);
+  const savedContentRef = useRef(content); // 记录已保存的内容
 
   /**
    * 加载文稿数据
@@ -81,8 +83,11 @@ export default function ManuscriptEditPage() {
 
     try {
       const response = await getChapterContent(Number(chapterId));
-      setContent(response.data.content || '');
-      contentRef.current = response.data.content || '';
+      const loadedContent = response.data.content || '';
+      setContent(loadedContent);
+      contentRef.current = loadedContent;
+      savedContentRef.current = loadedContent; // 记录已保存的内容
+      setHasUnsavedChanges(false);
       setLastSaved(response.data.updatedAt ? new Date(response.data.updatedAt) : null);
     } catch (error) {
       console.error('Load chapter content error:', error);
@@ -114,21 +119,35 @@ export default function ManuscriptEditPage() {
   /**
    * 保存章节内容
    */
-  const handleSave = useCallback(async () => {
-    if (!chapterId || saving) return;
+  const handleSave = useCallback(
+    async (showToast = true) => {
+      if (!chapterId || saving) return;
 
-    try {
-      setSaving(true);
-      await saveChapterContent(Number(chapterId), { content });
-      setLastSaved(new Date());
-      toast.success('保存成功');
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error('保存失败');
-    } finally {
-      setSaving(false);
-    }
-  }, [chapterId, content, saving]);
+      // 如果内容没有变化，不需要保存
+      if (contentRef.current === savedContentRef.current) {
+        return;
+      }
+
+      try {
+        setSaving(true);
+        await saveChapterContent(Number(chapterId), { content: contentRef.current });
+        savedContentRef.current = contentRef.current;
+        setHasUnsavedChanges(false);
+        setLastSaved(new Date());
+        if (showToast) {
+          toast.success('保存成功');
+        }
+      } catch (error) {
+        console.error('Save error:', error);
+        if (showToast) {
+          toast.error('保存失败');
+        }
+      } finally {
+        setSaving(false);
+      }
+    },
+    [chapterId, saving]
+  );
 
   /**
    * 处理内容变更
@@ -139,6 +158,9 @@ export default function ManuscriptEditPage() {
       contentRef.current = newContent;
       setWordCount(calculateWordCount(newContent));
 
+      // 标记有未保存的更改
+      setHasUnsavedChanges(newContent !== savedContentRef.current);
+
       // 清除之前的定时器
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
@@ -146,7 +168,7 @@ export default function ManuscriptEditPage() {
 
       // 设置新的自动保存定时器（30秒后保存）
       autoSaveTimerRef.current = setTimeout(() => {
-        void handleSave();
+        void handleSave(false); // 自动保存不显示toast
       }, 30000);
     },
     [calculateWordCount, handleSave]
@@ -162,6 +184,25 @@ export default function ManuscriptEditPage() {
       }
     };
   }, []);
+
+  /**
+   * 离开页面确认（当有未保存更改时）
+   */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的更改，确定要离开吗？';
+        return '您有未保存的更改，确定要离开吗？';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   const handleBack = () => {
     router.push(`/manuscripts/${id}`);
@@ -201,9 +242,25 @@ export default function ManuscriptEditPage() {
   };
 
   /**
-   * 处理切换章节
+   * 处理切换章节（先保存当前内容）
    */
-  const handleSelectChapter = (newChapterId: string) => {
+  const handleSelectChapter = async (newChapterId: string) => {
+    // 如果有未保存的更改，先保存
+    if (hasUnsavedChanges) {
+      try {
+        await handleSave(false); // 静默保存
+        toast.success('已自动保存当前章节');
+      } catch (error) {
+        console.error('Auto save before switch error:', error);
+        // 即使保存失败也允许切换，让用户决定
+        if (
+          !window.confirm('当前章节保存失败，是否仍要切换到其他章节？\n未保存的内容可能会丢失。')
+        ) {
+          return;
+        }
+      }
+    }
+
     router.push(`/manuscripts/${id}/edit?chapter=${newChapterId}`);
   };
 
@@ -315,13 +372,27 @@ export default function ManuscriptEditPage() {
             <span className="font-medium text-[var(--moge-text-main)]">{wordCount}</span> 字
           </div>
 
-          {/* 最后保存时间 */}
-          {lastSaved && (
-            <div className="flex items-center gap-2 text-sm text-[var(--moge-text-muted)]">
-              <Clock className="h-4 w-4" />
-              <span>最后保存: {dayjs(lastSaved).fromNow()}</span>
-            </div>
-          )}
+          {/* 保存状态提示 */}
+          <div className="flex items-center gap-2 text-sm">
+            {saving ? (
+              <>
+                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                <span className="text-blue-600">保存中...</span>
+              </>
+            ) : hasUnsavedChanges ? (
+              <>
+                <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                <span className="text-yellow-600">未保存</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <Clock className="h-4 w-4 text-[var(--moge-text-muted)]" />
+                <span className="text-[var(--moge-text-muted)]">
+                  已保存: {dayjs(lastSaved).fromNow()}
+                </span>
+              </>
+            ) : null}
+          </div>
 
           {/* AI 辅助按钮 */}
           <Button variant="outline" onClick={() => setAIPanelOpen(!isAIPanelOpen)}>
@@ -356,7 +427,7 @@ export default function ManuscriptEditPage() {
         <ManuscriptEditSidebar
           manuscript={manuscript}
           currentChapterId={chapterId}
-          onSelectChapter={handleSelectChapter}
+          onSelectChapter={(chapterId) => void handleSelectChapter(chapterId)}
           isOpen={isSidebarOpen}
           onToggle={() => setSidebarOpen(!isSidebarOpen)}
         />
