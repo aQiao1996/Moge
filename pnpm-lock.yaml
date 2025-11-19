@@ -613,6 +613,9 @@ importers:
       '@tailwindcss/typography':
         specifier: 'catalog:'
         version: 0.5.16(tailwindcss@4.1.13)
+      '@types/lodash':
+        specifier: ^4.17.20
+        version: 4.17.20
       '@uiw/react-md-editor':
         specifier: 'catalog:'
         version: 4.0.8(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -628,6 +631,9 @@ importers:
       event-source-polyfill:
         specifier: 'catalog:'
         version: 1.0.31
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       lucide-react:
         specifier: 'catalog:'
         version: 0.542.0(react@18.3.1)
@@ -2671,6 +2677,9 @@ packages:
 
   '@types/jsonwebtoken@9.0.7':
     resolution: {integrity: sha512-ugo316mmTYBl2g81zDFnZ7cfxlut3o+/EQdaP7J8QN2kY6lJ22hmQYCK5EHcJHbrW+dkCGSCPgbG8JtYj6qSrg==}
+
+  '@types/lodash@4.17.20':
+    resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -9342,6 +9351,8 @@ snapshots:
   '@types/jsonwebtoken@9.0.7':
     dependencies:
       '@types/node': 24.3.1
+
+  '@types/lodash@4.17.20': {}
 
   '@types/mdast@4.0.4':
     dependencies:

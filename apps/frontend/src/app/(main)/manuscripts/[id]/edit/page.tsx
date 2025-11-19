@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import MdEditor from '@/app/components/MdEditor';
+import EnhancedMdEditor from '@/app/components/EnhancedMdEditor';
 import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
 import AIAssistPanel from '../../components/AIAssistPanel';
 import {
@@ -436,13 +436,13 @@ export default function ManuscriptEditPage() {
         <div className="flex flex-1 gap-6">
           {/* 编辑器 */}
           <Card className="flex min-h-[600px] flex-1 flex-col p-6">
-            <MdEditor
+            <EnhancedMdEditor
               value={content}
               onChange={handleContentChange}
               onTextSelect={setSelectedText}
               placeholder="开始创作你的章节内容..."
               height={500}
-              className="border-0"
+              projectId={manuscript.projectId || undefined}
             />
           </Card>
 

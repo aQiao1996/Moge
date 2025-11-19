@@ -9,6 +9,7 @@ import { OutlineModule } from './outline/outline.module';
 import { SettingsModule } from './settings/settings.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ManuscriptsModule } from './manuscripts/manuscripts.module';
+import { SearchModule } from './search/search.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     SettingsModule,
     ProjectsModule,
     ManuscriptsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [
