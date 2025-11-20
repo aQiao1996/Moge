@@ -11,7 +11,7 @@ export default tseslint.config(
       'dist/',
       '**/dist/**',
       '.next/',
-      'test/', // Already present, but adding it explicitly for clarity for backend test
+      'test/', 
       'apps/backend/test/',
       '**/*.log',
       'tests/**/coverage/',
