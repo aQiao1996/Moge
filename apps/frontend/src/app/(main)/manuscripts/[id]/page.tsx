@@ -34,6 +34,7 @@ import ChapterTree from '../components/ChapterTree';
 import CreateItemDialog from '@/app/(main)/outline/components/CreateItemDialog';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
+import ExportButton from '@/components/ExportButton';
 
 dayjs.extend(relativeTime);
 
@@ -274,6 +275,14 @@ export default function ManuscriptDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {manuscript.id && (
+              <ExportButton
+                type="manuscript"
+                id={manuscript.id}
+                name={manuscript.name}
+                variant="outline"
+              />
+            )}
             <Button onClick={handleEdit} className="gap-2">
               <Edit className="h-4 w-4" />
               继续编辑
