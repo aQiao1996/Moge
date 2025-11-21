@@ -210,13 +210,50 @@ export class ExportService {
    */
   async exportChaptersBatch(
     chapterIds: number[],
-    userId: number
+    userId: number,
+    options?: ExportOptions
   ): Promise<{ [chapterId: number]: string }> {
     const results: { [chapterId: number]: string } = {};
+    const format = options?.format || 'txt';
 
     for (const chapterId of chapterIds) {
       try {
-        const content = await this.exportChapterToTxt(chapterId, userId);
+        let content: string;
+        if (format === 'markdown') {
+          // 对于 markdown 格式，我们需要获取章节的完整信息
+          const chapter = await this.prisma.manuscript_chapter.findFirst({
+            where: {
+              id: chapterId,
+              manuscript: {
+                userId,
+              },
+            },
+            include: {
+              content: true,
+              manuscript: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          });
+
+          if (!chapter) {
+            throw new Error('章节不存在或无权访问');
+          }
+
+          // 构建 Markdown 格式的内容
+          content = `# ${chapter.manuscript.name}\n\n`;
+          content += `## ${chapter.title}\n\n`;
+          if (chapter.content?.content) {
+            content += chapter.content.content + '\n';
+          } else {
+            content += '> 本章暂无内容\n';
+          }
+        } else {
+          // 默认使用 TXT 格式
+          content = await this.exportChapterToTxt(chapterId, userId);
+        }
         results[chapterId] = content;
       } catch (error) {
         console.error(`导出章节 ${chapterId} 失败:`, error);
