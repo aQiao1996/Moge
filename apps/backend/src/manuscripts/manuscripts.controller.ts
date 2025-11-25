@@ -316,4 +316,29 @@ export class ManuscriptsController {
     const userId = Number(req.user.id);
     return this.manuscriptsService.reorderChapters(dto.chapterIds, userId);
   }
+
+  /**
+   * 获取章节版本历史
+   */
+  @Get('chapters/:chapterId/versions')
+  async getChapterVersionHistory(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.getChapterVersionHistory(chapterId, userId);
+  }
+
+  /**
+   * 恢复章节到指定版本
+   */
+  @Post('chapters/:chapterId/versions/:version/restore')
+  async restoreChapterVersion(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Param('version', ParseIntPipe) version: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.restoreChapterVersion(chapterId, version, userId);
+  }
 }

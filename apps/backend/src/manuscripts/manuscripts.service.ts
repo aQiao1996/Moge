@@ -1032,6 +1032,123 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   }
 
   /**
+   * 获取章节内容的版本历史
+   */
+  async getChapterVersionHistory(chapterId: number, userId: number) {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+        content: true,
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    if (!chapter.content) {
+      return [];
+    }
+
+    // 获取所有历史版本
+    const versions = await this.prisma.manuscript_chapter_content_version.findMany({
+      where: {
+        contentId: chapter.content.id,
+      },
+      orderBy: {
+        version: 'desc',
+      },
+    });
+
+    return versions;
+  }
+
+  /**
+   * 恢复到指定版本
+   */
+  async restoreChapterVersion(chapterId: number, version: number, userId: number) {
+    const chapter = await this.prisma.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+        content: true,
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new BadRequestException('You do not have permission to access this chapter');
+    }
+
+    if (!chapter.content) {
+      throw new NotFoundException('Chapter content not found');
+    }
+
+    // 查找目标版本
+    const targetVersion = await this.prisma.manuscript_chapter_content_version.findFirst({
+      where: {
+        contentId: chapter.content.id,
+        version,
+      },
+    });
+
+    if (!targetVersion) {
+      throw new NotFoundException(`Version ${version} not found`);
+    }
+
+    // 保存当前版本到历史
+    await this.prisma.manuscript_chapter_content_version.create({
+      data: {
+        contentId: chapter.content.id,
+        version: chapter.content.version,
+        content: chapter.content.content,
+      },
+    });
+
+    // 恢复目标版本的内容，并递增版本号
+    await this.prisma.manuscript_chapter_content.update({
+      where: { chapterId },
+      data: {
+        content: targetVersion.content,
+        version: chapter.content.version + 1,
+      },
+    });
+
+    // 重新计算字数
+    const wordCount = this.calculateWordCount(targetVersion.content);
+    await this.prisma.manuscript_chapter.update({
+      where: { id: chapterId },
+      data: { wordCount },
+    });
+
+    // 更新文稿的lastEditedChapterId和lastEditedAt
+    await this.prisma.manuscripts.update({
+      where: { id: manuscript.id },
+      data: {
+        lastEditedChapterId: chapterId,
+        lastEditedAt: new Date(),
+      },
+    });
+
+    // 重新计算文稿总字数
+    await this.recalculateManuscriptTotalWords(manuscript.id);
+
+    return this.getChapterContent(chapterId, userId);
+  }
+
+  /**
    * 批量更新卷排序
    * @param volumeIds 卷 ID 数组,按新的排序顺序排列
    * @param userId 用户 ID
