@@ -197,4 +197,116 @@ export class SearchService {
         return null;
     }
   }
+
+  /**
+   * 获取反向链接
+   * 查询哪些内容（大纲章节、文稿章节）引用了当前设定
+   * @param type 设定类型
+   * @param id 设定ID
+   * @param userId 用户ID
+   * @returns 反向链接列表
+   */
+  async getBacklinks(type: 'character' | 'system' | 'world' | 'misc', id: number, userId?: number) {
+    const backlinks: Array<{
+      id: number;
+      type: 'outline_chapter' | 'manuscript_chapter';
+      title: string;
+      parentTitle: string;
+      updatedAt: Date;
+    }> = [];
+
+    // 1. 搜索大纲章节内容中的引用
+    const outlineChapters = await this.prisma.outline_chapter_content.findMany({
+      where: {
+        content: {
+          contains: `moge://${type}/${id}`,
+        },
+      },
+      include: {
+        chapter: {
+          include: {
+            outline: {
+              select: {
+                id: true,
+                name: true,
+                userId: true,
+              },
+            },
+          },
+        },
+      },
+      take: 20,
+    });
+
+    for (const item of outlineChapters) {
+      // 权限检查
+      if (userId && item.chapter.outline?.userId !== userId) {
+        continue;
+      }
+
+      backlinks.push({
+        id: item.chapter.id,
+        type: 'outline_chapter',
+        title: item.chapter.title,
+        parentTitle: item.chapter.outline?.name || '未命名大纲',
+        updatedAt: item.updatedAt,
+      });
+    }
+
+    // 2. 搜索文稿章节内容中的引用
+    const manuscriptChapters = await this.prisma.manuscript_chapter_content.findMany({
+      where: {
+        content: {
+          contains: `moge://${type}/${id}`,
+        },
+      },
+      include: {
+        chapter: {
+          include: {
+            manuscript: {
+              select: {
+                id: true,
+                name: true,
+                userId: true,
+              },
+            },
+            volume: {
+              include: {
+                manuscript: {
+                  select: {
+                    id: true,
+                    name: true,
+                    userId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      take: 20,
+    });
+
+    for (const item of manuscriptChapters) {
+      const manuscript = item.chapter.manuscript || item.chapter.volume?.manuscript;
+
+      // 权限检查
+      if (userId && manuscript?.userId !== userId) {
+        continue;
+      }
+
+      backlinks.push({
+        id: item.chapter.id,
+        type: 'manuscript_chapter',
+        title: item.chapter.title,
+        parentTitle: manuscript?.name || '未命名文稿',
+        updatedAt: item.updatedAt,
+      });
+    }
+
+    // 按更新时间倒序排列
+    backlinks.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+    return backlinks;
+  }
 }

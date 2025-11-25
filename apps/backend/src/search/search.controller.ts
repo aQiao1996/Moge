@@ -81,4 +81,34 @@ export class SearchController {
       data: setting,
     };
   }
+
+  /**
+   * 获取反向链接
+   * 查询哪些内容引用了当前设定
+   */
+  @Get('backlinks')
+  @ApiOperation({ summary: '获取设定的反向链接' })
+  @ApiQuery({
+    name: 'type',
+    description: '设定类型',
+    enum: ['character', 'system', 'world', 'misc'],
+    required: true,
+  })
+  @ApiQuery({ name: 'id', description: '设定ID', required: true })
+  async getBacklinks(
+    @Query('type') type: 'character' | 'system' | 'world' | 'misc',
+    @Query('id') id: string,
+    @Request() req?: AuthRequest
+  ) {
+    const userId = req?.user?.id;
+    const parsedId = parseInt(id, 10);
+
+    const backlinks = await this.searchService.getBacklinks(type, parsedId, userId);
+
+    return {
+      success: true,
+      data: backlinks,
+      total: backlinks.length,
+    };
+  }
 }
