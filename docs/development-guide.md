@@ -62,11 +62,13 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 | 文稿编辑  | 自动保存、AI续写/润色/扩写、@引用                       |
 | 导出发布  | 章节发布、单章/整书导出                                 |
 
-### P1 - 体验优化 (可延后)
+### P1 - 体验优化 ✅
 
-- @引用悬浮预览、跳转、反向链接
-- 版本历史UI (后端已支持)
-- 统计趋势图
+- ✅ @引用悬浮预览 (`MentionHoverCard.tsx`)
+- ✅ @引用跳转 (`MentionMarkdown.tsx`)
+- ✅ 反向链接 (`GET /search/backlinks`)
+- ✅ 版本历史UI (`ChapterVersionHistory.tsx` + API)
+- ✅ 统计趋势图 (`WritingStats.tsx` - 写作统计卡片)
 
 ### P2 - 高级功能 (后续迭代)
 
@@ -92,14 +94,25 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 - **触发**: 编辑器中输入 `@` 触发搜索
 - **格式**: `[@设定名称](moge://type/id)`
-- **已实现**: 搜索和插入
-- **待实现**: 悬浮预览、跳转、反向链接
+- **已实现**:
+  - 搜索和插入
+  - 悬浮预览 (`MentionHoverCard.tsx`)
+  - 跳转功能 (`MentionMarkdown.tsx`)
+  - 反向链接 (`/search/backlinks` API)
 
 ### 文稿模块架构
 
 - **从大纲创建**: 自动复制卷章结构
 - **AI辅助**: 续写、润色、扩写 (设定上下文注入)
 - **自动保存**: 30秒或内容变更时
+- **版本历史**:
+  - 每次保存自动创建版本快照
+  - 查看历史版本 (`ChapterVersionHistory.tsx`)
+  - 恢复到任意版本
+- **写作统计**:
+  - 总字数、已发布字数统计
+  - 章节发布进度追踪
+  - 最后编辑时间显示 (`WritingStats.tsx`)
 
 ---
 
