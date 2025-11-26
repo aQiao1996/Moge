@@ -69,6 +69,15 @@ export class ManuscriptsController {
   }
 
   /**
+   * 获取用户的写作统计数据
+   */
+  @Get('stats')
+  async getUserStats(@Request() req: AuthenticatedRequest) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.getUserStats(userId);
+  }
+
+  /**
    * 获取单个文稿
    */
   @Get(':id')

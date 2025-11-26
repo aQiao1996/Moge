@@ -35,6 +35,7 @@ import CreateItemDialog from '@/app/(main)/outline/components/CreateItemDialog';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 import ExportButton from '@/components/ExportButton';
+import WritingStats from '@/components/WritingStats';
 
 dayjs.extend(relativeTime);
 
@@ -246,6 +247,17 @@ export default function ManuscriptDetailPage() {
   const volumeCount = manuscript.volumes?.length || 0;
   const chapterCount = manuscript.chapters?.length || 0;
 
+  // 计算总章节数和已发布章节数
+  const totalChapters =
+    (manuscript.chapters?.length || 0) +
+    (manuscript.volumes?.reduce((sum, vol) => sum + (vol.chapters?.length || 0), 0) || 0);
+  const publishedChapters =
+    (manuscript.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0) +
+    (manuscript.volumes?.reduce(
+      (sum, vol) => sum + (vol.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0),
+      0
+    ) || 0);
+
   return (
     <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden p-6">
       {/* 头部信息 */}
@@ -415,16 +427,15 @@ export default function ManuscriptDetailPage() {
 
           {/* 统计分析 Tab */}
           <TabsContent value="stats" className="flex-1 overflow-y-auto">
-            <Card
-              className="border p-6 backdrop-blur-xl"
-              style={{
-                backgroundColor: 'var(--moge-card-bg)',
-                borderColor: 'var(--moge-card-border)',
-              }}
-            >
-              <h2 className="mb-4 text-lg font-semibold text-[var(--moge-text-main)]">统计分析</h2>
-              <p className="text-sm text-[var(--moge-text-muted)]">统计分析面板待实现...</p>
-            </Card>
+            <div className="space-y-6">
+              <WritingStats
+                totalWords={manuscript.totalWords || 0}
+                publishedWords={manuscript.publishedWords || 0}
+                totalChapters={totalChapters}
+                publishedChapters={publishedChapters}
+                lastEditedAt={manuscript.lastEditedAt || undefined}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

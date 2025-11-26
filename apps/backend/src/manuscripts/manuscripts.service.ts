@@ -1149,6 +1149,119 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   }
 
   /**
+   * 获取用户的写作统计数据
+   */
+  async getUserStats(userId: number) {
+    // 获取用户所有未删除的文稿
+    const manuscripts = await this.prisma.manuscripts.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+      },
+      include: {
+        chapters: true,
+        volumes: {
+          include: {
+            chapters: true,
+          },
+        },
+      },
+    });
+
+    // 统计总字数、已发布字数
+    let totalWords = 0;
+    let publishedWords = 0;
+    let totalChapters = 0;
+    let publishedChapters = 0;
+    const totalManuscripts = manuscripts.length;
+    let completedManuscripts = 0;
+    let inProgressManuscripts = 0;
+
+    for (const manuscript of manuscripts) {
+      totalWords += manuscript.totalWords || 0;
+      publishedWords += manuscript.publishedWords || 0;
+
+      // 统计章节数
+      const manuscriptChapters =
+        (manuscript.chapters?.length || 0) +
+        (manuscript.volumes?.reduce((sum, vol) => sum + (vol.chapters?.length || 0), 0) || 0);
+      totalChapters += manuscriptChapters;
+
+      // 统计已发布章节数
+      const manuscriptPublishedChapters =
+        (manuscript.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0) +
+        (manuscript.volumes?.reduce(
+          (sum, vol) => sum + (vol.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0),
+          0
+        ) || 0);
+      publishedChapters += manuscriptPublishedChapters;
+
+      // 统计文稿状态
+      if (manuscript.status === 'COMPLETED') {
+        completedManuscripts++;
+      } else if (manuscript.status === 'IN_PROGRESS') {
+        inProgressManuscripts++;
+      }
+    }
+
+    // 最近7天的写作统计
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentChapters = await this.prisma.manuscript_chapter_content.findMany({
+      where: {
+        updatedAt: {
+          gte: sevenDaysAgo,
+        },
+        chapter: {
+          OR: [
+            {
+              manuscript: {
+                userId,
+                deletedAt: null,
+              },
+            },
+            {
+              volume: {
+                manuscript: {
+                  userId,
+                  deletedAt: null,
+                },
+              },
+            },
+          ],
+        },
+      },
+      select: {
+        updatedAt: true,
+        content: true,
+      },
+      orderBy: {
+        updatedAt: 'asc',
+      },
+    });
+
+    // 按天统计字数
+    const dailyStats: Record<string, number> = {};
+    for (const chapter of recentChapters) {
+      const dateKey = chapter.updatedAt.toISOString().split('T')[0];
+      const wordCount = this.calculateWordCount(chapter.content);
+      dailyStats[dateKey] = (dailyStats[dateKey] || 0) + wordCount;
+    }
+
+    return {
+      totalWords,
+      publishedWords,
+      totalChapters,
+      publishedChapters,
+      totalManuscripts,
+      completedManuscripts,
+      inProgressManuscripts,
+      dailyStats,
+    };
+  }
+
+  /**
    * 批量更新卷排序
    * @param volumeIds 卷 ID 数组,按新的排序顺序排列
    * @param userId 用户 ID

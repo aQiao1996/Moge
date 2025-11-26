@@ -12,6 +12,17 @@ export interface ChapterVersion {
   createdAt: string;
 }
 
+export interface UserStats {
+  totalWords: number;
+  publishedWords: number;
+  totalChapters: number;
+  publishedChapters: number;
+  totalManuscripts: number;
+  completedManuscripts: number;
+  inProgressManuscripts: number;
+  dailyStats: Record<string, number>;
+}
+
 /**
  * 获取章节版本历史
  */
@@ -28,4 +39,12 @@ export async function restoreChapterVersion(chapterId: number, version: number) 
     `/manuscripts/chapters/${chapterId}/versions/${version}/restore`
   );
   return response.data;
+}
+
+/**
+ * 获取用户的写作统计数据
+ */
+export async function getUserStats(): Promise<UserStats> {
+  const response = await request.get('/manuscripts/stats');
+  return response.data as UserStats;
 }
