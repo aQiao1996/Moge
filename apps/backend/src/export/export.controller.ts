@@ -5,9 +5,7 @@ import { ExportService } from './export.service';
 import type { Response } from 'express';
 
 interface AuthRequest {
-  user?: {
-    id: number;
-  };
+  user?: { id: number };
 }
 
 /**
@@ -125,10 +123,7 @@ export class ExportController {
   ) {
     const userId = req?.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: '未登录',
-      });
+      return res.status(401).json({ success: false, message: '未登录' });
     }
 
     try {
@@ -169,11 +164,7 @@ export class ExportController {
   ) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: null,
-      };
+      return { success: false, message: '未登录', data: null };
     }
 
     try {
@@ -181,10 +172,7 @@ export class ExportController {
         format: (body.format || 'txt') as 'txt' | 'markdown',
       });
 
-      return {
-        success: true,
-        data: results,
-      };
+      return { success: true, data: results };
     } catch (error) {
       return {
         success: false,
@@ -209,11 +197,7 @@ export class ExportController {
   ) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: null,
-      };
+      return { success: false, message: '未登录', data: null };
     }
 
     try {
@@ -234,10 +218,7 @@ export class ExportController {
 
       return {
         success: true,
-        data: {
-          content,
-          format: format || 'txt',
-        },
+        data: { content, format: format || 'txt' },
       };
     } catch (error) {
       return {
