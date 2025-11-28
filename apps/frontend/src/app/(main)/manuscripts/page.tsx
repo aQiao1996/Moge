@@ -74,7 +74,6 @@ export default function ManuscriptsPage() {
       setManuscripts(response.data);
     } catch (error) {
       console.error('Load manuscripts error:', error);
-      toast.error('加载文稿列表失败');
     } finally {
       setLoading(false);
     }

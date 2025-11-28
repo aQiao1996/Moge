@@ -168,7 +168,6 @@ export default function OutlineStructureSidebar({
       }
     } catch (error) {
       console.error('删除失败:', error);
-      toast.error('删除失败，请重试');
       throw error;
     }
   };
@@ -206,7 +205,6 @@ export default function OutlineStructureSidebar({
       }
     } catch (error) {
       console.error('创建失败:', error);
-      toast.error('创建失败，请重试');
       throw error;
     }
   };

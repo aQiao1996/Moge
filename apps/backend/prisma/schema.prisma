@@ -124,7 +124,7 @@ model outline {
   id         Int               @id @default(autoincrement())
   /// 小说名称
   name       String
-  /// 小说类型（存 label）
+  /// 小说类型（存 value）
   type       String
   /// 故事时代背景
   era        String?

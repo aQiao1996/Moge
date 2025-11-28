@@ -89,7 +89,6 @@ export default function OutlineSettingsPanel({ outlineId, onUpdate }: OutlineSet
       setSettingsData(data);
     } catch (error) {
       console.error('加载大纲设定失败:', error);
-      toast.error('加载设定失败');
     }
   };
 
@@ -160,7 +159,6 @@ export default function OutlineSettingsPanel({ outlineId, onUpdate }: OutlineSet
       }
     } catch (error) {
       console.error('更新大纲设定失败:', error);
-      toast.error('更新设定关联失败，请重试');
     }
   };
 
@@ -209,7 +207,6 @@ export default function OutlineSettingsPanel({ outlineId, onUpdate }: OutlineSet
       }
     } catch (error) {
       console.error('移除设定关联失败:', error);
-      toast.error('移除设定关联失败，请重试');
     }
   };
 

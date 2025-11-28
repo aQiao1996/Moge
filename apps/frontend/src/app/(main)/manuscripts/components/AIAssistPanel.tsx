@@ -79,7 +79,6 @@ export default function AIAssistPanel({
       toast.success('AI 续写完成');
     } catch (error) {
       console.error('AI 续写失败:', error);
-      toast.error('AI 续写失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -107,7 +106,6 @@ export default function AIAssistPanel({
       toast.success('AI 润色完成');
     } catch (error) {
       console.error('AI 润色失败:', error);
-      toast.error('AI 润色失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -135,7 +133,6 @@ export default function AIAssistPanel({
       toast.success('AI 扩写完成');
     } catch (error) {
       console.error('AI 扩写失败:', error);
-      toast.error('AI 扩写失败，请稍后重试');
     } finally {
       setLoading(false);
     }

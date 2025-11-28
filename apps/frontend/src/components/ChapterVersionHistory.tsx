@@ -54,7 +54,6 @@ export default function ChapterVersionHistory({
       setVersions(data);
     } catch (error) {
       console.error('Failed to fetch version history:', error);
-      toast.error('加载版本历史失败');
     } finally {
       setLoading(false);
     }
@@ -69,7 +68,6 @@ export default function ChapterVersionHistory({
       onVersionRestored?.();
     } catch (error) {
       console.error('Failed to restore version:', error);
-      toast.error('版本恢复失败');
     } finally {
       setRestoring(false);
     }

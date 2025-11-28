@@ -69,7 +69,6 @@ export default function ManuscriptEditPage() {
       setManuscript(response.data);
     } catch (error) {
       console.error('Load manuscript error:', error);
-      toast.error('加载文稿失败');
     } finally {
       setLoading(false);
     }
@@ -91,7 +90,6 @@ export default function ManuscriptEditPage() {
       setLastSaved(response.data.updatedAt ? new Date(response.data.updatedAt) : null);
     } catch (error) {
       console.error('Load chapter content error:', error);
-      toast.error('加载章节内容失败');
     }
   }, [chapterId]);
 
@@ -139,9 +137,6 @@ export default function ManuscriptEditPage() {
         }
       } catch (error) {
         console.error('Save error:', error);
-        if (showToast) {
-          toast.error('保存失败');
-        }
       } finally {
         setSaving(false);
       }
@@ -276,7 +271,6 @@ export default function ManuscriptEditPage() {
       void loadManuscript(); // 刷新数据
     } catch (error) {
       console.error('Publish chapter error:', error);
-      toast.error('发布失败');
     }
   };
 
@@ -292,7 +286,6 @@ export default function ManuscriptEditPage() {
       void loadManuscript(); // 刷新数据
     } catch (error) {
       console.error('Unpublish chapter error:', error);
-      toast.error('取消发布失败');
     }
   };
 

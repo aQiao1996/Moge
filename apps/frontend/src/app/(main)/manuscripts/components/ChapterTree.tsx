@@ -401,7 +401,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('更新卷失败:', error);
-      toast.error('更新失败,请重试');
       throw error;
     }
   };
@@ -420,7 +419,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('更新章节失败:', error);
-      toast.error('更新失败,请重试');
       throw error;
     }
   };
@@ -460,7 +458,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('删除失败:', error);
-      toast.error('删除失败,请重试');
       throw error;
     }
   };
@@ -502,7 +499,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('创建失败:', error);
-      toast.error('创建失败,请重试');
       throw error;
     }
   };
@@ -540,7 +536,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('更新卷排序失败:', error);
-      toast.error('排序失败，请重试');
       // 失败时也刷新数据以恢复原状
       if (onRefresh) {
         void onRefresh();
@@ -585,7 +580,6 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
       }
     } catch (error) {
       console.error('更新章节排序失败:', error);
-      toast.error('排序失败，请重试');
       // 失败时也刷新数据以恢复原状
       if (onRefresh) {
         void onRefresh();

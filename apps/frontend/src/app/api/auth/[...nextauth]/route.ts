@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import NextAuth, { type NextAuthOptions } from 'next-auth';
+import type { NextRequest } from 'next/server';
 import GitlabProvider, { type GitLabProfile } from 'next-auth/providers/gitlab';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import httpRequest from '@/lib/request';
@@ -116,7 +116,7 @@ const authOptions: NextAuthOptions = {
       // 客户端更新 session: trigger 为 'update'
       if (trigger === 'update' && session) {
         // 将客户端传来的新 session 数据合并到 token 中
-        token = { ...token, ...session };
+        return { ...token, ...session } as typeof token;
       }
 
       return token;
@@ -147,6 +147,8 @@ const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions) as {
+  (req: NextRequest, context: { params: Record<string, string | string[]> }): Promise<Response>;
+};
 
 export { handler as GET, handler as POST };

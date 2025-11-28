@@ -85,7 +85,6 @@ export default function ManuscriptDetailPage() {
       setManuscript(response.data);
     } catch (error) {
       console.error('Load manuscript error:', error);
-      toast.error('加载文稿失败');
     } finally {
       setLoading(false);
     }
@@ -139,7 +138,6 @@ export default function ManuscriptDetailPage() {
       await loadManuscript();
     } catch (error) {
       console.error('Create volume error:', error);
-      toast.error('创建卷失败');
       throw error;
     }
   };
@@ -159,7 +157,6 @@ export default function ManuscriptDetailPage() {
       await loadManuscript();
     } catch (error) {
       console.error('Create chapter error:', error);
-      toast.error('创建章节失败');
       throw error;
     }
   };

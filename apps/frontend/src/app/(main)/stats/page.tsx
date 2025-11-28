@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, FileText, CheckCircle2, TrendingUp, BookMarked } from 'lucide-react';
 import { getUserStats, type UserStats } from '@/api/manuscripts.api';
-import { toast } from 'sonner';
 
 export default function StatsPage() {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -17,7 +16,6 @@ export default function StatsPage() {
         setStats(data);
       } catch (error) {
         console.error('Failed to load stats:', error);
-        toast.error('加载统计数据失败');
       } finally {
         setLoading(false);
       }
