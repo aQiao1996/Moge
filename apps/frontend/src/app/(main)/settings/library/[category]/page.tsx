@@ -22,6 +22,7 @@ import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/com
 import MogeList from '@/app/components/MogeList';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import CategoryDialogs from '@/app/(main)/settings/library/components/CategoryDialogs';
+import RelatedItemsDialog from '@/app/(main)/settings/library/components/RelatedItemsDialog';
 import CharacterDialog from '@/app/(main)/settings/components/CharacterDialog';
 import SystemDialog from '@/app/(main)/settings/components/SystemDialog';
 import WorldDialog from '@/app/(main)/settings/components/WorldDialog';
@@ -109,6 +110,8 @@ export default function CategorySettingsPage() {
   const [editingSetting, setEditingSetting] = useState<CharacterSetting | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [relatedDialogOpen, setRelatedDialogOpen] = useState(false);
+  const [selectedSetting, setSelectedSetting] = useState<CharacterSetting | null>(null);
   const pageSize = 10;
 
   // 获取当前分类信息
@@ -241,8 +244,8 @@ export default function CategorySettingsPage() {
 
   // 查看关联项目
   const handleViewProjects = (setting: CharacterSetting) => {
-    // TODO: 打开关联项目弹框
-    console.log('查看关联项目:', setting);
+    setSelectedSetting(setting);
+    setRelatedDialogOpen(true);
   };
 
   // 获取类型标签的中文名称
@@ -453,6 +456,17 @@ export default function CategorySettingsPage() {
         editingSetting={editingSetting}
         onEditChange={handleEditDialogChange}
       />
+
+      {/* 关联项目弹框 */}
+      {selectedSetting && (
+        <RelatedItemsDialog
+          open={relatedDialogOpen}
+          onOpenChange={setRelatedDialogOpen}
+          settingId={selectedSetting.id}
+          settingName={selectedSetting.name}
+          category={category as 'characters' | 'systems' | 'worlds' | 'misc'}
+        />
+      )}
     </div>
   );
 }
