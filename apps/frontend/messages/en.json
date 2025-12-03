@@ -1,0 +1,34 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "confirm": "Confirm",
+    "back": "Back",
+    "loading": "Loading...",
+    "noData": "No Data",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import"
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "manuscripts": "Manuscripts",
+    "outline": "Outline",
+    "settings": "Settings",
+    "dictionary": "Dictionary",
+    "profile": "Profile"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username"
+  }
+}

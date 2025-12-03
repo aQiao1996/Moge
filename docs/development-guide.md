@@ -254,9 +254,10 @@ export default function Component() {
    - 切换语言测试所有功能
    - 确保 AI 生成内容符合当前语言
 
-4. **类型安全**（可选优化）
-   - 配置 TypeScript 提示翻译键
-   - 防止拼写错误
+4. **类型安全**
+   - 翻译消息类型定义在 `src/i18n/messages.type.ts`
+   - 必须继承 `AbstractIntlMessages` 以满足 next-intl 类型要求
+   - 添加新命名空间时同步更新类型定义
 
 ### 注意事项
 
