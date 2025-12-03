@@ -10,6 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { FileText, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/zh-cn';
+
+dayjs.extend(relativeTime);
+dayjs.locale('zh-cn');
 
 interface WritingStatsProps {
   totalWords: number;
@@ -35,19 +41,7 @@ export default function WritingStats({
 
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '从未编辑';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) {
-      return `${days}天前`;
-    }
-    if (hours > 0) {
-      return `${hours}小时前`;
-    }
-    return '刚刚';
+    return dayjs(dateStr).fromNow();
   };
 
   return (
