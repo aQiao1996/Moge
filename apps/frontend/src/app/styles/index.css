@@ -139,3 +139,26 @@ input:-webkit-autofill:active {
     /* 使用超长 transition 技巧来防止浏览器样式覆盖 */
     transition: background-color 9999s ease-in-out 0s;
 }
+
+/* --- View Transitions API 主题切换动画 --- */
+/* 为根元素设置 view-transition-name */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* 确保旧视图和新视图都可见 */
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* 禁用默认的淡入淡出动画 */
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
+

@@ -32,13 +32,51 @@ export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
   /**
    * 处理主题切换
    * 在light和dark主题之间切换,system主题视为light
+   * 使用 View Transitions API 实现圆形扩散动画
    */
-  const handleTheme = () => {
-    setThemeAnim('rotate-90');
-    setTheme(theme === 'light' || theme === 'system' ? 'dark' : 'light');
-    setTimeout(() => {
-      setThemeAnim('');
-    }, 250);
+  const handleTheme = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // 检查浏览器是否支持 View Transitions API
+    if (!document.startViewTransition) {
+      // 不支持则直接切换
+      setTheme(theme === 'light' || theme === 'system' ? 'dark' : 'light');
+      return;
+    }
+
+    // 获取点击位置
+    const x = event.clientX;
+    const y = event.clientY;
+
+    // 计算覆盖整个屏幕所需的半径（从点击位置到屏幕最远角的距离）
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    // 启动 View Transition
+    const transition = document.startViewTransition(() => {
+      setTheme(theme === 'light' || theme === 'system' ? 'dark' : 'light');
+    });
+
+    // 等待 transition 准备就绪后执行动画
+    void transition.ready.then(() => {
+      // 按钮旋转动画
+      setThemeAnim('rotate-90');
+      setTimeout(() => {
+        setThemeAnim('');
+      }, 250);
+
+      // 圆形扩散动画 - 统一使用 new(root) 从小圆扩散到大圆
+      document.documentElement.animate(
+        {
+          clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`],
+        },
+        {
+          duration: 500,
+          easing: 'ease-in-out',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
   };
 
   /**
