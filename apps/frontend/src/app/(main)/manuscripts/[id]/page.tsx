@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/zh-cn';
 import { getManuscript, createVolume, createChapter, type Manuscript } from '../api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ChapterTree from '../components/ChapterTree';
@@ -36,8 +37,10 @@ import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 import ExportButton from '@/components/ExportButton';
 import WritingStats from '@/components/WritingStats';
+import ManuscriptSettingsPanel from '../components/ManuscriptSettingsPanel';
 
 dayjs.extend(relativeTime);
+dayjs.locale('zh-cn');
 
 /**
  * 文稿状态配置
@@ -410,16 +413,7 @@ export default function ManuscriptDetailPage() {
 
           {/* 关联设定 Tab */}
           <TabsContent value="settings" className="flex-1 overflow-y-auto">
-            <Card
-              className="border p-6 backdrop-blur-xl"
-              style={{
-                backgroundColor: 'var(--moge-card-bg)',
-                borderColor: 'var(--moge-card-border)',
-              }}
-            >
-              <h2 className="mb-4 text-lg font-semibold text-[var(--moge-text-main)]">关联设定</h2>
-              <p className="text-sm text-[var(--moge-text-muted)]">关联设定面板待实现...</p>
-            </Card>
+            {manuscript.id && <ManuscriptSettingsPanel manuscriptId={manuscript.id} />}
           </TabsContent>
 
           {/* 统计分析 Tab */}
