@@ -13,7 +13,7 @@ import DictItemDialog from '../components/DictItemDialog';
 import { toast } from 'sonner';
 import type { CreateDictItemValues, UpdateDictItemValues, Dict } from '@moge/types';
 import { useDictStore } from '@/stores/dictStore';
-import dayjs from 'dayjs';
+import dayjs from '@/lib/dayjs';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 
 /**

@@ -14,15 +14,12 @@ import {
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import dayjs from '@/lib/dayjs';
 import { getManuscripts, deleteManuscript, type Manuscript } from './api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ManuscriptDialog from './components/ManuscriptDialog';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
-
-dayjs.extend(relativeTime);
 
 /**
  * 文稿状态配置

@@ -26,9 +26,7 @@ import {
   FilePlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/zh-cn';
+import dayjs from '@/lib/dayjs';
 import { getManuscript, createVolume, createChapter, type Manuscript } from '../api/client';
 import type { ManuscriptStatus } from '@moge/types';
 import ChapterTree from '../components/ChapterTree';
@@ -38,9 +36,6 @@ import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 import ExportButton from '@/components/ExportButton';
 import WritingStats from '@/components/WritingStats';
 import ManuscriptSettingsPanel from '../components/ManuscriptSettingsPanel';
-
-dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
 
 /**
  * 文稿状态配置

@@ -16,12 +16,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getWorkspaceSummary, type WorkspaceSummary } from '@/api/workspace.api';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/zh-cn';
-
-dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
+import dayjs from '@/lib/dayjs';
 
 export default function WorkspacePage() {
   const router = useRouter();

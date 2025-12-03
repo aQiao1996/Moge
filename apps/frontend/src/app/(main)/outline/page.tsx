@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
 import { getDictLabel, getDictValue } from '@/app/(main)/outline/utils/dictUtils';
-import dayjs from 'dayjs';
+import dayjs from '@/lib/dayjs';
 import type { Outline } from '@moge/types';
 
 /**
