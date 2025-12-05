@@ -45,17 +45,17 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 ## 3. 模块完成状态
 
-| 模块       | 状态 | 核心功能                         |
-| ---------- | ---- | -------------------------------- |
-| 用户系统   | ✅   | 注册、登录、OAuth、个人中心      |
-| 设定集     | ✅   | 项目管理、四大设定CRUD、设定库   |
-| 字典管理   | ✅   | 分类管理、字典项CRUD             |
-| 大纲       | ✅   | CRUD、卷章结构、AI生成、设定关联 |
-| 文稿       | ✅   | CRUD、卷章管理、编辑器、AI辅助   |
-| 工作台     | ✅   | 统计卡片、最近项目、快速创建     |
-| 搜索/@引用 | ✅   | 统一搜索、@引用基础功能          |
-| 导出       | ✅   | TXT/Markdown导出                 |
-| 国际化     | 🚧   | next-intl 配置、中英文翻译       |
+| 模块       | 状态   | 核心功能                                |
+| ---------- | ------ | --------------------------------------- |
+| 用户系统   | ✅     | 注册、登录、OAuth、个人中心             |
+| 设定集     | ✅     | 项目管理、四大设定CRUD、设定库          |
+| 字典管理   | ✅     | 分类管理、字典项CRUD                    |
+| 大纲       | ✅     | CRUD、卷章结构、AI生成、设定关联        |
+| 文稿       | ✅     | CRUD、卷章管理、编辑器、AI辅助          |
+| 工作台     | ✅     | 统计卡片、最近项目、快速创建            |
+| 搜索/@引用 | ✅     | 统一搜索、@引用基础功能                 |
+| 导出       | ✅     | TXT/Markdown导出                        |
+| 国际化     | 🔴 10% | 仅完成架构配置,翻译文件和组件迁移待完成 |
 
 ---
 
@@ -148,12 +148,28 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 ## 7. 国际化 (i18n) 规范
 
+### 当前状态
+
+⚠️ **国际化工作处于初期阶段 (约 10% 完成)**
+
+- ✅ **架构配置**: next-intl 已安装并配置完成
+- 🔴 **翻译文件**: 仅包含 common/nav/auth 三个基础命名空间 (共 34 行)
+- 🔴 **组件迁移**: 前端组件中 `useTranslations` 使用次数为 0,所有文本仍为硬编码
+- 🔴 **AI 国际化**: 后端 AI prompt 完全硬编码中文,未支持语言参数
+- 🔴 **语言切换**: UI 功能尚未实现
+
+**缺失的翻译模块**:
+
+- manuscripts(文稿)、outline(大纲)、settings(设定集)
+- dictionary(字典)、workspace(工作台)、search(搜索)
+- export(导出)、errors(错误消息)、validation(表单验证)
+
 ### 技术方案
 
 - **框架**: next-intl (Next.js 官方推荐)
 - **支持语言**: 中文(zh)、英文(en)
-- **翻译文件**: `messages/zh.json` 和 `messages/en.json`
-- **语言切换**: 基于 cookie，与 zustand store 同步
+- **翻译文件**: `apps/frontend/messages/zh.json` 和 `en.json`
+- **语言切换**: 基于 cookie，与 zustand store 同步 (待实现)
 
 ### 使用规范
 
@@ -233,12 +249,12 @@ export default function AIComponent() {
 }
 ```
 
-**AI 调用点清单**（必须适配语言）:
+**AI 调用点清单**（⚠️ 均未适配语言参数）:
 
-- 大纲生成 (`outline/generate`)
-- 章节续写 (`manuscripts/ai-continue`)
-- 内容润色 (`manuscripts/ai-polish`)
-- 内容扩写 (`manuscripts/ai-expand`)
+- 🔴 大纲生成 (`outline/generate` → `outline.prompt.ts`) - 仅中文 prompt
+- 🔴 章节续写 (`manuscripts/ai-continue` → `manuscripts.service.ts:783-847`)
+- 🔴 内容润色 (`manuscripts/ai-polish` → `manuscripts.service.ts:852-912`)
+- 🔴 内容扩写 (`manuscripts/ai-expand` → `manuscripts.service.ts:917-984`)
 
 #### 5. 日期和数字格式化
 
@@ -298,8 +314,121 @@ export default function Component() {
 
 ---
 
-## 8. 下一步
+## 8. 国际化完成路线图
 
-1. **验证**: 启动服务,走完核心流程
-2. **修复**: 根据验证结果修复问题
-3. **优化**: 完善体验(可选)
+### 🔴 P0 - 核心国际化 (当前阻塞项)
+
+#### 阶段 1: 翻译文件完善 (工作量最大)
+
+- [ ] **manuscripts 模块** - 文稿相关所有文本 (约 100+ 键)
+  - 列表页、详情页、编辑器、卷章管理
+  - AI 辅助功能提示文本
+- [ ] **outline 模块** - 大纲相关文本 (约 60+ 键)
+  - 列表页、编辑器、AI 生成提示
+- [ ] **settings 模块** - 设定集相关文本 (约 80+ 键)
+  - 四大设定类型、表单字段、关联项目
+- [ ] **dictionary 模块** - 字典管理文本 (约 40+ 键)
+- [ ] **workspace 模块** - 工作台文本 (约 30+ 键)
+- [ ] **errors 模块** - 错误和提示消息 (约 50+ 键)
+- [ ] **validation 模块** - 表单验证消息 (约 30+ 键)
+
+**预计总翻译条目**: 500+
+
+#### 阶段 2: 前端组件迁移
+
+- [ ] **基础组件改造** - 为自定义组件添加翻译支持
+  - `MogeFormDialog`、`MogeConfirmPopover`、`MogeFilter` 等
+- [ ] **页面组件迁移** - 按模块逐个迁移 (建议顺序):
+  1. workspace (工作台) - 最简单,适合练手
+  2. dictionary (字典管理) - 功能单一
+  3. settings (设定集) - 中等复杂度
+  4. outline (大纲) - 包含 AI 交互
+  5. manuscripts (文稿) - 最复杂,含编辑器和多个 AI 功能
+- [ ] **共享组件** - Toast、错误边界、加载状态等
+
+#### 阶段 3: 后端 AI 国际化
+
+- [ ] **API 扩展** - 所有 AI 相关接口添加 `language` 参数
+  - `POST /outline/:id/generate`
+  - `POST /manuscripts/chapters/:id/ai/continue`
+  - `POST /manuscripts/chapters/:id/ai/polish`
+  - `POST /manuscripts/chapters/:id/ai/expand`
+- [ ] **Prompt 模板** - 为每个 AI 功能创建中英文两套 prompt
+  - `outline.prompt.ts` 拆分为 `outline.prompt.zh.ts` 和 `outline.prompt.en.ts`
+  - 或使用函数式 prompt 工厂,根据 language 参数返回对应模板
+- [ ] **DTO 验证** - 更新 Zod schema,添加 language 字段验证
+
+#### 阶段 4: 语言切换功能
+
+- [ ] **前端 Store** - zustand 添加语言状态管理
+- [ ] **切换 UI** - 在导航栏或个人中心添加语言切换按钮
+- [ ] **Cookie 同步** - 确保语言偏好持久化
+- [ ] **动态 locale** - 修改 `i18n/request.ts`,从 cookie 读取语言而非硬编码
+- [ ] **dayjs locale 切换** - 根据用户语言动态加载 dayjs 语言包
+
+### 🟡 P1 - 体验优化
+
+- [ ] **翻译质量检查** - 确保中英文翻译准确、专业、一致
+- [ ] **复数和性别** - 使用 next-intl 的高级功能处理复数形式
+- [ ] **错误处理** - 缺失翻译键时的降级方案
+- [ ] **SEO 优化** - 元数据和页面标题的国际化
+- [ ] **RTL 支持** - 为未来可能的阿拉伯语等语言预留接口
+
+### 🟢 P2 - 高级功能
+
+- [ ] **本地化测试** - 编写端到端测试覆盖两种语言
+- [ ] **翻译管理** - 集成 Crowdin 等翻译管理平台
+- [ ] **语言检测** - 根据浏览器语言自动设置默认语言
+- [ ] **更多语言** - 日语、韩语等
+
+---
+
+## 9. 下一步行动计划
+
+### 立即执行 (本周)
+
+1. ✅ 更新文档,明确国际化现状
+2. 🔴 创建完整的翻译文件骨架 - 添加所有业务模块的命名空间和主要键
+3. 🔴 迁移 1-2 个简单模块作为示范 (建议从 workspace 开始)
+
+### 短期目标 (2 周内)
+
+1. 完成所有翻译文件 (500+ 条目)
+2. 迁移 80% 以上的前端组件
+3. 实现基础的语言切换功能
+
+### 中期目标 (1 个月内)
+
+1. 完成所有前端组件迁移
+2. 后端 AI prompt 国际化完成
+3. 全流程中英文测试通过
+
+### 验证标准
+
+- [ ] 所有用户可见文本均通过 `t()` 调用,无硬编码
+- [ ] 语言切换后,所有页面文本正确更新
+- [ ] AI 生成内容符合当前选择的语言
+- [ ] `pnpm run lint` 和 `pnpm run typecheck` 全部通过
+- [ ] 错误消息、Toast 提示、表单验证均已国际化
+
+---
+
+## 10. 关键文件索引
+
+### 国际化相关
+
+- `apps/frontend/messages/zh.json` - 中文翻译文件
+- `apps/frontend/messages/en.json` - 英文翻译文件
+- `apps/frontend/src/i18n/request.ts` - next-intl 配置
+- `apps/frontend/src/i18n/messages.type.ts` - 翻译消息类型定义
+
+### AI Prompt 文件
+
+- `apps/backend/src/outline/prompts/outline.prompt.ts` - 大纲生成 prompt (需国际化)
+- `apps/backend/src/manuscripts/manuscripts.service.ts` - 文稿 AI 功能实现
+
+### 开发规范
+
+- `docs/development-standards.md` - 完整开发规范索引
+- `docs/standards/core-rules.md` - 核心开发规则
+- `docs/standards/api-development.md` - 接口开发规范
