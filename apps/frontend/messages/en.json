@@ -13,7 +13,13 @@
     "filter": "Filter",
     "sort": "Sort",
     "export": "Export",
-    "import": "Import"
+    "import": "Import",
+    "viewAll": "View All",
+    "success": "Success",
+    "error": "Error",
+    "submit": "Submit",
+    "close": "Close",
+    "actions": "Actions"
   },
   "nav": {
     "workspace": "Workspace",
@@ -30,5 +36,213 @@
     "email": "Email",
     "password": "Password",
     "username": "Username"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "createProject": "New Project",
+    "createOutline": "New Outline",
+    "createManuscript": "New Manuscript",
+    "stats": {
+      "todayWords": "Today's Words",
+      "weekWords": "This Week",
+      "totalWords": "Total Words",
+      "projectCount": "Projects",
+      "manuscriptCount": "Manuscripts"
+    },
+    "recent": {
+      "projects": "Recent Projects",
+      "outlines": "Recent Outlines",
+      "manuscripts": "Recent Manuscripts"
+    },
+    "empty": {
+      "projects": "No projects yet",
+      "outlines": "No outlines yet",
+      "manuscripts": "No manuscripts yet"
+    },
+    "status": {
+      "draft": "Draft",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "published": "Published",
+      "generating": "Generating",
+      "generated": "Generated"
+    },
+    "wordCount": "words"
+  },
+  "manuscripts": {
+    "title": "My Manuscripts",
+    "create": "New Manuscript",
+    "edit": "Edit Manuscript",
+    "delete": "Delete Manuscript",
+    "createFromOutline": "Create from Outline",
+    "name": "Manuscript Name",
+    "type": "Type",
+    "status": "Status",
+    "words": "Words",
+    "volumes": "Volumes",
+    "chapters": "Chapters",
+    "lastEdited": "Last Edited",
+    "ai": {
+      "continue": "AI Continue",
+      "polish": "AI Polish",
+      "expand": "AI Expand",
+      "generating": "AI Generating..."
+    },
+    "editor": {
+      "title": "Editor",
+      "autoSave": "Auto Save",
+      "saveSuccess": "Saved",
+      "saveFailed": "Save Failed"
+    },
+    "chapter": {
+      "add": "Add Chapter",
+      "edit": "Edit Chapter",
+      "delete": "Delete Chapter",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "content": "Content"
+    },
+    "version": {
+      "history": "Version History",
+      "restore": "Restore",
+      "current": "Current"
+    }
+  },
+  "outline": {
+    "title": "My Outlines",
+    "create": "New Outline",
+    "edit": "Edit Outline",
+    "delete": "Delete Outline",
+    "name": "Outline Name",
+    "type": "Type",
+    "status": "Status",
+    "generate": "Generate with AI",
+    "generating": "Generating...",
+    "saveContent": "Save Content",
+    "volumes": "Volumes",
+    "chapters": "Chapters",
+    "addVolume": "Add Volume",
+    "addChapter": "Add Chapter",
+    "volumeName": "Volume Name",
+    "chapterName": "Chapter Name",
+    "content": "Content"
+  },
+  "settings": {
+    "title": "Settings",
+    "project": {
+      "title": "Project Management",
+      "create": "New Project",
+      "edit": "Edit Project",
+      "delete": "Delete Project",
+      "name": "Project Name",
+      "type": "Project Type",
+      "description": "Description"
+    },
+    "character": {
+      "title": "Characters",
+      "create": "New Character",
+      "edit": "Edit Character",
+      "delete": "Delete Character",
+      "name": "Character Name",
+      "description": "Description",
+      "content": "Details"
+    },
+    "world": {
+      "title": "World Building",
+      "create": "New World Setting",
+      "edit": "Edit World Setting",
+      "delete": "Delete World Setting",
+      "name": "Name",
+      "description": "Description",
+      "content": "Details"
+    },
+    "system": {
+      "title": "Systems",
+      "create": "New System",
+      "edit": "Edit System",
+      "delete": "Delete System",
+      "name": "System Name",
+      "description": "Description",
+      "content": "Details"
+    },
+    "misc": {
+      "title": "Miscellaneous",
+      "create": "New Setting",
+      "edit": "Edit Setting",
+      "delete": "Delete Setting",
+      "name": "Name",
+      "description": "Description",
+      "content": "Details"
+    },
+    "library": {
+      "title": "Settings Library",
+      "search": "Search Settings",
+      "filter": "Filter",
+      "type": "Type"
+    }
+  },
+  "dictionary": {
+    "title": "Dictionary",
+    "category": {
+      "title": "Categories",
+      "create": "New Category",
+      "edit": "Edit Category",
+      "delete": "Delete Category",
+      "name": "Category Name",
+      "description": "Description"
+    },
+    "item": {
+      "title": "Items",
+      "create": "New Item",
+      "edit": "Edit Item",
+      "delete": "Delete Item",
+      "term": "Term",
+      "definition": "Definition",
+      "example": "Example"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search content...",
+    "results": "Search Results",
+    "noResults": "No results found",
+    "mention": {
+      "title": "@ Mention",
+      "search": "Search settings...",
+      "insert": "Insert Mention"
+    },
+    "backlinks": {
+      "title": "Backlinks",
+      "empty": "No backlinks"
+    }
+  },
+  "export": {
+    "title": "Export",
+    "format": "Format",
+    "txt": "TXT",
+    "markdown": "Markdown",
+    "epub": "EPUB",
+    "docx": "DOCX",
+    "export": "Export",
+    "exporting": "Exporting...",
+    "success": "Export Successful",
+    "failed": "Export Failed"
+  },
+  "errors": {
+    "network": "Network error, please try again",
+    "server": "Server error",
+    "notFound": "Not found",
+    "unauthorized": "Unauthorized, please login",
+    "forbidden": "Access forbidden",
+    "validation": "Validation failed",
+    "unknown": "Unknown error"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email",
+    "minLength": "Minimum {min} characters required",
+    "maxLength": "Maximum {max} characters allowed",
+    "pattern": "Invalid format",
+    "unique": "This value already exists"
   }
 }

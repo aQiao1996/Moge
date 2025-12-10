@@ -13,7 +13,13 @@
     "filter": "筛选",
     "sort": "排序",
     "export": "导出",
-    "import": "导入"
+    "import": "导入",
+    "viewAll": "查看全部",
+    "success": "操作成功",
+    "error": "操作失败",
+    "submit": "提交",
+    "close": "关闭",
+    "actions": "操作"
   },
   "nav": {
     "workspace": "工作台",
@@ -30,5 +36,213 @@
     "email": "邮箱",
     "password": "密码",
     "username": "用户名"
+  },
+  "workspace": {
+    "title": "工作台",
+    "createProject": "新建项目",
+    "createOutline": "新建大纲",
+    "createManuscript": "新建文稿",
+    "stats": {
+      "todayWords": "今日字数",
+      "weekWords": "本周字数",
+      "totalWords": "总字数",
+      "projectCount": "项目数",
+      "manuscriptCount": "文稿数"
+    },
+    "recent": {
+      "projects": "最近项目",
+      "outlines": "最近大纲",
+      "manuscripts": "最近文稿"
+    },
+    "empty": {
+      "projects": "暂无项目",
+      "outlines": "暂无大纲",
+      "manuscripts": "暂无文稿"
+    },
+    "status": {
+      "draft": "草稿",
+      "inProgress": "进行中",
+      "completed": "已完结",
+      "published": "已发布",
+      "generating": "生成中",
+      "generated": "已生成"
+    },
+    "wordCount": "字"
+  },
+  "manuscripts": {
+    "title": "我的文稿",
+    "create": "新建文稿",
+    "edit": "编辑文稿",
+    "delete": "删除文稿",
+    "createFromOutline": "从大纲创建",
+    "name": "文稿名称",
+    "type": "文稿类型",
+    "status": "状态",
+    "words": "字数",
+    "volumes": "卷",
+    "chapters": "章节",
+    "lastEdited": "最后编辑",
+    "ai": {
+      "continue": "AI 续写",
+      "polish": "AI 润色",
+      "expand": "AI 扩写",
+      "generating": "AI 生成中..."
+    },
+    "editor": {
+      "title": "编辑器",
+      "autoSave": "自动保存",
+      "saveSuccess": "保存成功",
+      "saveFailed": "保存失败"
+    },
+    "chapter": {
+      "add": "新增章节",
+      "edit": "编辑章节",
+      "delete": "删除章节",
+      "publish": "发布章节",
+      "unpublish": "取消发布",
+      "content": "章节内容"
+    },
+    "version": {
+      "history": "版本历史",
+      "restore": "恢复版本",
+      "current": "当前版本"
+    }
+  },
+  "outline": {
+    "title": "我的大纲",
+    "create": "新建大纲",
+    "edit": "编辑大纲",
+    "delete": "删除大纲",
+    "name": "大纲名称",
+    "type": "大纲类型",
+    "status": "状态",
+    "generate": "AI 生成大纲",
+    "generating": "生成中...",
+    "saveContent": "保存内容",
+    "volumes": "卷",
+    "chapters": "章节",
+    "addVolume": "添加卷",
+    "addChapter": "添加章节",
+    "volumeName": "卷名",
+    "chapterName": "章节名",
+    "content": "内容"
+  },
+  "settings": {
+    "title": "设定集",
+    "project": {
+      "title": "项目管理",
+      "create": "新建项目",
+      "edit": "编辑项目",
+      "delete": "删除项目",
+      "name": "项目名称",
+      "type": "项目类型",
+      "description": "项目描述"
+    },
+    "character": {
+      "title": "角色设定",
+      "create": "新建角色",
+      "edit": "编辑角色",
+      "delete": "删除角色",
+      "name": "角色名称",
+      "description": "角色描述",
+      "content": "详细设定"
+    },
+    "world": {
+      "title": "世界观设定",
+      "create": "新建世界观",
+      "edit": "编辑世界观",
+      "delete": "删除世界观",
+      "name": "世界观名称",
+      "description": "世界观描述",
+      "content": "详细设定"
+    },
+    "system": {
+      "title": "体系设定",
+      "create": "新建体系",
+      "edit": "编辑体系",
+      "delete": "删除体系",
+      "name": "体系名称",
+      "description": "体系描述",
+      "content": "详细设定"
+    },
+    "misc": {
+      "title": "其他设定",
+      "create": "新建设定",
+      "edit": "编辑设定",
+      "delete": "删除设定",
+      "name": "设定名称",
+      "description": "设定描述",
+      "content": "详细设定"
+    },
+    "library": {
+      "title": "设定库",
+      "search": "搜索设定",
+      "filter": "筛选",
+      "type": "类型"
+    }
+  },
+  "dictionary": {
+    "title": "字典管理",
+    "category": {
+      "title": "分类管理",
+      "create": "新建分类",
+      "edit": "编辑分类",
+      "delete": "删除分类",
+      "name": "分类名称",
+      "description": "分类描述"
+    },
+    "item": {
+      "title": "字典项",
+      "create": "新建字典项",
+      "edit": "编辑字典项",
+      "delete": "删除字典项",
+      "term": "词条",
+      "definition": "释义",
+      "example": "示例"
+    }
+  },
+  "search": {
+    "title": "搜索",
+    "placeholder": "搜索内容...",
+    "results": "搜索结果",
+    "noResults": "未找到相关内容",
+    "mention": {
+      "title": "@ 引用",
+      "search": "搜索设定...",
+      "insert": "插入引用"
+    },
+    "backlinks": {
+      "title": "反向链接",
+      "empty": "暂无反向链接"
+    }
+  },
+  "export": {
+    "title": "导出",
+    "format": "导出格式",
+    "txt": "TXT 格式",
+    "markdown": "Markdown 格式",
+    "epub": "EPUB 格式",
+    "docx": "DOCX 格式",
+    "export": "导出",
+    "exporting": "导出中...",
+    "success": "导出成功",
+    "failed": "导出失败"
+  },
+  "errors": {
+    "network": "网络错误,请稍后重试",
+    "server": "服务器错误",
+    "notFound": "未找到相关内容",
+    "unauthorized": "未授权,请先登录",
+    "forbidden": "无权限访问",
+    "validation": "数据验证失败",
+    "unknown": "未知错误"
+  },
+  "validation": {
+    "required": "此项为必填项",
+    "email": "请输入有效的邮箱地址",
+    "minLength": "最少需要 {min} 个字符",
+    "maxLength": "最多允许 {max} 个字符",
+    "pattern": "格式不正确",
+    "unique": "该值已存在"
   }
 }
