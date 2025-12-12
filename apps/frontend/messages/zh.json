@@ -129,6 +129,8 @@
   },
   "settings": {
     "title": "设定集",
+    "description": "管理您的小说设定，构建完整的创作世界",
+    "libraryLink": "设定库",
     "project": {
       "title": "项目管理",
       "create": "新建项目",
@@ -136,7 +138,24 @@
       "delete": "删除项目",
       "name": "项目名称",
       "type": "项目类型",
-      "description": "项目描述"
+      "description": "项目描述",
+      "viewDetail": "查看详情",
+      "confirmDelete": "确认删除",
+      "confirmDeleteDesc": "此操作无法撤销，确定要删除「{name}」吗？",
+      "confirmText": "确认删除",
+      "cancelText": "取消",
+      "deleting": "删除中...",
+      "searchPlaceholder": "搜索小说项目名称...",
+      "emptyTitle": "还没有小说项目",
+      "emptyDescription": "创建您的第一个小说项目，开始构建设定集",
+      "emptyFilteredTitle": "没有找到符合条件的项目",
+      "totalSettings": "设定总数",
+      "stats": {
+        "characters": "角色",
+        "systems": "系统",
+        "worlds": "世界",
+        "misc": "辅助"
+      }
     },
     "character": {
       "title": "角色设定",

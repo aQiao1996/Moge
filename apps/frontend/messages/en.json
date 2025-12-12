@@ -129,6 +129,8 @@
   },
   "settings": {
     "title": "Settings",
+    "description": "Manage your novel settings and build a complete creative world",
+    "libraryLink": "Settings Library",
     "project": {
       "title": "Project Management",
       "create": "New Project",
@@ -136,7 +138,24 @@
       "delete": "Delete Project",
       "name": "Project Name",
       "type": "Project Type",
-      "description": "Description"
+      "description": "Description",
+      "viewDetail": "View Details",
+      "confirmDelete": "Confirm Delete",
+      "confirmDeleteDesc": "This action cannot be undone. Are you sure you want to delete「{name}」?",
+      "confirmText": "Confirm Delete",
+      "cancelText": "Cancel",
+      "deleting": "Deleting...",
+      "searchPlaceholder": "Search project names...",
+      "emptyTitle": "No projects yet",
+      "emptyDescription": "Create your first novel project to start building settings",
+      "emptyFilteredTitle": "No projects match the criteria",
+      "totalSettings": "Total Settings",
+      "stats": {
+        "characters": "Characters",
+        "systems": "Systems",
+        "worlds": "Worlds",
+        "misc": "Misc"
+      }
     },
     "character": {
       "title": "Characters",

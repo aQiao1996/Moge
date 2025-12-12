@@ -30,6 +30,7 @@ import {
   deleteProject,
   type Project as ApiProject,
 } from '@/api/projects.api';
+import { useTranslations } from 'next-intl';
 
 interface Project {
   id: string;
@@ -46,35 +47,37 @@ interface Project {
   [key: string]: string | number | boolean | string[] | null | undefined | object;
 }
 
-// 筛选配置
-const filterOptions: FilterOption[] = [
-  {
-    key: 'type',
-    label: '类型',
-    type: 'select',
-    options: ['仙侠', '都市', '科幻', '玄幻', '历史'],
-    placeholder: '选择类型',
-  },
-];
-
-// 排序配置
-const sortOptions: SortOption[] = [
-  { value: 'createdAt', label: '创建时间' },
-  { value: 'name', label: '名称' },
-  { value: 'type', label: '类型' },
-];
-
 /**
  * 设定集首页组件
  * 显示所有小说项目的管理界面，支持项目筛选、搜索和创建
  */
 export default function SettingsPage() {
+  const t = useTranslations('settings.project');
+  const tCommon = useTranslations('common');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const pageSize = 6;
+
+  // 筛选配置
+  const filterOptions: FilterOption[] = [
+    {
+      key: 'type',
+      label: t('type'),
+      type: 'select',
+      options: ['仙侠', '都市', '科幻', '玄幻', '历史'],
+      placeholder: t('type'),
+    },
+  ];
+
+  // 排序配置
+  const sortOptions: SortOption[] = [
+    { value: 'createdAt', label: tCommon('sort') },
+    { value: 'name', label: t('name') },
+    { value: 'type', label: t('type') },
+  ];
 
   // 筛选状态
   const [filters, setFilters] = useState<MogeFilterState>({
@@ -269,24 +272,30 @@ export default function SettingsPage() {
               <div className="flex items-center gap-1">
                 <Users className="h-3 w-3 text-[var(--moge-text-muted)]" />
                 <span className="text-[var(--moge-text-sub)]">
-                  角色 {project.characters.length}
+                  {t('stats.characters')} {project.characters.length}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <Zap className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">系统 {project.systems.length}</span>
+                <span className="text-[var(--moge-text-sub)]">
+                  {t('stats.systems')} {project.systems.length}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Globe className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">世界 {project.worlds.length}</span>
+                <span className="text-[var(--moge-text-sub)]">
+                  {t('stats.worlds')} {project.worlds.length}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Folder className="h-3 w-3 text-[var(--moge-text-muted)]" />
-                <span className="text-[var(--moge-text-sub)]">辅助 {project.misc.length}</span>
+                <span className="text-[var(--moge-text-sub)]">
+                  {t('stats.misc')} {project.misc.length}
+                </span>
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-sm">
-              <span className="text-[var(--moge-text-sub)]">设定总数</span>
+              <span className="text-[var(--moge-text-sub)]">{t('totalSettings')}</span>
               <span className="font-medium text-[var(--moge-text-main)]">{totalSettings}</span>
             </div>
           </div>
@@ -295,7 +304,7 @@ export default function SettingsPage() {
             <Button
               size="sm"
               variant="ghost"
-              title="查看详情"
+              title={t('viewDetail')}
               onClick={() => handleViewDetail(project)}
             >
               <Eye className="h-4 w-4" />
@@ -318,7 +327,7 @@ export default function SettingsPage() {
                 await handleUpdateProject(Number(project.id), values);
               }}
               trigger={
-                <Button size="sm" variant="ghost" title="编辑">
+                <Button size="sm" variant="ghost" title={t('edit')}>
                   <Edit className="h-4 w-4" />
                 </Button>
               }
@@ -328,17 +337,17 @@ export default function SettingsPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  title="删除"
+                  title={t('delete')}
                   className="text-red-500 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               }
-              title="确认删除"
-              description={`此操作无法撤销，确定要删除「${project.name}」吗？`}
-              confirmText="确认删除"
-              cancelText="取消"
-              loadingText="删除中..."
+              title={t('confirmDelete')}
+              description={t('confirmDeleteDesc', { name: project.name })}
+              confirmText={t('confirmText')}
+              cancelText={t('cancelText')}
+              loadingText={t('deleting')}
               confirmVariant="destructive"
               onConfirm={() => handleDeleteProject(project)}
             />
@@ -355,14 +364,14 @@ export default function SettingsPage() {
       {/* 标题和功能入口 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">设定集</h1>
-          <p className="mt-1 text-[var(--moge-text-sub)]">管理您的小说设定，构建完整的创作世界</p>
+          <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">{t('title')}</h1>
+          <p className="mt-1 text-[var(--moge-text-sub)]">{t('description')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/settings/library">
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />
-              设定库
+              {t('libraryLink')}
             </Button>
           </Link>
           <ProjectDialog mode="create" onSubmit={handleCreateProject} />
@@ -377,7 +386,7 @@ export default function SettingsPage() {
             onFiltersChange={setFilters}
             filterOptions={filterOptions}
             sortOptions={sortOptions}
-            searchPlaceholder="搜索小说项目名称..."
+            searchPlaceholder={t('searchPlaceholder')}
             showViewMode={true}
             showSort={true}
           />
@@ -395,8 +404,8 @@ export default function SettingsPage() {
         onPageChange={setCurrentPage}
         renderItem={renderProjectCard}
         emptyIcon={<BookOpen className="mx-auto h-16 w-16 text-[var(--moge-text-muted)]" />}
-        emptyTitle={hasActiveFilters ? '没有找到符合条件的项目' : '还没有小说项目'}
-        emptyDescription={hasActiveFilters ? undefined : '创建您的第一个小说项目，开始构建设定集'}
+        emptyTitle={hasActiveFilters ? t('emptyFilteredTitle') : t('emptyTitle')}
+        emptyDescription={hasActiveFilters ? undefined : t('emptyDescription')}
         hasFilters={hasActiveFilters}
         showPagination={filteredProjects.length > pageSize}
         gridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
