@@ -183,22 +183,57 @@
   },
   "dictionary": {
     "title": "Dictionary",
-    "category": {
-      "title": "Categories",
-      "create": "New Category",
-      "edit": "Edit Category",
-      "delete": "Delete Category",
-      "name": "Category Name",
-      "description": "Description"
+    "description": "Manage global data dictionaries and basic configurations to provide standardized data support for creation",
+    "stats": {
+      "totalCategories": "Total Categories",
+      "totalItems": "Total Items",
+      "enabledItems": "Enabled Items"
+    },
+    "loading": "Loading...",
+    "itemCount": "items",
+    "categories": {
+      "novelTypes": {
+        "title": "Novel Types",
+        "description": "Manage novel type classifications such as fantasy, urban, historical, sci-fi, etc."
+      },
+      "novelEras": {
+        "title": "Novel Eras",
+        "description": "Manage era background classifications such as modern, ancient, future, republican, fictional, etc."
+      },
+      "novelTags": {
+        "title": "Novel Tags",
+        "description": "Manage novel tag library, categorized by theme, style, plot, character, etc."
+      },
+      "terminology": {
+        "title": "Terminology",
+        "description": "Manage professional vocabulary from various industries, technical terms, classical expressions, etc."
+      },
+      "templates": {
+        "title": "Template Library",
+        "description": "Manage common plot segments, dialogue templates, scene descriptions, etc."
+      }
     },
     "item": {
-      "title": "Items",
+      "title": "Dictionary Items",
       "create": "New Item",
       "edit": "Edit Item",
       "delete": "Delete Item",
-      "term": "Term",
-      "definition": "Definition",
-      "example": "Example"
+      "value": "Value",
+      "label": "Label",
+      "sortOrder": "Sort Order",
+      "isEnabled": "Status",
+      "description": "Description",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "toggleStatus": "Click to toggle status",
+      "valuePlaceholder": "English code, e.g.: fantasy, urban",
+      "labelPlaceholder": "Display name, e.g.: Fantasy, Urban",
+      "sortOrderPlaceholder": "Enter number, smaller values appear first",
+      "descriptionPlaceholder": "Detailed description of this item",
+      "createTitle": "New {category} Item",
+      "editTitle": "Edit {category} Item",
+      "createDescription": "Fill in the information and click create to add a new {category} item",
+      "editDescription": "Modify {category} item information"
     }
   },
   "search": {

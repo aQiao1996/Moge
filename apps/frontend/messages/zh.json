@@ -183,22 +183,57 @@
   },
   "dictionary": {
     "title": "字典管理",
-    "category": {
-      "title": "分类管理",
-      "create": "新建分类",
-      "edit": "编辑分类",
-      "delete": "删除分类",
-      "name": "分类名称",
-      "description": "分类描述"
+    "description": "管理全局数据字典和基础配置，为创作提供标准化数据支撑",
+    "stats": {
+      "totalCategories": "分类总数",
+      "totalItems": "词条总数",
+      "enabledItems": "启用词条"
+    },
+    "loading": "加载中...",
+    "itemCount": "个词条",
+    "categories": {
+      "novelTypes": {
+        "title": "小说类型",
+        "description": "管理小说的类型分类，如玄幻、都市、历史、科幻等"
+      },
+      "novelEras": {
+        "title": "小说时代",
+        "description": "管理小说的时代背景分类，如现代、古代、未来、民国、架空等"
+      },
+      "novelTags": {
+        "title": "小说标签",
+        "description": "管理小说标签库，按题材、风格、情节、角色等维度分类"
+      },
+      "terminology": {
+        "title": "专业术语",
+        "description": "管理各行业专业词汇、技术名词、古风用语等"
+      },
+      "templates": {
+        "title": "模板库",
+        "description": "管理常用的剧情桥段、对话模板、场景描述等"
+      }
     },
     "item": {
       "title": "字典项",
-      "create": "新建字典项",
-      "edit": "编辑字典项",
-      "delete": "删除字典项",
-      "term": "词条",
-      "definition": "释义",
-      "example": "示例"
+      "create": "新建词条",
+      "edit": "编辑词条",
+      "delete": "删除词条",
+      "value": "存储值",
+      "label": "显示标签",
+      "sortOrder": "排序序号",
+      "isEnabled": "启用状态",
+      "description": "描述",
+      "enabled": "启用",
+      "disabled": "禁用",
+      "toggleStatus": "点击切换状态",
+      "valuePlaceholder": "英文编码，如：fantasy, urban",
+      "labelPlaceholder": "中文显示名称，如：玄幻、都市",
+      "sortOrderPlaceholder": "输入数字，数值越小排序越靠前",
+      "descriptionPlaceholder": "对该词条的详细描述",
+      "createTitle": "新建{category}词条",
+      "editTitle": "编辑{category}词条",
+      "createDescription": "填写信息后点击创建即可添加新的{category}词条",
+      "editDescription": "修改{category}词条信息"
     }
   },
   "search": {

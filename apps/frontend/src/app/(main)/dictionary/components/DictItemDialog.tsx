@@ -20,6 +20,7 @@ import MogeFormDialog, {
 import { MogeInput } from '@/app/components/MogeInput';
 import { MogeTextarea } from '@/app/components/MogeTextarea';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 /**
  * 字典词条对话框组件的属性接口
@@ -66,14 +67,15 @@ export default function DictItemDialog({
   onSubmit,
 }: DictItemDialogProps) {
   const isEditMode = mode === 'edit';
+  const t = useTranslations('dictionary.item');
 
   // 字段配置：定义表单中需要显示的字段
   const fields: FieldConfig[] = [
-    { name: 'value', label: '存储值', required: !isEditMode },
-    { name: 'label', label: '显示标签', required: !isEditMode },
-    { name: 'sortOrder', label: '排序序号' },
-    { name: 'isEnabled', label: '启用状态' },
-    { name: 'description', label: '描述' },
+    { name: 'value', label: t('value'), required: !isEditMode },
+    { name: 'label', label: t('label'), required: !isEditMode },
+    { name: 'sortOrder', label: t('sortOrder') },
+    { name: 'isEnabled', label: t('isEnabled') },
+    { name: 'description', label: t('description') },
   ];
 
   /**
@@ -98,9 +100,9 @@ export default function DictItemDialog({
               variant={field.value ? 'default' : 'outline'}
               onClick={() => field.onChange(!field.value)}
             >
-              {field.value ? '启用' : '禁用'}
+              {field.value ? t('enabled') : t('disabled')}
             </Button>
-            <span className="text-sm text-[var(--moge-text-sub)]">点击切换状态</span>
+            <span className="text-sm text-[var(--moge-text-sub)]">{t('toggleStatus')}</span>
           </div>
         );
       }
@@ -110,7 +112,7 @@ export default function DictItemDialog({
         return (
           <MogeInput
             type="number"
-            placeholder="输入数字，数值越小排序越靠前"
+            placeholder={t('sortOrderPlaceholder')}
             value={(field.value as number)?.toString() || ''}
             onChange={(e) => {
               const value = e.target.value;
@@ -128,7 +130,7 @@ export default function DictItemDialog({
         return (
           <MogeTextarea
             rows={3}
-            placeholder="对该词条的详细描述"
+            placeholder={t('descriptionPlaceholder')}
             value={(field.value as string) || ''}
             onChange={field.onChange}
             onBlur={field.onBlur}
@@ -142,7 +144,7 @@ export default function DictItemDialog({
       if (name === 'value') {
         return (
           <MogeInput
-            placeholder="英文编码，如：fantasy, urban"
+            placeholder={t('valuePlaceholder')}
             value={(field.value as string) || ''}
             onChange={field.onChange}
             onBlur={field.onBlur}
@@ -156,7 +158,7 @@ export default function DictItemDialog({
       if (name === 'label') {
         return (
           <MogeInput
-            placeholder="中文显示名称，如：玄幻、都市"
+            placeholder={t('labelPlaceholder')}
             value={(field.value as string) || ''}
             onChange={field.onChange}
             onBlur={field.onBlur}
@@ -197,25 +199,23 @@ export default function DictItemDialog({
 
   // 默认触发按钮：根据模式显示不同的按钮
   const defaultTrigger = isEditMode ? (
-    <Button size="sm" variant="ghost" title="编辑词条">
+    <Button size="sm" variant="ghost" title={t('edit')}>
       <Edit className="h-4 w-4" />
     </Button>
   ) : (
     <Button className="gap-2 shadow-[var(--moge-glow-btn)]">
       <Plus className="h-4 w-4" />
-      新建词条
+      {t('create')}
     </Button>
   );
 
   return (
     <MogeFormDialog
       mode={mode}
-      title={isEditMode ? `编辑${categoryTitle}词条` : `新建${categoryTitle}词条`}
-      description={
-        isEditMode
-          ? `修改${categoryTitle}词条信息`
-          : `填写信息后点击创建即可添加新的${categoryTitle}词条`
-      }
+      title={t(isEditMode ? 'editTitle' : 'createTitle', { category: categoryTitle })}
+      description={t(isEditMode ? 'editDescription' : 'createDescription', {
+        category: categoryTitle,
+      })}
       open={open}
       onOpenChange={onOpenChange}
       trigger={trigger}

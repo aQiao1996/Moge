@@ -5,44 +5,45 @@ import { Card } from '@/components/ui/card';
 import { ArrowRight, Database, Tags, Book, Terminal, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
+import { useTranslations } from 'next-intl';
 
 /**
  * 字典分类配置
  * 定义了字典管理模块支持的分类及其展示信息
  */
-const dictionaryCategories = [
+const getDictionaryCategories = (t: ReturnType<typeof useTranslations>) => [
   {
     key: 'novel_types',
-    title: '小说类型',
-    description: '管理小说的类型分类，如玄幻、都市、历史、科幻等',
+    title: t('categories.novelTypes.title'),
+    description: t('categories.novelTypes.description'),
     icon: Book,
     color: 'text-blue-500',
   },
   {
     key: 'novel_eras',
-    title: '小说时代',
-    description: '管理小说的时代背景分类，如现代、古代、未来、民国、架空等',
+    title: t('categories.novelEras.title'),
+    description: t('categories.novelEras.description'),
     icon: Clock,
     color: 'text-yellow-500',
   },
   {
     key: 'novel_tags',
-    title: '小说标签',
-    description: '管理小说标签库，按题材、风格、情节、角色等维度分类',
+    title: t('categories.novelTags.title'),
+    description: t('categories.novelTags.description'),
     icon: Tags,
     color: 'text-green-500',
   },
   {
     key: 'terminology',
-    title: '专业术语',
-    description: '管理各行业专业词汇、技术名词、古风用语等',
+    title: t('categories.terminology.title'),
+    description: t('categories.terminology.description'),
     icon: Terminal,
     color: 'text-purple-500',
   },
   {
     key: 'templates',
-    title: '模板库',
-    description: '管理常用的剧情桥段、对话模板、场景描述等',
+    title: t('categories.templates.title'),
+    description: t('categories.templates.description'),
     icon: FileText,
     color: 'text-orange-500',
   },
@@ -57,9 +58,12 @@ const dictionaryCategories = [
  * - 实时获取各分类的词条统计数据
  */
 export default function DictionaryPage() {
+  const t = useTranslations('dictionary');
   const { fetchStatistics } = useDictStore();
   const [loading, setLoading] = useState(true);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+
+  const dictionaryCategories = getDictionaryCategories(t);
 
   /**
    * 获取字典统计数据
@@ -85,7 +89,7 @@ export default function DictionaryPage() {
     };
 
     void fetchCounts();
-  }, [fetchStatistics]);
+  }, [fetchStatistics, dictionaryCategories]);
 
   // 计算统计数据
   const totalCategories = dictionaryCategories.length;
@@ -99,10 +103,10 @@ export default function DictionaryPage() {
           <div className="mb-4 flex items-center gap-3">
             <Database className="h-8 w-8 text-[var(--moge-primary)]" />
             <div>
-              <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">字典管理</h1>
-              <p className="mt-2 text-[var(--moge-text-sub)]">
-                管理全局数据字典和基础配置，为创作提供标准化数据支撑
-              </p>
+              <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">
+                {t('title')}
+              </h1>
+              <p className="mt-2 text-[var(--moge-text-sub)]">{t('description')}</p>
             </div>
           </div>
         </div>
@@ -119,7 +123,9 @@ export default function DictionaryPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[var(--moge-text-muted)]">分类总数</p>
+                <p className="text-sm text-[var(--moge-text-muted)]">
+                  {t('stats.totalCategories')}
+                </p>
                 <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                   {loading ? '-' : totalCategories}
                 </p>
@@ -138,7 +144,7 @@ export default function DictionaryPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[var(--moge-text-muted)]">词条总数</p>
+                <p className="text-sm text-[var(--moge-text-muted)]">{t('stats.totalItems')}</p>
                 <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                   {loading ? '-' : totalItems.toLocaleString()}
                 </p>
@@ -157,7 +163,7 @@ export default function DictionaryPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[var(--moge-text-muted)]">启用词条</p>
+                <p className="text-sm text-[var(--moge-text-muted)]">{t('stats.enabledItems')}</p>
                 <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                   {loading ? '-' : totalItems > 0 ? totalItems.toLocaleString() : '0'}
                 </p>
@@ -199,7 +205,7 @@ export default function DictionaryPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <span className="text-xs text-[var(--moge-text-muted)]">
-                              {loading ? '加载中...' : `${count} 个词条`}
+                              {loading ? t('loading') : `${count} ${t('itemCount')}`}
                             </span>
                           </div>
                           <ArrowRight className="h-4 w-4 text-[var(--moge-text-muted)]" />
