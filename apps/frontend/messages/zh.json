@@ -269,7 +269,31 @@
       "title": "设定库",
       "search": "搜索设定",
       "filter": "筛选",
-      "type": "类型"
+      "type": "类型",
+      "description": "独立管理所有设定，可跨项目复用",
+      "totalSettings": "设定总数",
+      "itemCount": "个设定",
+      "loadFailed": "加载设定库数据失败",
+      "backToSettings": "设定集",
+      "viewAll": "查看全部",
+      "categories": {
+        "characters": {
+          "label": "角色设定",
+          "description": "管理所有角色设定，包括主角、配角、反派等"
+        },
+        "systems": {
+          "label": "系统/金手指",
+          "description": "管理各种系统设定，如升级、签到、抽奖等"
+        },
+        "worlds": {
+          "label": "世界背景",
+          "description": "管理世界观设定，包括势力组织、修炼体系等"
+        },
+        "misc": {
+          "label": "辅助设定",
+          "description": "管理其他辅助设定，如标签、分类、灵感等"
+        }
+      }
     },
     "settingSelector": {
       "title": "从设定库添加{category}",

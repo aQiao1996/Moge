@@ -269,7 +269,31 @@
       "title": "Settings Library",
       "search": "Search Settings",
       "filter": "Filter",
-      "type": "Type"
+      "type": "Type",
+      "description": "Manage all settings independently, reusable across projects",
+      "totalSettings": "Total Settings",
+      "itemCount": "items",
+      "loadFailed": "Failed to load settings library data",
+      "backToSettings": "Settings",
+      "viewAll": "View All",
+      "categories": {
+        "characters": {
+          "label": "Character Settings",
+          "description": "Manage all character settings including protagonists, supporting characters, antagonists, etc."
+        },
+        "systems": {
+          "label": "Systems/Cheats",
+          "description": "Manage various system settings such as leveling, check-in, lottery, etc."
+        },
+        "worlds": {
+          "label": "World Background",
+          "description": "Manage world-building settings including factions, cultivation systems, etc."
+        },
+        "misc": {
+          "label": "Miscellaneous Settings",
+          "description": "Manage other auxiliary settings such as tags, categories, inspiration, etc."
+        }
+      }
     },
     "settingSelector": {
       "title": "Add {category} from Settings Library",
