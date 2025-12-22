@@ -1,8 +1,6 @@
 import Providers from './providers';
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/sonner';
-import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
 import './styles/index.css';
 
 export const metadata: Metadata = {
@@ -11,17 +9,12 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.ico', apple: '/favicon.ico' },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang="zh" suppressHydrationWarning>
       <body>
-        <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
-          <Toaster richColors position="top-center" duration={2000} />
-        </NextIntlClientProvider>
+        <Providers>{children}</Providers>
+        <Toaster richColors position="top-center" duration={2000} />
       </body>
     </html>
   );

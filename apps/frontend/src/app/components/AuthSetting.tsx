@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/stores/settingStore';
+// import { useSettings } from '@/stores/settingStore';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
@@ -16,12 +16,12 @@ interface AuthSettingProps {
  * 提供明暗主题切换和中英文语言切换功能。
  */
 export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
-  const { lang, setLang } = useSettings();
+  // const { lang, setLang } = useSettings();
   const { theme, setTheme } = useTheme();
 
   // 动画状态
   const [themeAnim, setThemeAnim] = useState('');
-  const [langAnim, setLangAnim] = useState('');
+  // const [langAnim, setLangAnim] = useState('');
 
   // 组件挂载状态,用于防止主题切换时的水合错误
   const [mounted, setMounted] = useState(false);
@@ -83,14 +83,14 @@ export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
    * 处理语言切换
    * 在中文和英文之间切换
    */
-  const handleLang = () => {
-    const newLang = lang === 'zh' ? 'en' : 'zh';
-    setLangAnim('scale-95');
-    setLang(newLang);
-    setTimeout(() => {
-      setLangAnim('');
-    }, 200);
-  };
+  // const handleLang = () => {
+  //   const newLang = lang === 'zh' ? 'en' : 'zh';
+  //   setLangAnim('scale-95');
+  //   setLang(newLang);
+  //   setTimeout(() => {
+  //     setLangAnim('');
+  //   }, 200);
+  // };
 
   if (!mounted) {
     // 防止布局移位
@@ -119,7 +119,7 @@ export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
       </Button>
 
       {/* 语言切换按钮 */}
-      <Button
+      {/* <Button
         onClick={handleLang}
         title="切换语言"
         style={{
@@ -130,7 +130,7 @@ export default function AuthSetting({ isAbsolute = true }: AuthSettingProps) {
         className={`h-8 w-8 rounded-full border px-1 py-1 text-xs font-normal backdrop-blur-sm transition-transform duration-200 hover:bg-[var(--moge-btn-hover)] ${langAnim}`}
       >
         {lang.toUpperCase()}
-      </Button>
+      </Button> */}
     </div>
   );
 }

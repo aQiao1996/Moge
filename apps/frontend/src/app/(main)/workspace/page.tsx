@@ -17,12 +17,9 @@ import {
 import { useRouter } from 'next/navigation';
 import { getWorkspaceSummary, type WorkspaceSummary } from '@/api/workspace.api';
 import dayjs from '@/lib/dayjs';
-import { useTranslations } from 'next-intl';
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const t = useTranslations('workspace');
-  const tCommon = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
 
@@ -53,12 +50,12 @@ export default function WorkspacePage() {
   // 获取状态标签
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
-      DRAFT: { label: t('status.draft'), className: 'bg-gray-100 text-gray-600' },
-      IN_PROGRESS: { label: t('status.inProgress'), className: 'bg-blue-100 text-blue-600' },
-      COMPLETED: { label: t('status.completed'), className: 'bg-green-100 text-green-600' },
-      PUBLISHED: { label: t('status.published'), className: 'bg-purple-100 text-purple-600' },
-      GENERATING: { label: t('status.generating'), className: 'bg-yellow-100 text-yellow-600' },
-      GENERATED: { label: t('status.generated'), className: 'bg-cyan-100 text-cyan-600' },
+      DRAFT: { label: '草稿', className: 'bg-gray-100 text-gray-600' },
+      IN_PROGRESS: { label: '进行中', className: 'bg-blue-100 text-blue-600' },
+      COMPLETED: { label: '已完结', className: 'bg-green-100 text-green-600' },
+      PUBLISHED: { label: '已发布', className: 'bg-purple-100 text-purple-600' },
+      GENERATING: { label: '生成中', className: 'bg-yellow-100 text-yellow-600' },
+      GENERATED: { label: '已生成', className: 'bg-cyan-100 text-cyan-600' },
     };
     const config = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-600' };
     return (
@@ -92,19 +89,19 @@ export default function WorkspacePage() {
     <div className="mx-auto max-w-6xl space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
-        <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">{t('title')}</h1>
+        <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">工作台</h1>
         <div className="flex gap-2">
           <Button onClick={() => router.push('/settings')} variant="outline" size="sm">
             <Plus className="mr-1 h-4 w-4" />
-            {t('createProject')}
+            新建项目
           </Button>
           <Button onClick={() => router.push('/outline')} variant="outline" size="sm">
             <Plus className="mr-1 h-4 w-4" />
-            {t('createOutline')}
+            新建大纲
           </Button>
           <Button onClick={() => router.push('/manuscripts')} size="sm">
             <Plus className="mr-1 h-4 w-4" />
-            {t('createManuscript')}
+            新建文稿
           </Button>
         </div>
       </div>
@@ -117,7 +114,7 @@ export default function WorkspacePage() {
               <PenTool className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-[var(--moge-text-sub)]">{t('stats.todayWords')}</p>
+              <p className="text-sm text-[var(--moge-text-sub)]">今日字数</p>
               <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                 {formatNumber(summary?.stats.todayWords || 0)}
               </p>
@@ -131,7 +128,7 @@ export default function WorkspacePage() {
               <Calendar className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-[var(--moge-text-sub)]">{t('stats.weekWords')}</p>
+              <p className="text-sm text-[var(--moge-text-sub)]">本周字数</p>
               <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                 {formatNumber(summary?.stats.weekWords || 0)}
               </p>
@@ -145,7 +142,7 @@ export default function WorkspacePage() {
               <TrendingUp className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-[var(--moge-text-sub)]">{t('stats.totalWords')}</p>
+              <p className="text-sm text-[var(--moge-text-sub)]">总字数</p>
               <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                 {formatNumber(summary?.stats.totalWords || 0)}
               </p>
@@ -159,7 +156,7 @@ export default function WorkspacePage() {
               <FolderOpen className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-[var(--moge-text-sub)]">{t('stats.projectCount')}</p>
+              <p className="text-sm text-[var(--moge-text-sub)]">项目数</p>
               <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                 {summary?.stats.projectCount || 0}
               </p>
@@ -173,7 +170,7 @@ export default function WorkspacePage() {
               <FileText className="h-5 w-5 text-pink-600" />
             </div>
             <div>
-              <p className="text-sm text-[var(--moge-text-sub)]">{t('stats.manuscriptCount')}</p>
+              <p className="text-sm text-[var(--moge-text-sub)]">文稿数</p>
               <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                 {summary?.stats.manuscriptCount || 0}
               </p>
@@ -189,7 +186,7 @@ export default function WorkspacePage() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-lg font-semibold">
               <FolderOpen className="h-5 w-5" />
-              {t('recent.projects')}
+              最近项目
             </h3>
             <Button
               variant="ghost"
@@ -197,7 +194,7 @@ export default function WorkspacePage() {
               onClick={() => router.push('/settings')}
               className="text-sm"
             >
-              {tCommon('viewAll')}
+              查看全部
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -221,9 +218,7 @@ export default function WorkspacePage() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-sm text-[var(--moge-text-muted)]">
-                {t('empty.projects')}
-              </p>
+              <p className="text-center text-sm text-[var(--moge-text-muted)]">暂无项目</p>
             )}
           </div>
         </Card>
@@ -233,7 +228,7 @@ export default function WorkspacePage() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-lg font-semibold">
               <BookOpen className="h-5 w-5" />
-              {t('recent.outlines')}
+              最近大纲
             </h3>
             <Button
               variant="ghost"
@@ -241,7 +236,7 @@ export default function WorkspacePage() {
               onClick={() => router.push('/outline')}
               className="text-sm"
             >
-              {tCommon('viewAll')}
+              查看全部
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -268,9 +263,7 @@ export default function WorkspacePage() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-sm text-[var(--moge-text-muted)]">
-                {t('empty.outlines')}
-              </p>
+              <p className="text-center text-sm text-[var(--moge-text-muted)]">暂无大纲</p>
             )}
           </div>
         </Card>
@@ -280,7 +273,7 @@ export default function WorkspacePage() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-lg font-semibold">
               <FileText className="h-5 w-5" />
-              {t('recent.manuscripts')}
+              最近文稿
             </h3>
             <Button
               variant="ghost"
@@ -288,7 +281,7 @@ export default function WorkspacePage() {
               onClick={() => router.push('/manuscripts')}
               className="text-sm"
             >
-              {tCommon('viewAll')}
+              查看全部
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -316,7 +309,7 @@ export default function WorkspacePage() {
                       <div className="mt-1 flex items-center gap-2">
                         {getStatusBadge(manuscript.status)}
                         <span className="text-xs text-[var(--moge-text-sub)]">
-                          {formatNumber(manuscript.totalWords)} {t('wordCount')}
+                          {formatNumber(manuscript.totalWords)} 字
                         </span>
                       </div>
                     </div>
@@ -329,9 +322,7 @@ export default function WorkspacePage() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-sm text-[var(--moge-text-muted)]">
-                {t('empty.manuscripts')}
-              </p>
+              <p className="text-center text-sm text-[var(--moge-text-muted)]">暂无文稿</p>
             )}
           </div>
         </Card>
