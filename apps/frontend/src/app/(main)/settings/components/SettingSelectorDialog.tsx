@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -77,8 +76,6 @@ export default function SettingSelectorDialog({
   Icon,
   color,
 }: SettingSelectorDialogProps) {
-  const t = useTranslations('settings.settingSelector');
-
   /**
    * 设定列表数据
    */
@@ -105,7 +102,7 @@ export default function SettingSelectorDialog({
       const data = await getSettingsByCategory(category);
       setSettings(data as SettingItem[]);
     } catch (error) {
-      console.error(t('loadFailed'), error);
+      console.error('加载设定库数据失败:', error);
     } finally {
       setLoading(false);
     }
@@ -168,7 +165,7 @@ export default function SettingSelectorDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon className={`h-5 w-5 ${color}`} />
-            {t('title', { category: categoryLabel })}
+            从设定库添加{categoryLabel}
           </DialogTitle>
         </DialogHeader>
 
@@ -176,7 +173,7 @@ export default function SettingSelectorDialog({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--moge-text-muted)]" />
           <Input
-            placeholder={t('searchPlaceholder', { category: categoryLabel })}
+            placeholder={`搜索${categoryLabel}...`}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className="pl-9"
@@ -186,7 +183,7 @@ export default function SettingSelectorDialog({
         {/* 设定列表 */}
         <div className="max-h-[50vh] space-y-2 overflow-y-auto">
           {loading ? (
-            <div className="py-8 text-center text-[var(--moge-text-sub)]">{t('loading')}</div>
+            <div className="py-8 text-center text-[var(--moge-text-sub)]">加载中...</div>
           ) : filteredSettings.length === 0 ? (
             <Card
               className="border p-8 text-center"
@@ -197,9 +194,7 @@ export default function SettingSelectorDialog({
             >
               <Icon className={`mx-auto mb-2 h-12 w-12 ${color} opacity-50`} />
               <p className="text-[var(--moge-text-sub)]">
-                {searchText
-                  ? t('noResults', { category: categoryLabel })
-                  : t('noSettings', { category: categoryLabel })}
+                {searchText ? `没有找到匹配的${categoryLabel}` : `设定库中还没有${categoryLabel}`}
               </p>
             </Card>
           ) : (
@@ -228,12 +223,12 @@ export default function SettingSelectorDialog({
                         <h4 className="font-medium text-[var(--moge-text-main)]">{setting.name}</h4>
                         {isAlreadyAdded && (
                           <Badge variant="secondary" className="text-xs">
-                            {t('alreadyAdded')}
+                            已添加
                           </Badge>
                         )}
                       </div>
                       <p className="line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-                        {setting.background || setting.description || t('noDescription')}
+                        {setting.background || setting.description || '暂无描述'}
                       </p>
                       {setting.tags && setting.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
@@ -263,9 +258,9 @@ export default function SettingSelectorDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('cancel')}
+            取消
           </Button>
-          <Button onClick={handleConfirm}>{t('confirm', { count: tempSelectedIds.length })}</Button>
+          <Button onClick={handleConfirm}>确认选择 ({tempSelectedIds.length})</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

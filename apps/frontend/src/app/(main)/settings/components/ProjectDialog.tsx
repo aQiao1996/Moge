@@ -19,7 +19,6 @@ import { MogeFormSelect } from '@/app/components/MogeFormSelect';
 import { MogeMultiSelect } from '@/app/components/MogeMultiSelect';
 import { Button } from '@/components/ui/button';
 import { getSettingsLibrary, type SettingItem } from '@/api/settings.api';
-import { useTranslations } from 'next-intl';
 
 interface ProjectDialogProps {
   mode: 'create' | 'edit';
@@ -81,8 +80,6 @@ export default function ProjectDialog({
   onSubmit,
 }: ProjectDialogProps) {
   const isEditMode = mode === 'edit';
-  const t = useTranslations('settings.project');
-  const tCommon = useTranslations('common');
 
   const [settingsLibrary, setSettingsLibrary] = useState<SettingsLibraryData>({
     characters: [],
@@ -128,15 +125,15 @@ export default function ProjectDialog({
    */
   const fields = useMemo<FieldConfig<CreateProjectValues>[]>(
     () => [
-      { name: 'name', label: t('name'), required: true },
-      { name: 'type', label: t('type'), required: true },
-      { name: 'description', label: t('description') },
-      { name: 'characters', label: t('charactersLabel'), section: t('settingsSection') },
-      { name: 'systems', label: t('systemsLabel'), section: t('settingsSection') },
-      { name: 'worlds', label: t('worldsLabel'), section: t('settingsSection') },
-      { name: 'misc', label: t('miscLabel'), section: t('settingsSection') },
+      { name: 'name', label: '项目名称', required: true },
+      { name: 'type', label: '项目类型', required: true },
+      { name: 'description', label: '项目描述' },
+      { name: 'characters', label: '角色设定', section: '设定库关联' },
+      { name: 'systems', label: '系统设定', section: '设定库关联' },
+      { name: 'worlds', label: '世界设定', section: '设定库关联' },
+      { name: 'misc', label: '辅助设定', section: '设定库关联' },
     ],
-    [t]
+    []
   );
 
   /**
@@ -158,7 +155,7 @@ export default function ProjectDialog({
             value={field.value as string}
             onChange={field.onChange}
             onBlur={field.onBlur}
-            placeholder={t('typePlaceholder')}
+            placeholder="请选择项目类型"
             options={projectTypeOptions}
             disabled={field.disabled}
           />
@@ -168,7 +165,7 @@ export default function ProjectDialog({
       if (name === 'description') {
         return (
           <MogeTextarea
-            placeholder={t('descriptionPlaceholder')}
+            placeholder="简要描述您的小说项目（可选）"
             value={(field.value as string) || ''}
             onChange={(e) => field.onChange(e.target.value)}
             onBlur={field.onBlur}
@@ -187,10 +184,10 @@ export default function ProjectDialog({
             value={(field.value as string[]) || []}
             onChange={field.onChange}
             onBlur={field.onBlur}
-            placeholder={t('charactersPlaceholder')}
+            placeholder="选择角色设定（可选）"
             disabled={field.disabled}
             loading={loadingSettings}
-            emptyMessage={t('charactersEmpty')}
+            emptyMessage="暂无角色设定，请先在设定库中创建"
             maxDisplay={3}
           />
         );
@@ -204,10 +201,10 @@ export default function ProjectDialog({
             value={(field.value as string[]) || []}
             onChange={field.onChange}
             onBlur={field.onBlur}
-            placeholder={t('systemsPlaceholder')}
+            placeholder="选择系统设定（可选）"
             disabled={field.disabled}
             loading={loadingSettings}
-            emptyMessage={t('systemsEmpty')}
+            emptyMessage="暂无系统设定，请先在设定库中创建"
             maxDisplay={3}
           />
         );
@@ -221,10 +218,10 @@ export default function ProjectDialog({
             value={(field.value as string[]) || []}
             onChange={field.onChange}
             onBlur={field.onBlur}
-            placeholder={t('worldsPlaceholder')}
+            placeholder="选择世界设定（可选）"
             disabled={field.disabled}
             loading={loadingSettings}
-            emptyMessage={t('worldsEmpty')}
+            emptyMessage="暂无世界设定，请先在设定库中创建"
             maxDisplay={3}
           />
         );
@@ -238,10 +235,10 @@ export default function ProjectDialog({
             value={(field.value as string[]) || []}
             onChange={field.onChange}
             onBlur={field.onBlur}
-            placeholder={t('miscPlaceholder')}
+            placeholder="选择辅助设定（可选）"
             disabled={field.disabled}
             loading={loadingSettings}
-            emptyMessage={t('miscEmpty')}
+            emptyMessage="暂无辅助设定，请先在设定库中创建"
             maxDisplay={3}
           />
         );
@@ -249,7 +246,7 @@ export default function ProjectDialog({
 
       return (
         <MogeInput
-          placeholder={name === 'name' ? t('namePlaceholder') : ''}
+          placeholder={name === 'name' ? '输入项目名称，如"仙侠传说"' : ''}
           value={(field.value as string) || ''}
           onChange={(e) => field.onChange(e.target.value)}
           onBlur={field.onBlur}
@@ -258,7 +255,7 @@ export default function ProjectDialog({
         />
       );
     },
-    [settingsOptions, loadingSettings, t]
+    [settingsOptions, loadingSettings]
   );
 
   /**
@@ -293,8 +290,8 @@ export default function ProjectDialog({
   return (
     <MogeFormDialog<CreateProjectValues>
       mode={mode}
-      title={t(isEditMode ? 'editTitle' : 'createTitle')}
-      description={t(isEditMode ? 'editDescription' : 'createDescription')}
+      title={isEditMode ? '编辑小说项目' : '创建小说项目'}
+      description={isEditMode ? '修改项目信息' : '创建一个新的小说项目，开始构建您的设定集'}
       createSchema={createProjectSchema}
       updateSchema={updateProjectSchema}
       fields={fields}
@@ -308,11 +305,11 @@ export default function ProjectDialog({
       defaultTrigger={
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          {t('createButton')}
+          创建小说项目
         </Button>
       }
       maxWidth="lg"
-      submitText={isEditMode ? tCommon('save') : tCommon('create')}
+      submitText={isEditMode ? '保存' : '创建'}
     />
   );
 }

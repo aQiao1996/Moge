@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, Zap, Globe, Folder, Eye } from 'lucide-react';
@@ -10,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { getSettingsLibrary, type SettingsLibraryResponse } from '@/api/settings.api';
 
 export default function SettingsLibraryPage() {
-  const t = useTranslations('settings.library');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [settingsData, setSettingsData] = useState<SettingsLibraryResponse>({
@@ -24,30 +22,30 @@ export default function SettingsLibraryPage() {
   const settingCategories = [
     {
       key: 'characters',
-      label: t('categories.characters.label'),
+      label: '角色设定',
       icon: Users,
-      description: t('categories.characters.description'),
+      description: '管理所有角色设定，包括主角、配角、反派等',
       color: 'text-blue-500',
     },
     {
       key: 'systems',
-      label: t('categories.systems.label'),
+      label: '系统/金手指',
       icon: Zap,
-      description: t('categories.systems.description'),
+      description: '管理各种系统设定，如升级、签到、抽奖等',
       color: 'text-yellow-500',
     },
     {
       key: 'worlds',
-      label: t('categories.worlds.label'),
+      label: '世界背景',
       icon: Globe,
-      description: t('categories.worlds.description'),
+      description: '管理世界观设定，包括势力组织、修炼体系等',
       color: 'text-green-500',
     },
     {
       key: 'misc',
-      label: t('categories.misc.label'),
+      label: '辅助设定',
       icon: Folder,
-      description: t('categories.misc.description'),
+      description: '管理其他辅助设定，如标签、分类、灵感等',
       color: 'text-purple-500',
     },
   ];
@@ -61,7 +59,7 @@ export default function SettingsLibraryPage() {
       const data = await getSettingsLibrary();
       setSettingsData(data);
     } catch (error) {
-      console.error(t('loadFailed'), error);
+      console.error('加载设定库数据失败:', error);
     } finally {
       setLoading(false);
     }
@@ -105,24 +103,22 @@ export default function SettingsLibraryPage() {
         <Link href="/settings">
           <Button variant="ghost" size="sm" className="flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />
-            {t('backToSettings')}
+            设定集
           </Button>
         </Link>
         <span className="text-[var(--moge-text-muted)]">/</span>
-        <span className="font-medium text-[var(--moge-text-main)]">{t('title')}</span>
+        <span className="font-medium text-[var(--moge-text-main)]">设定库</span>
       </div>
 
       {/* 设定库信息头部 */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">
-              {t('title')}
-            </h1>
-            <p className="mt-1 text-[var(--moge-text-sub)]">{t('description')}</p>
+            <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">设定库</h1>
+            <p className="mt-1 text-[var(--moge-text-sub)]">独立管理所有设定，可跨项目复用</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-[var(--moge-text-sub)]">{t('totalSettings')}</p>
+            <p className="text-sm text-[var(--moge-text-sub)]">设定总数</p>
             <p className="text-2xl font-bold text-[var(--moge-text-main)]">{totalSettings}</p>
           </div>
         </div>
@@ -157,7 +153,7 @@ export default function SettingsLibraryPage() {
                   <p className="text-2xl font-bold text-[var(--moge-text-main)]">
                     {getCategoryCount(category.key)}
                   </p>
-                  <p className="text-xs text-[var(--moge-text-muted)]">{t('itemCount')}</p>
+                  <p className="text-xs text-[var(--moge-text-muted)]">个设定</p>
                 </div>
               </div>
 
@@ -168,7 +164,7 @@ export default function SettingsLibraryPage() {
                   disabled={loading}
                 >
                   <Eye className="mr-2 h-4 w-4" />
-                  {t('viewAll')}
+                  查看全部
                 </Button>
               </div>
             </Card>
