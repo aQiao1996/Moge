@@ -19,7 +19,7 @@ export type CreateOutlineValues = z.infer<typeof createOutlineSchema>;
 export const outlineSchema = createOutlineSchema.extend({
   id: z.string(),
   status: z.enum(['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED']),
-  userId: z.string(),
+  userId: z.number(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

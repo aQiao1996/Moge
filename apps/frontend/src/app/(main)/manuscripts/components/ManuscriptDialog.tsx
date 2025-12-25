@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import type { ControllerRenderProps, FieldPath, UseFormReturn } from 'react-hook-form';
 import { FilePlus, Edit, Users, Zap, Globe, Folder } from 'lucide-react';
 import {
@@ -162,7 +162,8 @@ export default function ManuscriptDialog({
         return (
           <MogeSelect
             onValueChange={(value) => {
-              field.onChange(Number(value));
+              const numValue = Number(value);
+              field.onChange(numValue);
               setSelectedOutlineId(value);
             }}
             value={field.value ? String(field.value) : undefined}
@@ -269,13 +270,15 @@ export default function ManuscriptDialog({
         await updateManuscript(manuscript.id, values as UpdateManuscriptValues);
         toast.success('更新成功');
       } else if (isFromOutline) {
-        // 从表单values中获取outlineId，如果没有则使用props传入的outlineId
-        const selectedOutlineId = (values as CreateManuscriptValues).outlineId || outlineId;
-        if (!selectedOutlineId) {
+        // 从表单values中获取outlineId,如果没有则使用props传入的outlineId
+        const formOutlineId = (values as CreateManuscriptValues).outlineId;
+        const finalOutlineId = formOutlineId || outlineId;
+
+        if (!finalOutlineId) {
           toast.error('请选择大纲');
           return;
         }
-        await createManuscriptFromOutline(selectedOutlineId);
+        await createManuscriptFromOutline(finalOutlineId);
         toast.success('创建成功');
       } else {
         await createManuscript(values as CreateManuscriptValues);
@@ -308,6 +311,23 @@ export default function ManuscriptDialog({
     }
   };
 
+  // 使用 useMemo 缓存 defaultValues，避免每次渲染都创建新对象导致表单重置
+  const memoizedDefaultValues = useMemo(
+    () => ({
+      name: '',
+      type: '',
+      description: '',
+      tags: [],
+      outlineId: outlineId || undefined,
+      targetWords: undefined,
+      characters: [],
+      systems: [],
+      worlds: [],
+      misc: [],
+    }),
+    [outlineId]
+  );
+
   return (
     <>
       <MogeFormDialog
@@ -325,18 +345,7 @@ export default function ManuscriptDialog({
         trigger={trigger}
         createSchema={createManuscriptSchema}
         updateSchema={updateManuscriptSchema}
-        defaultValues={{
-          name: '',
-          type: '',
-          description: '',
-          tags: [],
-          outlineId: outlineId || undefined,
-          targetWords: undefined,
-          characters: [],
-          systems: [],
-          worlds: [],
-          misc: [],
-        }}
+        defaultValues={memoizedDefaultValues}
         onSubmit={onSubmit}
         fields={fields as FormFieldConfig<CreateManuscriptValues | UpdateManuscriptValues>[]}
         renderControl={renderControl}
