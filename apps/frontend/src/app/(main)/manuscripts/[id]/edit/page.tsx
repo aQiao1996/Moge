@@ -77,12 +77,12 @@ export default function ManuscriptEditPage() {
 
     try {
       const response = await getChapterContent(Number(chapterId));
-      const loadedContent = response.data.content || '';
+      const loadedContent = response.data?.content || '';
       setContent(loadedContent);
       contentRef.current = loadedContent;
       savedContentRef.current = loadedContent; // 记录已保存的内容
       setHasUnsavedChanges(false);
-      setLastSaved(response.data.updatedAt ? new Date(response.data.updatedAt) : null);
+      setLastSaved(response.data?.updatedAt ? new Date(response.data.updatedAt) : null);
     } catch (error) {
       console.error('Load chapter content error:', error);
     }
