@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -11,7 +12,7 @@ export default tseslint.config(
       'dist/',
       '**/dist/**',
       '.next/',
-      'test/', 
+      'test/',
       'apps/backend/test/',
       '**/*.log',
       'tests/**/coverage/',
@@ -38,7 +39,23 @@ export default tseslint.config(
   /* 纯语法：所有配置文件 & 非 TS */
   {
     files: ['*.config.mjs', '*.config.js'], // 匹配配置文件（如 webpack.config.js、vite.config.ts 等）
-    languageOptions: { parserOptions: { project: false } }, // 关闭 TypeScript 项目解析
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: { project: false },
+    }, // 关闭 TypeScript 项目解析
+    rules: {
+      '@typescript-eslint/await-thenable': 'off', // 关闭 TS 特有的 await-thenable 规则
+      '@typescript-eslint/no-unsafe-call': 'off', // 关闭 TS 的不安全调用检查
+    },
+  },
+
+  /* Node 脚本：scripts 目录 */
+  {
+    files: ['scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: { project: false },
+    },
     rules: {
       '@typescript-eslint/await-thenable': 'off', // 关闭 TS 特有的 await-thenable 规则
       '@typescript-eslint/no-unsafe-call': 'off', // 关闭 TS 的不安全调用检查
