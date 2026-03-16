@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ExportService } from './export.service';
+import { ExportFilePayload, ExportService } from './export.service';
 import type { Response } from 'express';
 
 interface AuthRequest {
@@ -39,6 +39,15 @@ export class ExportController {
     return userId;
   }
 
+  private sendFile(res: Response, payload: ExportFilePayload) {
+    res.setHeader('Content-Type', payload.contentType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(payload.filename)}"`
+    );
+    return res.send(payload.content);
+  }
+
   /**
    * 导出单个章节为TXT
    */
@@ -51,13 +60,8 @@ export class ExportController {
     @Res() res: Response
   ) {
     const userId = this.getUserId(req);
-    const content = await this.exportService.exportChapterToTxt(Number(id), userId);
-
-    // 设置响应头
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="chapter_${id}.txt"`);
-
-    return res.send(content);
+    const payload = await this.exportService.exportChapterToTxtFile(Number(id), userId);
+    return this.sendFile(res, payload);
   }
 
   /**
@@ -82,21 +86,8 @@ export class ExportController {
       preserveFormatting: preserveFormatting === 'true',
     };
 
-    const content = await this.exportService.exportManuscriptToTxt(Number(id), userId, options);
-
-    // 获取文稿名称作为文件名
-    const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
-      where: { id: Number(id) },
-      select: { name: true },
-    });
-
-    const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.txt`;
-
-    // 设置响应头
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
-
-    return res.send(content);
+    const payload = await this.exportService.exportManuscriptToTxtFile(Number(id), userId, options);
+    return this.sendFile(res, payload);
   }
 
   /**
@@ -111,21 +102,8 @@ export class ExportController {
     @Res() res: Response
   ) {
     const userId = this.getUserId(req);
-    const content = await this.exportService.exportManuscriptToMarkdown(Number(id), userId);
-
-    // 获取文稿名称作为文件名
-    const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
-      where: { id: Number(id) },
-      select: { name: true },
-    });
-
-    const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.md`;
-
-    // 设置响应头
-    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
-
-    return res.send(content);
+    const payload = await this.exportService.exportManuscriptToMarkdownFile(Number(id), userId);
+    return this.sendFile(res, payload);
   }
 
   /**

@@ -1,6 +1,5 @@
 import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ManuscriptsService } from '../manuscripts/manuscripts.service';
 
 export interface ExportOptions {
   format: 'txt' | 'markdown';
@@ -21,21 +20,24 @@ export interface BatchExportResult {
   failureCount: number;
 }
 
+export interface ExportFilePayload {
+  filename: string;
+  contentType: string;
+  content: string;
+}
+
+const TXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
+const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
+
 /**
  * 导出服务
  * 提供文稿的导出功能
  */
 @Injectable()
 export class ExportService {
-  constructor(
-    private prisma: PrismaService,
-    private manuscriptsService: ManuscriptsService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  /**
-   * 导出单个章节为TXT
-   */
-  async exportChapterToTxt(chapterId: number, userId: number): Promise<string> {
+  async exportChapterToTxtFile(chapterId: number, userId: number): Promise<ExportFilePayload> {
     const chapter = await this.prisma.manuscript_chapter.findFirst({
       where: {
         id: chapterId,
@@ -76,17 +78,26 @@ export class ExportService {
     output += '\n' + '-'.repeat(20) + '\n';
     output += `字数：${chapter.wordCount || 0} 字\n`;
 
-    return output;
+    return {
+      filename: `chapter_${chapterId}.txt`,
+      contentType: TXT_CONTENT_TYPE,
+      content: output,
+    };
   }
 
   /**
-   * 导出整个文稿为TXT
+   * 导出单个章节为TXT
    */
-  async exportManuscriptToTxt(
+  async exportChapterToTxt(chapterId: number, userId: number): Promise<string> {
+    const payload = await this.exportChapterToTxtFile(chapterId, userId);
+    return payload.content;
+  }
+
+  async exportManuscriptToTxtFile(
     manuscriptId: number,
     userId: number,
     options?: ExportOptions
-  ): Promise<string> {
+  ): Promise<ExportFilePayload> {
     const manuscript = await this.prisma.manuscripts.findFirst({
       where: {
         id: manuscriptId,
@@ -215,7 +226,23 @@ export class ExportService {
     output += `总字数：${manuscript.totalWords || 0} 字\n`;
     output += `导出时间：${this.formatDate(new Date())}\n`;
 
-    return output;
+    return {
+      filename: `${manuscript.name || 'manuscript'}_${new Date().getTime()}.txt`,
+      contentType: TXT_CONTENT_TYPE,
+      content: output,
+    };
+  }
+
+  /**
+   * 导出整个文稿为TXT
+   */
+  async exportManuscriptToTxt(
+    manuscriptId: number,
+    userId: number,
+    options?: ExportOptions
+  ): Promise<string> {
+    const payload = await this.exportManuscriptToTxtFile(manuscriptId, userId, options);
+    return payload.content;
   }
 
   /**
@@ -290,6 +317,14 @@ export class ExportService {
    * 导出为Markdown格式
    */
   async exportManuscriptToMarkdown(manuscriptId: number, userId: number): Promise<string> {
+    const payload = await this.exportManuscriptToMarkdownFile(manuscriptId, userId);
+    return payload.content;
+  }
+
+  async exportManuscriptToMarkdownFile(
+    manuscriptId: number,
+    userId: number
+  ): Promise<ExportFilePayload> {
     const manuscript = await this.prisma.manuscripts.findFirst({
       where: {
         id: manuscriptId,
@@ -352,7 +387,11 @@ export class ExportService {
       output += '---\n\n';
     }
 
-    return output;
+    return {
+      filename: `${manuscript.name || 'manuscript'}_${new Date().getTime()}.md`,
+      contentType: MARKDOWN_CONTENT_TYPE,
+      content: output,
+    };
   }
 
   /**

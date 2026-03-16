@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { ExportService } from './export.service';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { ManuscriptsService } from '../manuscripts/manuscripts.service';
 
 describe('ExportService', () => {
   it('returns failed chapters instead of swallowing batch export errors', async () => {
@@ -10,8 +9,7 @@ describe('ExportService', () => {
         findFirst: jest.fn(),
       },
     } as unknown as PrismaService;
-    const manuscriptsService = {} as ManuscriptsService;
-    const service = new ExportService(prisma, manuscriptsService);
+    const service = new ExportService(prisma);
 
     jest
       .spyOn(service, 'exportChapterToTxt')
@@ -32,5 +30,29 @@ describe('ExportService', () => {
       successCount: 1,
       failureCount: 1,
     });
+  });
+
+  it('builds file payloads inside the service', async () => {
+    const prisma = {
+      manuscript_chapter: {
+        findFirst: jest.fn().mockResolvedValue({
+          title: '第一章',
+          wordCount: 1280,
+          content: {
+            content: '正文内容',
+          },
+          manuscript: {
+            name: '测试文稿',
+          },
+        }),
+      },
+    } as unknown as PrismaService;
+    const service = new ExportService(prisma);
+
+    const result = await service.exportChapterToTxtFile(1, 100);
+
+    expect(result.filename).toBe('chapter_1.txt');
+    expect(result.contentType).toBe('text/plain; charset=utf-8');
+    expect(result.content).toContain('测试文稿');
   });
 });
