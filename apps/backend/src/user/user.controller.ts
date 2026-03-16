@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Request } from '@nestjs/common';
+import { Controller, Post, Body, Request, UnauthorizedException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -51,7 +51,7 @@ export class UserController {
     @Request() req: AuthenticatedRequest
   ) {
     if (!req.user?.id) {
-      throw new Error('用户未登录');
+      throw new UnauthorizedException('用户未登录');
     }
     return this.userService.updateProfile(
       Number(req.user.id),

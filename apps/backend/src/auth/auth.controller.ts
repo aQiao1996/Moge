@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Request, UnauthorizedException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -94,7 +94,7 @@ export class AuthController {
     @Request() req: AuthenticatedRequest
   ) {
     if (!req.user?.id) {
-      throw new Error('用户未登录');
+      throw new UnauthorizedException('用户未登录');
     }
     return this.authService.changePassword(
       Number(req.user.id),
