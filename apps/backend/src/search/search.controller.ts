@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SearchService } from './search.service';
@@ -39,8 +39,7 @@ export class SearchController {
     const results = await this.searchService.searchSettings(q, parsedProjectId, userId);
 
     return {
-      success: true,
-      data: results,
+      items: results,
       total: results.length,
     };
   }
@@ -69,17 +68,10 @@ export class SearchController {
     const setting = await this.searchService.getSettingByTypeAndId(type, parsedId, userId);
 
     if (!setting) {
-      return {
-        success: false,
-        message: '设定不存在',
-        data: null,
-      };
+      throw new NotFoundException('设定不存在');
     }
 
-    return {
-      success: true,
-      data: setting,
-    };
+    return setting;
   }
 
   /**
@@ -106,8 +98,7 @@ export class SearchController {
     const backlinks = await this.searchService.getBacklinks(type, parsedId, userId);
 
     return {
-      success: true,
-      data: backlinks,
+      items: backlinks,
       total: backlinks.length,
     };
   }

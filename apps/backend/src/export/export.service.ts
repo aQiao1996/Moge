@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ManuscriptsService } from '../manuscripts/manuscripts.service';
 
@@ -41,7 +41,7 @@ export class ExportService {
     });
 
     if (!chapter) {
-      throw new Error('章节不存在或无权访问');
+      throw new NotFoundException('章节不存在或无权访问');
     }
 
     // 构建导出内容
@@ -82,7 +82,7 @@ export class ExportService {
     });
 
     if (!manuscript) {
-      throw new Error('文稿不存在或无权访问');
+      throw new NotFoundException('文稿不存在或无权访问');
     }
 
     // 获取所有章节
@@ -239,7 +239,7 @@ export class ExportService {
           });
 
           if (!chapter) {
-            throw new Error('章节不存在或无权访问');
+            throw new NotFoundException('章节不存在或无权访问');
           }
 
           // 构建 Markdown 格式的内容
@@ -275,7 +275,7 @@ export class ExportService {
     });
 
     if (!manuscript) {
-      throw new Error('文稿不存在或无权访问');
+      throw new NotFoundException('文稿不存在或无权访问');
     }
 
     // 获取所有章节

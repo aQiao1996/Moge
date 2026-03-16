@@ -617,7 +617,7 @@ export class ManuscriptsService {
       await this.recalculateManuscriptTotalWords(manuscriptId);
     }
 
-    return { success: true, count: chapterIds.length };
+    return { count: chapterIds.length };
   }
 
   /**
@@ -1302,7 +1302,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     await Promise.all(updatePromises);
 
-    return { success: true };
+    return {};
   }
 
   /**
@@ -1352,6 +1352,6 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     await Promise.all(updatePromises);
 
-    return { success: true };
+    return {};
   }
 }

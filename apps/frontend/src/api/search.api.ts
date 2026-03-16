@@ -15,9 +15,8 @@ export interface SearchResult {
 }
 
 /** 搜索响应类型 */
-interface SearchResponse {
-  success: boolean;
-  data: SearchResult[];
+interface SearchListResponse {
+  items: SearchResult[];
   total: number;
 }
 
@@ -33,8 +32,8 @@ export async function searchSettings(q: string, projectId?: number): Promise<Sea
     params.append('projectId', projectId.toString());
   }
 
-  const { data } = await request.get<SearchResponse>(`/search/settings?${params.toString()}`);
-  return data?.data || [];
+  const { data } = await request.get<SearchListResponse>(`/search/settings?${params.toString()}`);
+  return data.items;
 }
 
 /**

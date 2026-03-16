@@ -9,6 +9,32 @@ export interface ExportPreviewResponse {
   format: 'txt' | 'markdown';
 }
 
+interface ExportErrorResponse {
+  message?: string;
+}
+
+async function getExportErrorMessage(response: Response, fallback: string): Promise<string> {
+  const contentType = response.headers.get('content-type');
+
+  try {
+    if (contentType?.includes('application/json')) {
+      const payload = (await response.json()) as ExportErrorResponse;
+      if (payload.message) {
+        return payload.message;
+      }
+    } else {
+      const text = await response.text();
+      if (text) {
+        return text;
+      }
+    }
+  } catch {
+    // 忽略解析错误，回退到兜底文案
+  }
+
+  return fallback;
+}
+
 /**
  * 导出单个章节为TXT（下载文件）
  */
@@ -24,7 +50,7 @@ export async function exportChapterToTxt(chapterId: number): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error('导出失败');
+    throw new Error(await getExportErrorMessage(response, '导出失败'));
   }
 
   const blob = await response.blob();
@@ -63,7 +89,7 @@ export async function exportManuscriptToTxt(
   });
 
   if (!response.ok) {
-    throw new Error('导出失败');
+    throw new Error(await getExportErrorMessage(response, '导出失败'));
   }
 
   // 从响应头获取文件名
@@ -102,7 +128,7 @@ export async function exportManuscriptToMarkdown(manuscriptId: number): Promise<
   });
 
   if (!response.ok) {
-    throw new Error('导出失败');
+    throw new Error(await getExportErrorMessage(response, '导出失败'));
   }
 
   // 从响应头获取文件名

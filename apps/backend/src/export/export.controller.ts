@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Param, Query, UseGuards, Request, Res, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  Res,
+  Body,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ExportService } from './export.service';
@@ -19,6 +31,14 @@ interface AuthRequest {
 export class ExportController {
   constructor(private readonly exportService: ExportService) {}
 
+  private getUserId(req: AuthRequest): number {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('未登录');
+    }
+    return userId;
+  }
+
   /**
    * 导出单个章节为TXT
    */
@@ -30,28 +50,14 @@ export class ExportController {
     @Request() req: AuthRequest,
     @Res() res: Response
   ) {
-    const userId = req?.user?.id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: '未登录',
-      });
-    }
+    const userId = this.getUserId(req);
+    const content = await this.exportService.exportChapterToTxt(Number(id), userId);
 
-    try {
-      const content = await this.exportService.exportChapterToTxt(Number(id), userId);
+    // 设置响应头
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="chapter_${id}.txt"`);
 
-      // 设置响应头
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="chapter_${id}.txt"`);
-
-      return res.send(content);
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '导出失败',
-      });
-    }
+    return res.send(content);
   }
 
   /**
@@ -69,45 +75,28 @@ export class ExportController {
     @Request() req: AuthRequest,
     @Res() res: Response
   ) {
-    const userId = req?.user?.id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: '未登录',
-      });
-    }
+    const userId = this.getUserId(req);
+    const options = {
+      format: 'txt' as const,
+      includeMetadata: includeMetadata === 'true',
+      preserveFormatting: preserveFormatting === 'true',
+    };
 
-    try {
-      const options = {
-        format: 'txt' as const,
-        includeMetadata: includeMetadata === 'true',
-        preserveFormatting: preserveFormatting === 'true',
-      };
+    const content = await this.exportService.exportManuscriptToTxt(Number(id), userId, options);
 
-      const content = await this.exportService.exportManuscriptToTxt(Number(id), userId, options);
+    // 获取文稿名称作为文件名
+    const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
+      where: { id: Number(id) },
+      select: { name: true },
+    });
 
-      // 获取文稿名称作为文件名
-      const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
-        where: { id: Number(id) },
-        select: { name: true },
-      });
+    const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.txt`;
 
-      const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.txt`;
+    // 设置响应头
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
 
-      // 设置响应头
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(filename)}"`
-      );
-
-      return res.send(content);
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '导出失败',
-      });
-    }
+    return res.send(content);
   }
 
   /**
@@ -121,36 +110,22 @@ export class ExportController {
     @Request() req: AuthRequest,
     @Res() res: Response
   ) {
-    const userId = req?.user?.id;
-    if (!userId) {
-      return res.status(401).json({ success: false, message: '未登录' });
-    }
+    const userId = this.getUserId(req);
+    const content = await this.exportService.exportManuscriptToMarkdown(Number(id), userId);
 
-    try {
-      const content = await this.exportService.exportManuscriptToMarkdown(Number(id), userId);
+    // 获取文稿名称作为文件名
+    const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
+      where: { id: Number(id) },
+      select: { name: true },
+    });
 
-      // 获取文稿名称作为文件名
-      const manuscript = await this.exportService['prisma'].manuscripts.findUnique({
-        where: { id: Number(id) },
-        select: { name: true },
-      });
+    const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.md`;
 
-      const filename = `${manuscript?.name || 'manuscript'}_${new Date().getTime()}.md`;
+    // 设置响应头
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
 
-      // 设置响应头
-      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(filename)}"`
-      );
-
-      return res.send(content);
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '导出失败',
-      });
-    }
+    return res.send(content);
   }
 
   /**
@@ -162,24 +137,10 @@ export class ExportController {
     @Body() body: { chapterIds: number[]; format?: string },
     @Request() req: AuthRequest
   ) {
-    const userId = req?.user?.id;
-    if (!userId) {
-      return { success: false, message: '未登录', data: null };
-    }
-
-    try {
-      const results = await this.exportService.exportChaptersBatch(body.chapterIds, userId, {
-        format: (body.format || 'txt') as 'txt' | 'markdown',
-      });
-
-      return { success: true, data: results };
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : '导出失败',
-        data: null,
-      };
-    }
+    const userId = this.getUserId(req);
+    return this.exportService.exportChaptersBatch(body.chapterIds, userId, {
+      format: (body.format || 'txt') as 'txt' | 'markdown',
+    });
   }
 
   /**
@@ -195,37 +156,27 @@ export class ExportController {
     @Query('format') format: string,
     @Request() req: AuthRequest
   ) {
-    const userId = req?.user?.id;
-    if (!userId) {
-      return { success: false, message: '未登录', data: null };
-    }
+    const userId = this.getUserId(req);
+    let content = '';
 
-    try {
-      let content = '';
-
-      if (type === 'chapter') {
-        content = await this.exportService.exportChapterToTxt(Number(id), userId);
-      } else if (type === 'manuscript') {
-        if (format === 'markdown') {
-          content = await this.exportService.exportManuscriptToMarkdown(Number(id), userId);
-        } else {
-          content = await this.exportService.exportManuscriptToTxt(Number(id), userId, {
-            format: 'txt',
-            includeMetadata: true,
-          });
-        }
+    if (type === 'chapter') {
+      content = await this.exportService.exportChapterToTxt(Number(id), userId);
+    } else if (type === 'manuscript') {
+      if (format === 'markdown') {
+        content = await this.exportService.exportManuscriptToMarkdown(Number(id), userId);
+      } else {
+        content = await this.exportService.exportManuscriptToTxt(Number(id), userId, {
+          format: 'txt',
+          includeMetadata: true,
+        });
       }
-
-      return {
-        success: true,
-        data: { content, format: format || 'txt' },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : '预览失败',
-        data: null,
-      };
+    } else {
+      throw new BadRequestException('不支持的预览类型');
     }
+
+    return {
+      content,
+      format: format === 'markdown' ? 'markdown' : 'txt',
+    };
   }
 }

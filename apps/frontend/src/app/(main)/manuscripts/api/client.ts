@@ -92,7 +92,7 @@ export async function deleteVolume(volumeId: number) {
  * 批量更新卷排序
  */
 export async function reorderVolumes(volumeIds: number[]) {
-  return put<{ success: boolean }>('/manuscripts/volumes/reorder', { volumeIds });
+  return put<Record<string, never>>('/manuscripts/volumes/reorder', { volumeIds });
 }
 
 // ==================== Chapter APIs ====================
@@ -150,7 +150,7 @@ export async function unpublishChapter(chapterId: number) {
  * 批量发布章节
  */
 export async function batchPublishChapters(chapterIds: number[]) {
-  return post<{ success: boolean; count: number }>('/manuscripts/chapters/batch-publish', {
+  return post<{ count: number }>('/manuscripts/chapters/batch-publish', {
     chapterIds,
   });
 }
@@ -159,7 +159,7 @@ export async function batchPublishChapters(chapterIds: number[]) {
  * 批量更新章节排序
  */
 export async function reorderChapters(chapterIds: number[]) {
-  return put<{ success: boolean }>('/manuscripts/chapters/reorder', { chapterIds });
+  return put<Record<string, never>>('/manuscripts/chapters/reorder', { chapterIds });
 }
 
 // ==================== AI APIs ====================

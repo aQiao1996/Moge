@@ -63,6 +63,7 @@ export default function ExportButton({
         toast.success('文稿导出成功');
       }
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : '导出失败');
       console.error('导出失败:', error);
     } finally {
       setLoading(false);
@@ -77,6 +78,7 @@ export default function ExportButton({
       await exportManuscriptToMarkdown(id);
       toast.success('Markdown导出成功');
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : '导出失败');
       console.error('导出失败:', error);
     } finally {
       setLoading(false);
