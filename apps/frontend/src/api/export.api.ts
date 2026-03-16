@@ -9,6 +9,19 @@ export interface ExportPreviewResponse {
   format: 'txt' | 'markdown';
 }
 
+export interface BatchExportFailure {
+  chapterId: number;
+  message: string;
+}
+
+export interface BatchExportResponse {
+  items: { [chapterId: number]: string };
+  failures: BatchExportFailure[];
+  total: number;
+  successCount: number;
+  failureCount: number;
+}
+
 interface ExportErrorResponse {
   message?: string;
 }
@@ -158,8 +171,8 @@ export async function exportManuscriptToMarkdown(manuscriptId: number): Promise<
 export async function exportChaptersBatch(
   chapterIds: number[],
   format?: 'txt' | 'markdown'
-): Promise<{ [chapterId: number]: string }> {
-  const response = await request.post<{ [chapterId: number]: string }>('/export/chapters/batch', {
+): Promise<BatchExportResponse> {
+  const response = await request.post<BatchExportResponse>('/export/chapters/batch', {
     chapterIds,
     format: format || 'txt',
   });

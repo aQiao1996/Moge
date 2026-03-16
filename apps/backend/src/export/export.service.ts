@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ManuscriptsService } from '../manuscripts/manuscripts.service';
 
@@ -6,6 +6,19 @@ export interface ExportOptions {
   format: 'txt' | 'markdown';
   includeMetadata?: boolean;
   preserveFormatting?: boolean;
+}
+
+export interface BatchExportFailure {
+  chapterId: number;
+  message: string;
+}
+
+export interface BatchExportResult {
+  items: { [chapterId: number]: string };
+  failures: BatchExportFailure[];
+  total: number;
+  successCount: number;
+  failureCount: number;
 }
 
 /**
@@ -212,8 +225,9 @@ export class ExportService {
     chapterIds: number[],
     userId: number,
     options?: ExportOptions
-  ): Promise<{ [chapterId: number]: string }> {
-    const results: { [chapterId: number]: string } = {};
+  ): Promise<BatchExportResult> {
+    const items: { [chapterId: number]: string } = {};
+    const failures: BatchExportFailure[] = [];
     const format = options?.format || 'txt';
 
     for (const chapterId of chapterIds) {
@@ -254,13 +268,22 @@ export class ExportService {
           // 默认使用 TXT 格式
           content = await this.exportChapterToTxt(chapterId, userId);
         }
-        results[chapterId] = content;
+        items[chapterId] = content;
       } catch (error) {
-        console.error(`导出章节 ${chapterId} 失败:`, error);
+        failures.push({
+          chapterId,
+          message: this.getErrorMessage(error),
+        });
       }
     }
 
-    return results;
+    return {
+      items,
+      failures,
+      total: chapterIds.length,
+      successCount: Object.keys(items).length,
+      failureCount: failures.length,
+    };
   }
 
   /**
@@ -348,6 +371,32 @@ export class ExportService {
       .replace(/^\d+\.\s/gm, '') // 移除有序列表标记
       .replace(/^>\s/gm, '') // 移除引用标记
       .replace(/\n{3,}/g, '\n\n'); // 限制最多两个连续换行
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof HttpException) {
+      const response = error.getResponse();
+
+      if (typeof response === 'string') {
+        return response;
+      }
+
+      const message = (response as { message?: string | string[] })?.message;
+      if (Array.isArray(message)) {
+        return message.join(' & ');
+      }
+      if (typeof message === 'string' && message) {
+        return message;
+      }
+
+      return error.message;
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return '导出失败';
   }
 
   /**
