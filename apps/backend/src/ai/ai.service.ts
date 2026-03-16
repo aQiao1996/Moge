@@ -1,5 +1,5 @@
 // apps/backend/src/ai/ai.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
@@ -11,6 +11,8 @@ export type AIProvider = 'gemini' | 'openai' | 'moonshot';
 
 @Injectable()
 export class AIService {
+  private readonly logger = new Logger(AIService.name);
+
   constructor(private configService: ConfigService) {}
 
   /**
@@ -50,7 +52,8 @@ export class AIService {
         });
 
       default:
-        throw new Error(`Unsupported AI provider: ${provider as string}`);
+        this.logger.error(`不支持的 AI 提供商: ${provider as string}`);
+        throw new InternalServerErrorException('AI 提供商配置错误');
     }
   }
 }
