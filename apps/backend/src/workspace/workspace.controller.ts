@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceService } from './workspace.service';
@@ -28,18 +28,10 @@ export class WorkspaceController {
   async getWorkspaceSummary(@Request() req: AuthRequest) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: null,
-      };
+      throw new UnauthorizedException('未登录');
     }
 
-    const summary = await this.workspaceService.getWorkspaceSummary(userId);
-    return {
-      success: true,
-      data: summary,
-    };
+    return this.workspaceService.getWorkspaceSummary(userId);
   }
 
   /**
@@ -50,18 +42,10 @@ export class WorkspaceController {
   async getRecentProjects(@Request() req: AuthRequest) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: [],
-      };
+      throw new UnauthorizedException('未登录');
     }
 
-    const projects = await this.workspaceService.getRecentProjects(userId);
-    return {
-      success: true,
-      data: projects,
-    };
+    return this.workspaceService.getRecentProjects(userId);
   }
 
   /**
@@ -72,18 +56,10 @@ export class WorkspaceController {
   async getRecentOutlines(@Request() req: AuthRequest) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: [],
-      };
+      throw new UnauthorizedException('未登录');
     }
 
-    const outlines = await this.workspaceService.getRecentOutlines(userId);
-    return {
-      success: true,
-      data: outlines,
-    };
+    return this.workspaceService.getRecentOutlines(userId);
   }
 
   /**
@@ -94,18 +70,10 @@ export class WorkspaceController {
   async getRecentManuscripts(@Request() req: AuthRequest) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: [],
-      };
+      throw new UnauthorizedException('未登录');
     }
 
-    const manuscripts = await this.workspaceService.getRecentManuscripts(userId);
-    return {
-      success: true,
-      data: manuscripts,
-    };
+    return this.workspaceService.getRecentManuscripts(userId);
   }
 
   /**
@@ -116,17 +84,9 @@ export class WorkspaceController {
   async getWritingStats(@Request() req: AuthRequest) {
     const userId = req?.user?.id;
     if (!userId) {
-      return {
-        success: false,
-        message: '未登录',
-        data: null,
-      };
+      throw new UnauthorizedException('未登录');
     }
 
-    const stats = await this.workspaceService.getWritingStats(userId);
-    return {
-      success: true,
-      data: stats,
-    };
+    return this.workspaceService.getWritingStats(userId);
   }
 }

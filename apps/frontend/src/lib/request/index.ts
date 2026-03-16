@@ -161,10 +161,9 @@ function isErrorResponse(
 
 const requestInterceptor = (url: string, options: FetchOptions) => {
   const { requiresToken = true } = options;
-  const token: string | undefined =
-    globalHandlers.getToken?.() || typeof window !== 'undefined'
-      ? localStorage.getItem('auth-token') || undefined
-      : undefined;
+  const token =
+    globalHandlers.getToken?.() ??
+    (typeof window !== 'undefined' ? (localStorage.getItem('auth-token') ?? undefined) : undefined);
   const newOpts = { ...options };
   if (requiresToken && token) {
     newOpts.headers = { ...newOpts.headers, Authorization: `Bearer ${token}` };

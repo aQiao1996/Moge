@@ -48,16 +48,14 @@ export interface WritingStats {
  * 获取工作台汇总数据
  */
 export async function getWorkspaceSummary(): Promise<WorkspaceSummary> {
-  const response = await request.get<{ success: boolean; data: WorkspaceSummary }>(
-    '/workspace/summary'
-  );
-  return response.data.data;
+  const response = await request.get<WorkspaceSummary>('/workspace/summary');
+  return response.data;
 }
 
 /**
  * 获取写作统计
  */
 export async function getWritingStats(): Promise<WritingStats> {
-  const response = await request.get<{ success: boolean; data: WritingStats }>('/workspace/stats');
-  return response.data.data;
+  const response = await request.get<WritingStats>('/workspace/stats');
+  return response.data;
 }

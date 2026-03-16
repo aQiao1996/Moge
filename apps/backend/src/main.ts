@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'node:path';
-import * as express from 'express';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -22,7 +21,9 @@ async function bootstrap() {
   // 可以直接访问文件 如：http://localhost:3000/public/uploads/36T4NJ0P3UQCIU3GFRMARZ.jpeg
   // * 配置 public 文件夹为静态目录，以达到可直接访问下面文件的目的
   const rootDir = join(__dirname, '..');
-  app.use('/public', express.static(join(rootDir, 'public')));
+  app.useStaticAssets(join(rootDir, 'public'), {
+    prefix: '/public',
+  });
 
   // * 注册全局过滤器处理HTTP异常
   app.useGlobalFilters(new HttpExceptionFilter());
