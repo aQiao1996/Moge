@@ -20,6 +20,7 @@ selenium-debug.log
 *.njsproj
 *.sln
 *.local
+.env.*
 .env.local
 .env.*.local
 **/.env.local
