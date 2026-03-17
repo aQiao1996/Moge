@@ -8,7 +8,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit, Sparkles, Save } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, Save, Sparkles } from 'lucide-react';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
 import type { OutlineWithStructure } from '@moge/types';
 
@@ -75,7 +75,11 @@ export default function OutlineHeader({
           <MogeConfirmPopover
             trigger={
               <Button disabled={isGenerating} variant="outline">
-                <Sparkles className="mr-2 h-4 w-4" />
+                {isGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
                 {isGenerating ? '生成中...' : '智能生成'}
               </Button>
             }
@@ -89,7 +93,11 @@ export default function OutlineHeader({
           />
         ) : (
           <Button onClick={onGenerate} disabled={isGenerating} variant="outline">
-            <Sparkles className="mr-2 h-4 w-4" />
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
             {isGenerating ? '生成中...' : '智能生成'}
           </Button>
         )}
