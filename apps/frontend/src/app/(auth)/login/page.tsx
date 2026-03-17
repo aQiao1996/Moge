@@ -5,7 +5,7 @@
  * - 支持用户名/邮箱 + 密码登录
  * - 支持 GitLab OAuth 第三方登录
  * - 表单验证基于 Zod Schema
- * - 登录成功后跳转到首页
+ * - 登录成功后跳转到工作台
  * - 使用 NextAuth 进行认证管理
  */
 'use client';
@@ -55,7 +55,7 @@ export default function LoginPage() {
       toast.success('登录成功');
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
-        router.push('/');
+        router.replace('/workspace');
       }, 1000);
     } else {
       toast.error(result?.error || '用户名或密码错误');
@@ -129,7 +129,7 @@ export default function LoginPage() {
 
       {/* GitLab OAuth 登录按钮 */}
       <Button
-        onClick={() => void signIn('gitlab', { callbackUrl: '/' })}
+        onClick={() => void signIn('gitlab', { callbackUrl: '/workspace' })}
         style={{
           borderColor: 'var(--moge-card-border)',
           background:

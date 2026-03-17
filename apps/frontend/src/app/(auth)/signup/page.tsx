@@ -4,7 +4,7 @@
  * 功能特性：
  * - 支持用户名、密码、确认密码注册
  * - 表单验证基于 Zod Schema（密码强度、确认密码匹配）
- * - 注册成功后自动登录并跳转到首页
+ * - 注册成功后自动登录并跳转到工作台
  * - 如果自动登录失败，引导用户手动登录
  */
 'use client';
@@ -56,9 +56,9 @@ export default function SignupPage() {
     });
 
     if (signInResult?.ok) {
-      // 自动登录成功，跳转到首页
+      // 自动登录成功，跳转到工作台
       setTimeout(() => {
-        router.push('/');
+        router.replace('/workspace');
       }, 1000);
     } else {
       // 自动登录失败，引导用户手动登录
