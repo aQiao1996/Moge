@@ -20,6 +20,10 @@ selenium-debug.log
 *.njsproj
 *.sln
 *.local
+.env.local
+.env.*.local
+**/.env.local
+**/.env.*.local
 
 tsconfig.tsbuildinfo
 # 包依赖分析 Rollup Visualizer

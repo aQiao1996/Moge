@@ -33,6 +33,7 @@ interface FindAllOptions {
 export class OutlineService extends BaseService {
   private readonly logger = new Logger(OutlineService.name);
   private readonly STREAM_TIMEOUT = 120000; // 120 s
+  private readonly HEARTBEAT_INTERVAL = 15000; // 15 s
 
   constructor(
     private readonly prisma: PrismaService,
@@ -50,12 +51,17 @@ export class OutlineService extends BaseService {
    * @returns 包含流式数据的 Observable
    */
   generateContentStream(id: string, userId: string): Observable<MessageEvent> {
-    const subject = new Subject<{ type: 'content' | 'complete'; data?: string }>();
+    const subject = new Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>();
 
     const abortController = new AbortController();
     const timeout = setTimeout(() => {
       abortController.abort('timeout');
     }, this.STREAM_TIMEOUT);
+    const heartbeatTimer = setInterval(() => {
+      if (!subject.closed) {
+        subject.next({ type: 'heartbeat' });
+      }
+    }, this.HEARTBEAT_INTERVAL);
 
     this._generateStreamWithSubject(id, userId, subject, abortController.signal).catch((error) => {
       if (!subject.closed) {
@@ -68,6 +74,8 @@ export class OutlineService extends BaseService {
         next: (data) => {
           if (data.type === 'complete') {
             observer.next({ type: 'complete', data: null });
+          } else if (data.type === 'heartbeat') {
+            observer.next({ type: 'heartbeat', data: null });
           } else {
             observer.next({ type: 'content', data: data.data });
           }
@@ -78,6 +86,7 @@ export class OutlineService extends BaseService {
 
       return () => {
         clearTimeout(timeout);
+        clearInterval(heartbeatTimer);
         abortController.abort('cleanup');
         sub.unsubscribe();
       };
@@ -97,7 +106,7 @@ export class OutlineService extends BaseService {
    * @param signal 中止信号，用于提前终止
    */
   private async _dripFeedBufferToSubject(
-    subject: Subject<{ type: 'content' | 'complete'; data?: string }>,
+    subject: Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>,
     bufferRef: { current: string },
     isStreamFinishedRef: { current: boolean },
     signal: AbortSignal
@@ -131,7 +140,7 @@ export class OutlineService extends BaseService {
   private async _generateStreamWithSubject(
     id: string,
     userId: string,
-    subject: Subject<{ type: 'content' | 'complete'; data?: string }>,
+    subject: Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>,
     signal: AbortSignal
   ) {
     this.logger.debug(`[流开始] 大纲ID: ${id}, 用户ID: ${userId}`);
@@ -159,7 +168,7 @@ export class OutlineService extends BaseService {
       const settings = await this.getOutlineSettings(parseInt(id, 10), userId);
       const settingsContext = this.buildSettingsContext(settings);
 
-      const model = this.aiService.getStreamingModel('moonshot');
+      const model = this.aiService.getDefaultStreamingModel();
       const prompt = this.createPromptTemplate();
       const chain = prompt.pipe(model).pipe(new StringOutputParser());
 

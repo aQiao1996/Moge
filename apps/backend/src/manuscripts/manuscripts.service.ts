@@ -828,7 +828,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     try {
       this.logger.debug(`[AI 续写] 章节ID: ${chapterId}, 用户ID: ${userId}`);
 
-      const model = this.aiService.getStreamingModel('moonshot');
+      const model = this.aiService.getDefaultStreamingModel();
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],
@@ -893,7 +893,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         `[AI 润色] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
       );
 
-      const model = this.aiService.getStreamingModel('moonshot');
+      const model = this.aiService.getDefaultStreamingModel();
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],
@@ -965,7 +965,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         `[AI 扩写] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
       );
 
-      const model = this.aiService.getStreamingModel('moonshot');
+      const model = this.aiService.getDefaultStreamingModel();
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],

@@ -68,7 +68,10 @@ export function useOutlineGenerate({
 
     const eventSource = new EventSourcePolyfill(
       `${baseUrl}/moge-api/outline/${outlineId}/generate-stream`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        heartbeatTimeout: 120000,
+      }
     );
 
     let errorHandled = false;
@@ -116,6 +119,10 @@ export function useOutlineGenerate({
 
             setContent((prev) => prev + data);
           }
+          return;
+        }
+
+        if (type === 'heartbeat') {
           return;
         }
 
