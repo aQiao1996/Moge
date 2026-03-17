@@ -38,7 +38,7 @@ export default tseslint.config(
 
   /* 纯语法：所有配置文件 & 非 TS */
   {
-    files: ['*.config.mjs', '*.config.js'], // 匹配配置文件（如 webpack.config.js、vite.config.ts 等）
+    files: ['*.config.{js,mjs,cjs}', '**/*.config.{js,mjs,cjs}'], // 匹配根目录和子目录中的配置文件
     languageOptions: {
       globals: globals.node,
       parserOptions: { project: false },
