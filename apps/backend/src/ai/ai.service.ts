@@ -13,6 +13,7 @@ export interface AIStreamingDebugInfo {
   provider: string;
   modelName?: string;
   baseURL?: string;
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
 }
 
 const SUPPORTED_AI_PROVIDERS: AIProvider[] = ['gemini', 'openai', 'moonshot', 'openai_compatible'];
@@ -59,10 +60,11 @@ export class AIService {
         return this.createOpenAICompatibleModel({
           label: 'OpenAI Compatible',
           apiKeyEnvName: 'OPENAI_COMPATIBLE_API_KEY',
-          modelName: this.configService.get<string>('OPENAI_COMPATIBLE_MODEL') ?? 'gpt-4o-mini',
+          modelName: this.configService.get<string>('OPENAI_COMPATIBLE_MODEL') ?? 'gpt-5.2',
           baseURL: this.getRequiredConfig('OPENAI_COMPATIBLE_BASE_URL'),
           maxTokens: 2000,
           temperature: 0.6,
+          reasoningEffort: 'low', // 最低推理能力,快速推理
         });
 
       default:
@@ -114,11 +116,12 @@ export class AIService {
     baseURL?: string;
     temperature?: number;
     maxTokens?: number;
+    reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
   }): BaseChatModel {
     const apiKey = this.getRequiredConfig(options.apiKeyEnvName);
 
     this.logger.log(
-      `使用 ${options.label} 模型: ${options.modelName}${options.baseURL ? ` @ ${options.baseURL}` : ''}`
+      `使用 ${options.label} 模型: ${options.modelName}${options.baseURL ? ` @ ${options.baseURL}` : ''}${options.reasoningEffort ? `, reasoning=${options.reasoningEffort}` : ''}`
     );
 
     return new ChatOpenAI({
@@ -132,6 +135,11 @@ export class AIService {
       streaming: true,
       maxTokens: options.maxTokens,
       temperature: options.temperature,
+      reasoning: options.reasoningEffort
+        ? {
+            effort: options.reasoningEffort,
+          }
+        : undefined,
     });
   }
 
@@ -187,8 +195,9 @@ export class AIService {
       case 'openai_compatible':
         return {
           provider,
-          modelName: this.configService.get<string>('OPENAI_COMPATIBLE_MODEL') ?? 'gpt-4o-mini',
+          modelName: this.configService.get<string>('OPENAI_COMPATIBLE_MODEL') ?? 'gpt-5.2',
           baseURL: this.configService.get<string>('OPENAI_COMPATIBLE_BASE_URL'),
+          reasoningEffort: 'low',
         };
     }
   }

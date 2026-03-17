@@ -116,10 +116,15 @@ export class OutlineService extends BaseService {
     });
   }
 
-  // 定义小批量分发的配置
-  private readonly DRIP_CHUNK_SIZE = 1; // 每次发送的字符数
-  private readonly DRIP_INTERVAL = 20; // ms, 基础间隔
-  private readonly PUNCTUATION_DELAY = 100; // ms, 遇到标点时的额外延迟
+  // 定义自适应分发的配置
+  private readonly INITIAL_DRIP_CHUNK_SIZE = 8; // 刚开始保留“正在生成”的观感
+  private readonly ACCELERATED_DRIP_CHUNK_SIZE = 24; // 缓冲积压后自动提速
+  private readonly FINISHING_DRIP_CHUNK_SIZE = 96; // 上游结束后快速清空缓冲
+  private readonly INITIAL_DRIP_INTERVAL = 45; // 初始阶段稍慢，保留打字机效果
+  private readonly ACCELERATED_DRIP_INTERVAL = 18; // 中段加速，避免用户误以为卡住
+  private readonly FINISHING_DRIP_INTERVAL = 4; // 收尾尽快完成，避免按钮长期停在“生成中”
+  private readonly PUNCTUATION_DELAY = 70; // 遇到标点稍作停顿，让阅读节奏更自然
+  private readonly IDLE_WAIT_INTERVAL = 50; // 缓冲区为空时的轮询间隔
 
   /**
    * 缓冲区分发器
@@ -134,30 +139,90 @@ export class OutlineService extends BaseService {
     isStreamFinishedRef: { current: boolean },
     signal: AbortSignal
   ) {
+    let emittedChars = 0;
+
     while (!signal.aborted) {
       if (bufferRef.current.length > 0) {
-        // 从缓冲区取出小批量字符
-        const dripChunk = bufferRef.current.substring(0, this.DRIP_CHUNK_SIZE);
-        bufferRef.current = bufferRef.current.substring(this.DRIP_CHUNK_SIZE);
+        const strategy = this.resolveDripStrategy(
+          bufferRef.current.length,
+          emittedChars,
+          isStreamFinishedRef.current
+        );
+
+        // 从缓冲区取出当前策略对应的小批量字符
+        const dripChunk = bufferRef.current.substring(0, strategy.chunkSize);
+        bufferRef.current = bufferRef.current.substring(dripChunk.length);
+        emittedChars += dripChunk.length;
 
         // 推送给前端
         subject.next({ type: 'content', data: dripChunk });
 
         // 检查块的最后一个字符是否为标点，以实现智能延迟
         const lastChar = dripChunk.slice(-1);
-        if (['。', '！', '？', '，', '；', '、', '\n'].includes(lastChar)) {
-          await new Promise((resolve) => setTimeout(resolve, this.PUNCTUATION_DELAY));
-        } else {
-          await new Promise((resolve) => setTimeout(resolve, this.DRIP_INTERVAL));
+        const delay = this.resolveDripDelay(
+          lastChar,
+          bufferRef.current.length,
+          isStreamFinishedRef.current,
+          strategy.interval
+        );
+
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       } else if (isStreamFinishedRef.current) {
         // 如果上游流已结束，且缓冲区已清空，则退出循环
         break;
       } else {
         // 如果缓冲区为空，但上游流尚未结束，则稍作等待，避免空转
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, this.IDLE_WAIT_INTERVAL));
       }
     }
+  }
+
+  private resolveDripStrategy(
+    pendingLength: number,
+    emittedChars: number,
+    isStreamFinished: boolean
+  ): { chunkSize: number; interval: number } {
+    if (isStreamFinished || pendingLength >= 600) {
+      return {
+        chunkSize: this.FINISHING_DRIP_CHUNK_SIZE,
+        interval: this.FINISHING_DRIP_INTERVAL,
+      };
+    }
+
+    if (pendingLength >= 180 || emittedChars >= 320) {
+      return {
+        chunkSize: this.ACCELERATED_DRIP_CHUNK_SIZE,
+        interval: this.ACCELERATED_DRIP_INTERVAL,
+      };
+    }
+
+    return {
+      chunkSize: this.INITIAL_DRIP_CHUNK_SIZE,
+      interval: this.INITIAL_DRIP_INTERVAL,
+    };
+  }
+
+  private resolveDripDelay(
+    lastChar: string,
+    pendingLength: number,
+    isStreamFinished: boolean,
+    baseInterval: number
+  ): number {
+    if (isStreamFinished && pendingLength > this.FINISHING_DRIP_CHUNK_SIZE * 2) {
+      return 0;
+    }
+
+    if (isStreamFinished) {
+      return this.FINISHING_DRIP_INTERVAL;
+    }
+
+    if (['。', '！', '？', '，', '；', '、', '\n'].includes(lastChar)) {
+      return baseInterval + this.PUNCTUATION_DELAY;
+    }
+
+    return baseInterval;
   }
 
   private async _generateStreamWithSubject(
