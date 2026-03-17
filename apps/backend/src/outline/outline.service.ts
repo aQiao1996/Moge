@@ -4,11 +4,13 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 import { BaseService } from '../base/base.service';
 import { AIService } from '../ai/ai.service';
+import type { AIStreamingDebugInfo } from '../ai/ai.service';
 import { Observable, Subject } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
@@ -27,6 +29,27 @@ interface FindAllOptions {
   tags?: string[];
   sortBy?: 'name' | 'createdAt' | 'type';
   sortOrder?: 'asc' | 'desc';
+}
+
+interface OutlineStreamEvent {
+  type: 'content' | 'complete' | 'heartbeat';
+  data?: string;
+}
+
+interface OutlineStreamErrorPayload {
+  error: {
+    message: string;
+    code: string;
+  };
+}
+
+interface NormalizedOutlineStreamError {
+  name?: string;
+  message?: string;
+  status?: number;
+  code?: string;
+  type?: string;
+  requestId?: string;
 }
 
 @Injectable()
@@ -51,7 +74,7 @@ export class OutlineService extends BaseService {
    * @returns 包含流式数据的 Observable
    */
   generateContentStream(id: string, userId: string): Observable<MessageEvent> {
-    const subject = new Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>();
+    const subject = new Subject<OutlineStreamEvent>();
 
     const abortController = new AbortController();
     const timeout = setTimeout(() => {
@@ -106,7 +129,7 @@ export class OutlineService extends BaseService {
    * @param signal 中止信号，用于提前终止
    */
   private async _dripFeedBufferToSubject(
-    subject: Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>,
+    subject: Subject<OutlineStreamEvent>,
     bufferRef: { current: string },
     isStreamFinishedRef: { current: boolean },
     signal: AbortSignal
@@ -140,7 +163,7 @@ export class OutlineService extends BaseService {
   private async _generateStreamWithSubject(
     id: string,
     userId: string,
-    subject: Subject<{ type: 'content' | 'complete' | 'heartbeat'; data?: string }>,
+    subject: Subject<OutlineStreamEvent>,
     signal: AbortSignal
   ) {
     this.logger.debug(`[流开始] 大纲ID: ${id}, 用户ID: ${userId}`);
@@ -219,23 +242,14 @@ export class OutlineService extends BaseService {
       }
     } catch (error) {
       isStreamFinishedRef.current = true; // 确保在出错时也能终止分发器循环
-      if (error instanceof Error && error.name === 'AbortError') {
+      await dripPromise;
+
+      const errorPayload = this.buildStreamErrorPayload(error, signal);
+
+      if (!errorPayload) {
         this.logger.warn(`[流已中止] 大纲ID: ${id}, 用户ID: ${userId}, 原因: ${signal.reason}`);
       } else {
-        let errorMessage = '生成大纲时发生未知错误，请稍后重试。';
-        let errorCode = 'UNKNOWN_ERROR';
-
-        if (error instanceof Error) {
-          this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error.stack);
-          if (error.message.includes('429 Too Many Requests')) {
-            errorMessage = '您的请求过于频繁，已超出当前使用额度。请检查您的套餐详情或稍后再试。';
-            errorCode = 'RATE_LIMIT_EXCEEDED';
-          }
-        } else {
-          this.logger.error(`[流错误] 大纲ID: ${id}, 用户ID: ${userId}`, error);
-        }
-
-        const errorPayload = { error: { message: errorMessage, code: errorCode } };
+        this.logStreamError(id, userId, error, signal, errorPayload);
         subject.next({ type: 'content', data: JSON.stringify(errorPayload) });
       }
     } finally {
@@ -244,6 +258,282 @@ export class OutlineService extends BaseService {
         subject.complete();
       }
     }
+  }
+
+  private buildStreamErrorPayload(
+    error: unknown,
+    signal: AbortSignal
+  ): OutlineStreamErrorPayload | null {
+    const normalizedError = this.normalizeStreamError(error);
+
+    if (normalizedError.name === 'AbortError') {
+      if (signal.reason === 'timeout') {
+        return {
+          error: {
+            message: 'AI 生成超时，请稍后重试。',
+            code: 'AI_TIMEOUT',
+          },
+        };
+      }
+
+      return null;
+    }
+
+    if (
+      signal.reason === 'timeout' ||
+      normalizedError.name === 'TimeoutError' ||
+      this.messageIncludes(normalizedError.message, ['timed out', 'timeout'])
+    ) {
+      return {
+        error: {
+          message: 'AI 生成超时，请稍后重试。',
+          code: 'AI_TIMEOUT',
+        },
+      };
+    }
+
+    if (error instanceof NotFoundException) {
+      return {
+        error: {
+          message: this.getHttpExceptionMessage(error) ?? '大纲不存在或无权限访问',
+          code: 'OUTLINE_NOT_FOUND',
+        },
+      };
+    }
+
+    if (error instanceof ForbiddenException) {
+      return {
+        error: {
+          message: this.getHttpExceptionMessage(error) ?? '无权访问此大纲',
+          code: 'OUTLINE_ACCESS_DENIED',
+        },
+      };
+    }
+
+    if (error instanceof BadRequestException) {
+      return {
+        error: {
+          message: this.getHttpExceptionMessage(error) ?? '请求参数有误，请检查后重试。',
+          code: 'OUTLINE_REQUEST_ERROR',
+        },
+      };
+    }
+
+    if (normalizedError.status === 429 || normalizedError.code === 'MODEL_RATE_LIMIT') {
+      return {
+        error: {
+          message: '您的请求过于频繁或已超出额度，请稍后再试。',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+      };
+    }
+
+    if (
+      normalizedError.status === 401 ||
+      normalizedError.status === 403 ||
+      normalizedError.code === 'MODEL_AUTHENTICATION'
+    ) {
+      return {
+        error: {
+          message: 'AI 服务鉴权失败，请检查密钥或中转站权限配置。',
+          code: 'AI_AUTH_ERROR',
+        },
+      };
+    }
+
+    if (this.isAIConfigError(normalizedError.message)) {
+      return {
+        error: {
+          message: 'AI 服务配置不完整，请检查环境变量配置。',
+          code: 'AI_CONFIG_ERROR',
+        },
+      };
+    }
+
+    if (normalizedError.status === 404 || normalizedError.code === 'MODEL_NOT_FOUND') {
+      return {
+        error: {
+          message: '当前配置的 AI 模型不存在或不可用，请检查模型名称。',
+          code: 'AI_MODEL_NOT_FOUND',
+        },
+      };
+    }
+
+    if (normalizedError.status === 400 || normalizedError.status === 422) {
+      return {
+        error: {
+          message: 'AI 请求参数不被当前模型或中转站支持，请检查模型与参数配置。',
+          code: 'AI_REQUEST_ERROR',
+        },
+      };
+    }
+
+    if (
+      (normalizedError.status !== undefined && normalizedError.status >= 500) ||
+      this.messageIncludes(normalizedError.message, [
+        'no clients available',
+        'connection error',
+        'fetch failed',
+        'service unavailable',
+        'bad gateway',
+        'gateway timeout',
+      ])
+    ) {
+      return {
+        error: {
+          message: 'AI 服务暂时不可用，请稍后重试。',
+          code: 'AI_PROVIDER_ERROR',
+        },
+      };
+    }
+
+    return {
+      error: {
+        message: '生成大纲时发生未知错误，请稍后重试。',
+        code: 'UNKNOWN_ERROR',
+      },
+    };
+  }
+
+  private logStreamError(
+    outlineId: string,
+    userId: string,
+    error: unknown,
+    signal: AbortSignal,
+    errorPayload: OutlineStreamErrorPayload
+  ) {
+    const normalizedError = this.normalizeStreamError(error);
+    const aiDebugInfo = this.aiService.getDefaultStreamingDebugInfo();
+    const logMessage = JSON.stringify({
+      outlineId,
+      userId,
+      abortReason: typeof signal.reason === 'string' ? signal.reason : undefined,
+      ai: this.buildSafeAIDebugInfo(aiDebugInfo),
+      errorCode: errorPayload.error.code,
+      errorName: normalizedError.name,
+      status: normalizedError.status,
+      upstreamCode: normalizedError.code,
+      upstreamType: normalizedError.type,
+      requestId: normalizedError.requestId,
+      message: normalizedError.message,
+    });
+
+    if (error instanceof Error) {
+      this.logger.error(`[流错误] ${logMessage}`, error.stack);
+      return;
+    }
+
+    this.logger.error(`[流错误] ${logMessage}`);
+  }
+
+  private buildSafeAIDebugInfo(aiDebugInfo: AIStreamingDebugInfo) {
+    return {
+      provider: aiDebugInfo.provider,
+      modelName: aiDebugInfo.modelName,
+      baseURL: aiDebugInfo.baseURL,
+    };
+  }
+
+  private normalizeStreamError(error: unknown, depth = 0): NormalizedOutlineStreamError {
+    if (depth > 3 || !this.isErrorRecord(error)) {
+      return {};
+    }
+
+    const nestedError = this.isErrorRecord(error.error) ? error.error : undefined;
+    const nestedCause = error.cause;
+    const normalizedNestedError = nestedError
+      ? this.normalizeStreamError(nestedError, depth + 1)
+      : {};
+    const normalizedCause = nestedCause ? this.normalizeStreamError(nestedCause, depth + 1) : {};
+
+    return {
+      name:
+        this.getStringValue(error, 'name') ?? normalizedCause.name ?? normalizedNestedError.name,
+      message:
+        this.getStringValue(error, 'message') ??
+        normalizedNestedError.message ??
+        normalizedCause.message,
+      status:
+        this.getNumberValue(error, 'status') ??
+        this.getNumberValue(error, 'statusCode') ??
+        normalizedNestedError.status ??
+        normalizedCause.status,
+      code:
+        this.getStringValue(error, 'code') ??
+        this.getStringValue(error, 'lc_error_code') ??
+        normalizedNestedError.code ??
+        normalizedCause.code,
+      type:
+        this.getStringValue(error, 'type') ?? normalizedNestedError.type ?? normalizedCause.type,
+      requestId:
+        this.getStringValue(error, 'requestID') ??
+        this.getStringValue(error, 'requestId') ??
+        normalizedCause.requestId,
+    };
+  }
+
+  private getHttpExceptionMessage(error: HttpException): string | undefined {
+    const response = error.getResponse();
+
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    if (!this.isErrorRecord(response)) {
+      return error.message;
+    }
+
+    const responseMessage = response.message;
+    if (typeof responseMessage === 'string') {
+      return responseMessage;
+    }
+
+    if (Array.isArray(responseMessage)) {
+      const messageList = responseMessage.filter(
+        (message): message is string => typeof message === 'string'
+      );
+
+      if (messageList.length > 0) {
+        return messageList.join('；');
+      }
+    }
+
+    return error.message;
+  }
+
+  private isAIConfigError(message?: string): boolean {
+    return this.messageIncludes(message, [
+      'ai 提供商配置错误',
+      '缺少 ai 配置项',
+      'missing api key',
+      'api key is required',
+      'api key missing',
+      'missing openai_api_key',
+      'missing google api key',
+    ]);
+  }
+
+  private messageIncludes(message: string | undefined, keywords: string[]): boolean {
+    if (!message) {
+      return false;
+    }
+
+    const normalizedMessage = message.toLowerCase();
+    return keywords.some((keyword) => normalizedMessage.includes(keyword));
+  }
+
+  private isErrorRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private getStringValue(source: Record<string, unknown>, key: string): string | undefined {
+    const value = source[key];
+    return typeof value === 'string' ? value : undefined;
+  }
+
+  private getNumberValue(source: Record<string, unknown>, key: string): number | undefined {
+    const value = source[key];
+    return typeof value === 'number' ? value : undefined;
   }
 
   /**

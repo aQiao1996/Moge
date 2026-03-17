@@ -9,6 +9,12 @@ import { ChatOpenAI } from '@langchain/openai';
 // 定义支持的 AI供应商类型，方便扩展
 export type AIProvider = 'gemini' | 'openai' | 'moonshot' | 'openai_compatible';
 
+export interface AIStreamingDebugInfo {
+  provider: string;
+  modelName?: string;
+  baseURL?: string;
+}
+
 const SUPPORTED_AI_PROVIDERS: AIProvider[] = ['gemini', 'openai', 'moonshot', 'openai_compatible'];
 
 @Injectable()
@@ -70,13 +76,7 @@ export class AIService {
    * 优先读取 AI_PROVIDER；未配置时，如果存在中转站 Key，则默认走 openai_compatible，否则保持 moonshot。
    */
   getDefaultProvider(): AIProvider {
-    const configuredProvider = this.configService.get<string>('AI_PROVIDER');
-
-    if (!configuredProvider) {
-      return this.configService.get<string>('OPENAI_COMPATIBLE_API_KEY')
-        ? 'openai_compatible'
-        : 'moonshot';
-    }
+    const configuredProvider = this.resolveConfiguredProvider();
 
     if (this.isAIProvider(configuredProvider)) {
       return configuredProvider;
@@ -91,6 +91,20 @@ export class AIService {
    */
   getDefaultStreamingModel(): BaseChatModel {
     return this.getStreamingModel(this.getDefaultProvider());
+  }
+
+  /**
+   * 获取当前默认流式模型的调试信息
+   * 仅用于日志诊断，不会校验配置完整性
+   */
+  getDefaultStreamingDebugInfo(): AIStreamingDebugInfo {
+    const configuredProvider = this.resolveConfiguredProvider();
+
+    if (!this.isAIProvider(configuredProvider)) {
+      return { provider: configuredProvider };
+    }
+
+    return this.getStreamingDebugInfo(configuredProvider);
   }
 
   private createOpenAICompatibleModel(options: {
@@ -134,5 +148,48 @@ export class AIService {
 
   private isAIProvider(provider: string): provider is AIProvider {
     return SUPPORTED_AI_PROVIDERS.includes(provider as AIProvider);
+  }
+
+  private resolveConfiguredProvider(): string {
+    const configuredProvider = this.configService.get<string>('AI_PROVIDER');
+
+    if (configuredProvider) {
+      return configuredProvider;
+    }
+
+    return this.configService.get<string>('OPENAI_COMPATIBLE_API_KEY')
+      ? 'openai_compatible'
+      : 'moonshot';
+  }
+
+  private getStreamingDebugInfo(provider: AIProvider): AIStreamingDebugInfo {
+    switch (provider) {
+      case 'gemini':
+        return {
+          provider,
+          modelName: 'gemini-1.5-pro-latest',
+        };
+
+      case 'openai':
+        return {
+          provider,
+          modelName: this.configService.get<string>('OPENAI_MODEL') ?? 'gpt-4-turbo-preview',
+        };
+
+      case 'moonshot':
+        return {
+          provider,
+          modelName: this.configService.get<string>('MOONSHOT_MODEL_NAME') ?? 'moonshot-v1-8k',
+          baseURL:
+            this.configService.get<string>('MOONSHOT_BASE_URL') ?? 'https://api.moonshot.cn/v1',
+        };
+
+      case 'openai_compatible':
+        return {
+          provider,
+          modelName: this.configService.get<string>('OPENAI_COMPATIBLE_MODEL') ?? 'gpt-4o-mini',
+          baseURL: this.configService.get<string>('OPENAI_COMPATIBLE_BASE_URL'),
+        };
+    }
   }
 }
