@@ -29,6 +29,13 @@ interface OutlineWithId extends Omit<Outline, 'id'> {
 }
 
 /**
+ * 比较两个字符串数组的内容是否一致
+ */
+function areStringArraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+/**
  * 大纲列表页组件
  *
  * 功能：
@@ -119,6 +126,7 @@ export default function Home() {
     { value: 'name', label: '名称' },
     { value: 'type', label: '类型' },
   ];
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   /**
    * 获取大纲列表数据
@@ -163,20 +171,34 @@ export default function Home() {
   ]);
 
   /**
-   * 当筛选条件改变时，重置到第一页
-   * 避免筛选后仍停留在不存在的页码
+   * 当总页数缩小时，自动修正越界页码
    */
   useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    filters.search,
-    filters.type,
-    filters.era,
-    filters.tags,
-    filters.status,
-    filters.sortBy,
-    filters.sortOrder,
-  ]);
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  /**
+   * 处理筛选条件变化
+   * 在同一次状态更新中同步重置页码，避免先用旧页码请求导致空态闪烁
+   */
+  const handleFiltersChange = (nextFilters: MogeFilterState) => {
+    const shouldResetPage =
+      nextFilters.search !== filters.search ||
+      nextFilters.type !== filters.type ||
+      nextFilters.era !== filters.era ||
+      nextFilters.status !== filters.status ||
+      nextFilters.sortBy !== filters.sortBy ||
+      nextFilters.sortOrder !== filters.sortOrder ||
+      !areStringArraysEqual(nextFilters.tags as string[], filters.tags as string[]);
+
+    setFilters(nextFilters);
+
+    if (shouldResetPage && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
 
   /**
    * 处理编辑大纲
@@ -337,7 +359,7 @@ export default function Home() {
       <div className="mb-6">
         <MogeFilter
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           filterOptions={filterOptions}
           sortOptions={sortOptions}
           searchPlaceholder="搜索大纲名称或备注..."
