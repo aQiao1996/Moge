@@ -31,6 +31,13 @@ export default function StatsPage() {
   const publishRate = stats?.totalWords
     ? Math.round((stats.publishedWords / stats.totalWords) * 100)
     : 0;
+  const manuscriptStatusItems = [
+    { label: '草稿', value: stats?.draftManuscripts ?? 0 },
+    { label: '进行中', value: stats?.inProgressManuscripts ?? 0 },
+    { label: '已完结', value: stats?.completedManuscripts ?? 0 },
+    { label: '已发布', value: stats?.publishedManuscripts ?? 0 },
+    { label: '已放弃', value: stats?.abandonedManuscripts ?? 0 },
+  ];
 
   if (loading) {
     return (
@@ -200,14 +207,12 @@ export default function StatsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">进行中</span>
-                    <span className="font-medium">{stats.inProgressManuscripts} 部</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">已完结</span>
-                    <span className="font-medium">{stats.completedManuscripts} 部</span>
-                  </div>
+                  {manuscriptStatusItems.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between">
+                      <span className="text-sm">{item.label}</span>
+                      <span className="font-medium">{item.value} 部</span>
+                    </div>
+                  ))}
                   <div className="flex items-center justify-between">
                     <span className="text-sm">总计</span>
                     <span className="font-medium">{stats.totalManuscripts} 部</span>

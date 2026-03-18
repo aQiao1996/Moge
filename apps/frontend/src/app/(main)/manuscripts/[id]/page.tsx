@@ -240,18 +240,22 @@ export default function ManuscriptDetailPage() {
   const status = manuscript.status ? statusConfig[manuscript.status] : undefined;
   const progress = calculateProgress(manuscript);
   const volumeCount = manuscript.volumes?.length || 0;
-  const chapterCount = manuscript.chapters?.length || 0;
 
-  // 计算总章节数和已发布章节数
-  const totalChapters =
-    (manuscript.chapters?.length || 0) +
-    (manuscript.volumes?.reduce((sum, vol) => sum + (vol.chapters?.length || 0), 0) || 0);
-  const publishedChapters =
-    (manuscript.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0) +
-    (manuscript.volumes?.reduce(
-      (sum, vol) => sum + (vol.chapters?.filter((ch) => ch.status === 'PUBLISHED').length || 0),
-      0
-    ) || 0);
+  // 统一按章节 ID 去重，避免接口异常时重复计数
+  const uniqueChapters = Array.from(
+    new Map(
+      [
+        ...(manuscript.chapters || []),
+        ...(manuscript.volumes?.flatMap((vol) => vol.chapters || []) || []),
+      ]
+        .filter((chapter) => chapter.id !== undefined)
+        .map((chapter) => [chapter.id, chapter] as const)
+    ).values()
+  );
+  const totalChapters = uniqueChapters.length;
+  const publishedChapters = uniqueChapters.filter(
+    (chapter) => chapter.status === 'PUBLISHED'
+  ).length;
 
   return (
     <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden p-6">
@@ -315,7 +319,7 @@ export default function ManuscriptDetailPage() {
             <BookText className="h-5 w-5" />,
             '卷数',
             volumeCount,
-            `共 ${chapterCount} 章节`
+            `共 ${totalChapters} 章节`
           )}
           {renderStatsCard(
             <Clock className="h-5 w-5" />,
@@ -387,7 +391,7 @@ export default function ManuscriptDetailPage() {
               </div>
 
               {/* 卷章列表 */}
-              {volumeCount === 0 && chapterCount === 0 ? (
+              {volumeCount === 0 && totalChapters === 0 ? (
                 <div className="py-20 text-center">
                   <BookText className="mx-auto h-12 w-12 text-[var(--moge-text-muted)]" />
                   <p className="mt-4 text-[var(--moge-text-sub)]">暂无卷章结构</p>

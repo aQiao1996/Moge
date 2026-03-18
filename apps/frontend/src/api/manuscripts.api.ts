@@ -18,8 +18,11 @@ export interface UserStats {
   totalChapters: number;
   publishedChapters: number;
   totalManuscripts: number;
+  draftManuscripts: number;
   completedManuscripts: number;
   inProgressManuscripts: number;
+  publishedManuscripts: number;
+  abandonedManuscripts: number;
   dailyStats: Record<string, number>;
 }
 

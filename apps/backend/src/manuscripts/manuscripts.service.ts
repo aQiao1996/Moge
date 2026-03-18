@@ -27,6 +27,26 @@ export class ManuscriptsService {
   ) {}
 
   /**
+   * 文稿详情统一只返回无卷直连章节，避免与卷内章节重复
+   */
+  private getManuscriptInclude() {
+    return {
+      volumes: {
+        include: {
+          chapters: {
+            orderBy: { sortOrder: 'asc' as const },
+          },
+        },
+        orderBy: { sortOrder: 'asc' as const },
+      },
+      chapters: {
+        where: { volumeId: null },
+        orderBy: { sortOrder: 'asc' as const },
+      },
+    };
+  }
+
+  /**
    * 创建文稿
    */
   async createManuscript(userId: number, dto: CreateManuscriptDto) {
@@ -35,17 +55,7 @@ export class ManuscriptsService {
         ...dto,
         userId,
       },
-      include: {
-        volumes: {
-          include: {
-            chapters: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-        chapters: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      include: this.getManuscriptInclude(),
     });
   }
 
@@ -58,10 +68,15 @@ export class ManuscriptsService {
       where: { id: outlineId },
       include: {
         volumes: {
-          include: { chapters: true },
+          include: {
+            chapters: {
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
           orderBy: { sortOrder: 'asc' },
         },
         chapters: {
+          where: { volumeId: null },
           orderBy: { sortOrder: 'asc' },
         },
       },
@@ -137,17 +152,7 @@ export class ManuscriptsService {
         userId,
         deletedAt: null,
       },
-      include: {
-        volumes: {
-          include: {
-            chapters: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-        chapters: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      include: this.getManuscriptInclude(),
       orderBy: { updatedAt: 'desc' },
     });
   }
@@ -162,17 +167,7 @@ export class ManuscriptsService {
         userId,
         deletedAt: null,
       },
-      include: {
-        volumes: {
-          include: {
-            chapters: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-        chapters: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      include: this.getManuscriptInclude(),
     });
 
     if (!manuscript) {
@@ -191,17 +186,7 @@ export class ManuscriptsService {
     return this.prisma.manuscripts.update({
       where: { id },
       data: dto,
-      include: {
-        volumes: {
-          include: {
-            chapters: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-        chapters: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      include: this.getManuscriptInclude(),
     });
   }
 
@@ -320,7 +305,9 @@ export class ManuscriptsService {
 
     // 获取当前最大sortOrder
     const lastChapter = await this.prisma.manuscript_chapter.findFirst({
-      where: dto.manuscriptId ? { manuscriptId: dto.manuscriptId } : { volumeId: dto.volumeId },
+      where: dto.manuscriptId
+        ? { manuscriptId: dto.manuscriptId, volumeId: null }
+        : { volumeId: dto.volumeId },
       orderBy: { sortOrder: 'desc' },
     });
 
@@ -1158,14 +1145,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         userId,
         deletedAt: null,
       },
-      include: {
-        chapters: true,
-        volumes: {
-          include: {
-            chapters: true,
-          },
-        },
-      },
+      include: this.getManuscriptInclude(),
     });
 
     // 统计总字数、已发布字数
@@ -1174,8 +1154,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     let totalChapters = 0;
     let publishedChapters = 0;
     const totalManuscripts = manuscripts.length;
+    let draftManuscripts = 0;
     let completedManuscripts = 0;
     let inProgressManuscripts = 0;
+    let publishedManuscripts = 0;
+    let abandonedManuscripts = 0;
 
     for (const manuscript of manuscripts) {
       totalWords += manuscript.totalWords || 0;
@@ -1197,10 +1180,22 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       publishedChapters += manuscriptPublishedChapters;
 
       // 统计文稿状态
-      if (manuscript.status === 'COMPLETED') {
-        completedManuscripts++;
-      } else if (manuscript.status === 'IN_PROGRESS') {
-        inProgressManuscripts++;
+      switch (manuscript.status) {
+        case 'DRAFT':
+          draftManuscripts++;
+          break;
+        case 'IN_PROGRESS':
+          inProgressManuscripts++;
+          break;
+        case 'COMPLETED':
+          completedManuscripts++;
+          break;
+        case 'PUBLISHED':
+          publishedManuscripts++;
+          break;
+        case 'ABANDONED':
+          abandonedManuscripts++;
+          break;
       }
     }
 
@@ -1255,8 +1250,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       totalChapters,
       publishedChapters,
       totalManuscripts,
+      draftManuscripts,
       completedManuscripts,
       inProgressManuscripts,
+      publishedManuscripts,
+      abandonedManuscripts,
       dailyStats,
     };
   }

@@ -54,6 +54,9 @@ export default function OutlineHeader({
   onEdit,
 }: OutlineHeaderProps) {
   const status = statusConfig[outlineData.status as keyof typeof statusConfig];
+  const metadataItems = [typeLabel || outlineData.type, eraLabel || outlineData.era, status?.text]
+    .filter((item): item is string => Boolean(item && item.trim().length > 0))
+    .join(' · ');
 
   return (
     <div className="mb-6 flex items-center justify-between">
@@ -64,9 +67,7 @@ export default function OutlineHeader({
         </Button>
         <div>
           <h1 className="text-2xl font-bold">{outlineData.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {typeLabel || outlineData.type} · {eraLabel || outlineData.era} · {status.text}
-          </p>
+          <p className="text-muted-foreground text-sm">{metadataItems}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
