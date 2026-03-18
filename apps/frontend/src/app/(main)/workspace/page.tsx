@@ -11,7 +11,6 @@ import {
   TrendingUp,
   Calendar,
   PenTool,
-  Plus,
   ArrowRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -100,16 +99,16 @@ export default function WorkspacePage() {
         <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">工作台</h1>
         <div className="flex gap-2">
           <Button onClick={() => router.push('/settings')} variant="outline" size="sm">
-            <Plus className="mr-1 h-4 w-4" />
-            新建项目
+            <FolderOpen className="mr-1 h-4 w-4" />
+            项目列表
           </Button>
           <Button onClick={() => router.push('/outline')} variant="outline" size="sm">
-            <Plus className="mr-1 h-4 w-4" />
-            新建大纲
+            <BookOpen className="mr-1 h-4 w-4" />
+            大纲列表
           </Button>
           <Button onClick={() => router.push('/manuscripts')} size="sm">
-            <Plus className="mr-1 h-4 w-4" />
-            新建文稿
+            <FileText className="mr-1 h-4 w-4" />
+            文稿列表
           </Button>
         </div>
       </div>
