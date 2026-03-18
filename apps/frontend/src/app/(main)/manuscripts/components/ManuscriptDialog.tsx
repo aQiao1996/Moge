@@ -279,7 +279,10 @@ export default function ManuscriptDialog({
           toast.error('请选择大纲');
           return;
         }
-        await createManuscriptFromOutline(finalOutlineId);
+        await createManuscriptFromOutline({
+          ...(values as CreateManuscriptValues),
+          outlineId: finalOutlineId,
+        });
         toast.success('创建成功');
       } else {
         await createManuscript(values as CreateManuscriptValues);

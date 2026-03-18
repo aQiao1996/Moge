@@ -50,13 +50,10 @@ export class ManuscriptsController {
   /**
    * 从大纲创建文稿
    */
-  @Post('from-outline/:outlineId')
-  async createFromOutline(
-    @Request() req: AuthenticatedRequest,
-    @Param('outlineId', ParseIntPipe) outlineId: number
-  ) {
+  @Post('from-outline')
+  async createFromOutline(@Request() req: AuthenticatedRequest, @Body() dto: CreateManuscriptDto) {
     const userId = Number(req.user.id);
-    return this.manuscriptsService.createManuscriptFromOutline(userId, outlineId);
+    return this.manuscriptsService.createManuscriptFromOutline(userId, dto);
   }
 
   /**

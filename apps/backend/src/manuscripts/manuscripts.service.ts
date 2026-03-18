@@ -62,7 +62,13 @@ export class ManuscriptsService {
   /**
    * 从大纲创建文稿
    */
-  async createManuscriptFromOutline(userId: number, outlineId: number) {
+  async createManuscriptFromOutline(userId: number, dto: CreateManuscriptDto) {
+    const outlineId = dto.outlineId;
+
+    if (!outlineId) {
+      throw new BadRequestException('outlineId is required');
+    }
+
     // 获取大纲信息
     const outline = await this.prisma.outline.findUnique({
       where: { id: outlineId },
@@ -93,16 +99,19 @@ export class ManuscriptsService {
     // 创建文稿
     const manuscript = await this.prisma.manuscripts.create({
       data: {
-        name: outline.name,
-        description: `根据大纲《${outline.name}》创建`,
-        type: outline.type,
-        tags: outline.tags,
+        name: dto.name,
+        description: dto.description?.trim() || `根据大纲《${outline.name}》创建`,
+        type: dto.type ?? outline.type,
+        tags: dto.tags ?? outline.tags,
         outlineId: outline.id,
         userId,
-        characters: outline.characters,
-        systems: outline.systems,
-        worlds: outline.worlds,
-        misc: outline.misc,
+        projectId: dto.projectId,
+        characters: dto.characters ?? outline.characters,
+        systems: dto.systems ?? outline.systems,
+        worlds: dto.worlds ?? outline.worlds,
+        misc: dto.misc ?? outline.misc,
+        targetWords: dto.targetWords,
+        coverUrl: dto.coverUrl,
       },
     });
 

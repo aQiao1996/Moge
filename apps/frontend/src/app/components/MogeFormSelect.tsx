@@ -38,7 +38,7 @@ const MogeFormSelect = React.forwardRef<
   MogeFormSelectProps
 >(({ value, onChange, onBlur, placeholder, options, disabled, className }, ref) => {
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger
         ref={ref}
         className={`input-moge w-full rounded-md border px-3 py-2 text-white placeholder-white/40 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--moge-input-ring)] ${className || ''}`}

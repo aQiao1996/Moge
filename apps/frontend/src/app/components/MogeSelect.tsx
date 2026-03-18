@@ -28,7 +28,9 @@ const MogeSelectTrigger = React.forwardRef<
   </OriginalSelectTrigger>
 ));
 
-const MogeSelect = OriginalSelect;
+const MogeSelect = ({ value, ...props }: React.ComponentPropsWithoutRef<typeof OriginalSelect>) => (
+  <OriginalSelect value={value ?? ''} {...props} />
+);
 const MogeSelectValue = OriginalSelectValue;
 const MogeSelectContent = OriginalSelectContent;
 const MogeSelectItem = OriginalSelectItem;

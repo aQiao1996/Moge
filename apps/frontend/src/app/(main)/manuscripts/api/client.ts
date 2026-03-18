@@ -26,8 +26,8 @@ export async function createManuscript(data: CreateManuscriptValues) {
 /**
  * 从大纲创建文稿
  */
-export async function createManuscriptFromOutline(outlineId: number) {
-  return post<Manuscript>(`/manuscripts/from-outline/${outlineId}`);
+export async function createManuscriptFromOutline(data: CreateManuscriptValues) {
+  return post<Manuscript>('/manuscripts/from-outline', data);
 }
 
 /**
