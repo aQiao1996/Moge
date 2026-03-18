@@ -12,12 +12,14 @@ import {
   Calendar,
   PenTool,
   ArrowRight,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getWorkspaceSummary, type WorkspaceSummary } from '@/api/workspace.api';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 import dayjs from '@/lib/dayjs';
+import MogePageHeader from '@/app/components/MogePageHeader';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -94,24 +96,27 @@ export default function WorkspacePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">工作台</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => router.push('/settings')} variant="outline" size="sm">
-            <FolderOpen className="mr-1 h-4 w-4" />
-            项目列表
-          </Button>
-          <Button onClick={() => router.push('/outline')} variant="outline" size="sm">
-            <BookOpen className="mr-1 h-4 w-4" />
-            大纲列表
-          </Button>
-          <Button onClick={() => router.push('/manuscripts')} size="sm">
-            <FileText className="mr-1 h-4 w-4" />
-            文稿列表
-          </Button>
-        </div>
-      </div>
+      <MogePageHeader
+        title="工作台"
+        description="查看近期创作概览，快速进入常用工作区"
+        icon={LayoutDashboard}
+        actions={
+          <div className="flex gap-2">
+            <Button onClick={() => router.push('/settings')} variant="outline" size="sm">
+              <FolderOpen className="mr-1 h-4 w-4" />
+              项目列表
+            </Button>
+            <Button onClick={() => router.push('/outline')} variant="outline" size="sm">
+              <BookOpen className="mr-1 h-4 w-4" />
+              大纲列表
+            </Button>
+            <Button onClick={() => router.push('/manuscripts')} size="sm">
+              <FileText className="mr-1 h-4 w-4" />
+              文稿列表
+            </Button>
+          </div>
+        }
+      />
 
       {/* 统计卡片 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">

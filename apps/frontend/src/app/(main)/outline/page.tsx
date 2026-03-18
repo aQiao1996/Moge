@@ -9,10 +9,11 @@ import MogeList from '@/app/components/MogeList';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Edit, FileText, Trash2 } from 'lucide-react';
+import { BookOpen, Clock, Edit, FileText, Trash2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import MogePageHeader from '@/app/components/MogePageHeader';
 import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
 import { getDictLabel, getDictValue } from '@/app/(main)/outline/utils/dictUtils';
 import dayjs from '@/lib/dayjs';
@@ -324,12 +325,13 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex h-full max-w-6xl flex-col">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">我的大纲</h1>
-        </div>
-        <OutlineDialog mode="create" />
-      </div>
+      <MogePageHeader
+        title="我的大纲"
+        description="管理创作蓝图与章节结构，快速筛选和定位内容"
+        icon={Sparkles}
+        className="mb-6"
+        actions={<OutlineDialog mode="create" />}
+      />
 
       {/* 筛选组件 */}
       <div className="mb-6">

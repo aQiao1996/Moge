@@ -9,9 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import HookForm from '@/app/components/HookForm';
+import MogePageHeader from '@/app/components/MogePageHeader';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
+import { UserRound } from 'lucide-react';
 import {
   changePasswordSchema,
   profileSchema,
@@ -88,8 +90,11 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      {/* 页面标题 */}
-      <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">个人中心</h1>
+      <MogePageHeader
+        title="个人中心"
+        description="维护个人资料、登录凭据与账号安全"
+        icon={UserRound}
+      />
 
       <div className="space-y-8 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0">
         {/* 基本信息卡片 */}

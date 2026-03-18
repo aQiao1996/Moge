@@ -19,6 +19,7 @@ import {
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
 import MogeList from '@/app/components/MogeList';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import MogePageHeader from '@/app/components/MogePageHeader';
 import Link from 'next/link';
 import ProjectDialog from './components/ProjectDialog';
 import ProjectDetailDialog from './components/ProjectDetailDialog';
@@ -352,22 +353,23 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* 标题和功能入口 */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">设定集</h1>
-          <p className="mt-1 text-[var(--moge-text-sub)]">管理您的小说设定，构建完整的创作世界</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/settings/library">
-            <Button variant="outline">
-              <Settings className="mr-2 h-4 w-4" />
-              设定库
-            </Button>
-          </Link>
-          <ProjectDialog mode="create" onSubmit={handleCreateProject} />
-        </div>
-      </div>
+      <MogePageHeader
+        title="设定集"
+        description="管理您的小说设定，构建完整的创作世界"
+        icon={Settings}
+        className="mb-6"
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/settings/library">
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                设定库
+              </Button>
+            </Link>
+            <ProjectDialog mode="create" onSubmit={handleCreateProject} />
+          </div>
+        }
+      />
 
       {/* 筛选组件 */}
       {projects.length > 0 && (

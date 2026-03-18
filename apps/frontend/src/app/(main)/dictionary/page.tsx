@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowRight, Database, Tags, Book, Terminal, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useDictStore } from '@/stores/dictStore';
+import MogePageHeader from '@/app/components/MogePageHeader';
 
 /**
  * 字典分类配置
@@ -94,18 +95,12 @@ export default function DictionaryPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="mx-auto w-full max-w-6xl flex-shrink-0">
-        {/* 页面标题区 */}
-        <div className="mb-8">
-          <div className="mb-4 flex items-center gap-3">
-            <Database className="h-8 w-8 text-[var(--moge-primary)]" />
-            <div>
-              <h1 className="font-han text-3xl font-bold text-[var(--moge-text-main)]">字典管理</h1>
-              <p className="mt-2 text-[var(--moge-text-sub)]">
-                管理全局数据字典和基础配置，为创作提供标准化数据支撑
-              </p>
-            </div>
-          </div>
-        </div>
+        <MogePageHeader
+          title="字典管理"
+          description="管理全局数据字典和基础配置，为创作提供标准化数据支撑"
+          icon={Database}
+          className="mb-8"
+        />
 
         {/* 统计概览卡片 */}
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">

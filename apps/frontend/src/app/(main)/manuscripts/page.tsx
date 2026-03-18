@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import MogePageHeader from '@/app/components/MogePageHeader';
 import dayjs from '@/lib/dayjs';
 import { getManuscripts, deleteManuscript, type Manuscript } from './api/client';
 import type { ManuscriptStatus } from '@moge/types';
@@ -273,41 +274,43 @@ export default function ManuscriptsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-han text-2xl font-bold text-[var(--moge-text-main)]">文稿</h1>
-          <p className="mt-1 text-sm text-[var(--moge-text-sub)]">管理你的创作文稿</p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="gap-2 shadow-[var(--moge-glow-btn)]">
-              <FilePlus className="h-4 w-4" />
-              新建文稿
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setCreateMode('create');
-                setCreateDialogOpen(true);
-              }}
-            >
-              <FilePlus className="mr-2 h-4 w-4" />
-              空白创建
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setCreateMode('from-outline');
-                setCreateDialogOpen(true);
-              }}
-            >
-              <BookText className="mr-2 h-4 w-4" />
-              从大纲创建
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <MogePageHeader
+        title="文稿"
+        description="管理你的创作文稿"
+        icon={BookText}
+        className="mb-6"
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2 shadow-[var(--moge-glow-btn)]">
+                <FilePlus className="h-4 w-4" />
+                新建文稿
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setCreateMode('create');
+                  setCreateDialogOpen(true);
+                }}
+              >
+                <FilePlus className="mr-2 h-4 w-4" />
+                空白创建
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setCreateMode('from-outline');
+                  setCreateDialogOpen(true);
+                }}
+              >
+                <BookText className="mr-2 h-4 w-4" />
+                从大纲创建
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      />
 
       {/* 创建文稿对话框 */}
       <ManuscriptDialog
