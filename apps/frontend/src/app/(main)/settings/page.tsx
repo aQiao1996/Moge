@@ -232,6 +232,17 @@ export default function SettingsPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.search, filters.type, filters.sortBy, filters.sortOrder]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   /**
    * 渲染项目卡片组件

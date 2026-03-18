@@ -200,6 +200,17 @@ export default function CategorySettingsPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+  const totalPages = Math.max(1, Math.ceil(filteredSettings.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.tags]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // 处理编辑操作
   const handleEdit = (setting: CharacterSetting) => {

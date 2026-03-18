@@ -174,6 +174,17 @@ export default function DictionaryCategoryPage() {
 
   const filteredItems = getFilteredItems();
   const paginatedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.search, filters.isEnabled, filters.sortBy, filters.sortOrder]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   /**
    * 处理创建词条
