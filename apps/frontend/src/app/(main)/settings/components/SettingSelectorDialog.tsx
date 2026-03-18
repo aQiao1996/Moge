@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -159,6 +160,10 @@ export default function SettingSelectorDialog({
     onOpenChange(false);
   };
 
+  if (!open) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl">
@@ -167,6 +172,9 @@ export default function SettingSelectorDialog({
             <Icon className={`h-5 w-5 ${color}`} />
             从设定库添加{categoryLabel}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            从设定库中搜索并选择{categoryLabel}，确认后将其关联到当前项目
+          </DialogDescription>
         </DialogHeader>
 
         {/* 搜索框 */}
