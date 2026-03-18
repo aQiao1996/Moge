@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -385,6 +391,9 @@ export default function ProjectDetailDialog({
               <BookOpen className="h-5 w-5 text-[var(--moge-primary-400)]" />
               {project.name}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              查看项目基础信息，以及角色、系统、世界、辅助等关联设定
+            </DialogDescription>
           </DialogHeader>
         </div>
 

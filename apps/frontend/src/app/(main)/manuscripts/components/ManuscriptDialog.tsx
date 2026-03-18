@@ -11,6 +11,7 @@
 
 import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import type { ControllerRenderProps, FieldPath, UseFormReturn } from 'react-hook-form';
+import { z } from 'zod';
 import { FilePlus, Edit, Users, Zap, Globe, Folder } from 'lucide-react';
 import {
   createManuscriptSchema,
@@ -139,7 +140,7 @@ export default function ManuscriptDialog({
   // 字段配置
   const fields: FieldConfig[] = [
     { name: 'name', label: '文稿名称', required: !isEditMode },
-    ...(isFromOutline ? [{ name: 'outlineId', label: '关联大纲' }] : []),
+    ...(isFromOutline ? [{ name: 'outlineId', label: '关联大纲', required: true }] : []),
     { name: 'type', label: '小说类型' },
     { name: 'description', label: '简介' },
     { name: 'tags', label: '标签' },
@@ -328,6 +329,19 @@ export default function ManuscriptDialog({
     [outlineId]
   );
 
+  const createSchema = useMemo(
+    () =>
+      isFromOutline
+        ? createManuscriptSchema.extend({
+            outlineId: z.number({
+              required_error: '请选择大纲',
+              invalid_type_error: '请选择大纲',
+            }),
+          })
+        : createManuscriptSchema,
+    [isFromOutline]
+  );
+
   return (
     <>
       <MogeFormDialog
@@ -343,7 +357,7 @@ export default function ManuscriptDialog({
         open={open}
         onOpenChange={onOpenChange}
         trigger={trigger}
-        createSchema={createManuscriptSchema}
+        createSchema={createSchema}
         updateSchema={updateManuscriptSchema}
         defaultValues={memoizedDefaultValues}
         onSubmit={onSubmit}

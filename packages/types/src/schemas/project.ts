@@ -4,8 +4,19 @@ import { z } from 'zod';
  * 小说项目创建表单 Schema
  */
 export const createProjectSchema = z.object({
-  name: z.string().min(1, '项目名称不能为空').max(50, '项目名称不能超过50个字符'),
-  type: z.string().min(1, '请选择项目类型'),
+  name: z
+    .string({
+      required_error: '项目名称不能为空',
+      invalid_type_error: '项目名称不能为空',
+    })
+    .min(1, '项目名称不能为空')
+    .max(50, '项目名称不能超过50个字符'),
+  type: z
+    .string({
+      required_error: '请选择项目类型',
+      invalid_type_error: '请选择项目类型',
+    })
+    .min(1, '请选择项目类型'),
   description: z.string().max(500, '项目描述不能超过500个字符').optional(),
   tags: z.array(z.string()).max(10, '标签不能超过10个').optional(),
   // 设定库关联字段，非必填
