@@ -110,6 +110,13 @@ export default function SettingsPage() {
       }));
 
       setProjects(transformedProjects);
+      setSelectedProject((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return transformedProjects.find((item) => item.id === current.id) || current;
+      });
     } catch (error) {
       console.error('加载项目列表失败:', error);
     } finally {

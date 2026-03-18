@@ -52,7 +52,7 @@ interface SettingSelectorDialogProps {
   /**
    * 确认选择回调,传入选中的 ID 列表
    */
-  onConfirm: (selectedIds: string[]) => void;
+  onConfirm: (selectedIds: string[]) => void | Promise<void>;
   /**
    * 图标组件
    */
@@ -93,6 +93,10 @@ export default function SettingSelectorDialog({
    * 临时选中的 ID 列表(用于在确认前暂存选择)
    */
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
+  /**
+   * 提交中状态
+   */
+  const [submitting, setSubmitting] = useState(false);
 
   /**
    * 加载设定库数据
@@ -155,9 +159,14 @@ export default function SettingSelectorDialog({
    * 确认选择
    * 调用回调函数并关闭对话框
    */
-  const handleConfirm = () => {
-    onConfirm(tempSelectedIds);
-    onOpenChange(false);
+  const handleConfirm = async () => {
+    try {
+      setSubmitting(true);
+      await onConfirm(tempSelectedIds);
+      onOpenChange(false);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!open) {
@@ -265,10 +274,12 @@ export default function SettingSelectorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             取消
           </Button>
-          <Button onClick={handleConfirm}>确认选择 ({tempSelectedIds.length})</Button>
+          <Button onClick={() => void handleConfirm()} disabled={submitting}>
+            {submitting ? '保存中...' : `确认选择 (${tempSelectedIds.length})`}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

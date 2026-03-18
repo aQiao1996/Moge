@@ -52,6 +52,8 @@ interface ProjectData {
   misc?: string[];
 }
 
+type SettingCategoryKey = 'characters' | 'systems' | 'worlds' | 'misc';
+
 /**
  * 项目详情对话框组件属性接口
  */
@@ -72,6 +74,13 @@ export default function ProjectDetailDialog({
   onOpenChange,
   onUpdate,
 }: ProjectDetailDialogProps) {
+  const createAssociationState = (source: ProjectData) => ({
+    characters: source.characters || [],
+    systems: source.systems || [],
+    worlds: source.worlds || [],
+    misc: source.misc || [],
+  });
+
   /**
    * 设定数据,包含各分类的设定列表
    */
@@ -86,6 +95,21 @@ export default function ProjectDetailDialog({
     worlds: [],
     misc: [],
   });
+  const [associatedSettingIds, setAssociatedSettingIds] = useState<{
+    characters: string[];
+    systems: string[];
+    worlds: string[];
+    misc: string[];
+  }>(
+    project
+      ? createAssociationState(project)
+      : {
+          characters: [],
+          systems: [],
+          worlds: [],
+          misc: [],
+        }
+  );
 
   /**
    * 设定选择器状态管理
@@ -121,9 +145,10 @@ export default function ProjectDetailDialog({
    */
   useEffect(() => {
     if (open && project) {
+      setAssociatedSettingIds(createAssociationState(project));
       void loadProjectSettings();
     }
-  }, [open, project]);
+  }, [open, project?.id, project?.characters, project?.systems, project?.worlds, project?.misc]);
 
   if (!project) return null;
 
@@ -131,10 +156,10 @@ export default function ProjectDetailDialog({
    * 计算项目关联的设定总数
    */
   const totalSettings =
-    (project.characters?.length || 0) +
-    (project.systems?.length || 0) +
-    (project.worlds?.length || 0) +
-    (project.misc?.length || 0);
+    associatedSettingIds.characters.length +
+    associatedSettingIds.systems.length +
+    associatedSettingIds.worlds.length +
+    associatedSettingIds.misc.length;
 
   /**
    * 格式化日期显示
@@ -158,7 +183,7 @@ export default function ProjectDetailDialog({
    * @param color 图标颜色
    */
   const handleOpenSelector = (
-    key: 'characters' | 'systems' | 'worlds' | 'misc',
+    key: SettingCategoryKey,
     label: string,
     Icon: React.ComponentType<{ className?: string }>,
     color: string
@@ -196,6 +221,10 @@ export default function ProjectDetailDialog({
           break;
       }
 
+      setAssociatedSettingIds((prev) => ({
+        ...prev,
+        [currentCategory.key]: selectedIds,
+      }));
       toast.success('设定关联更新成功');
 
       // 重新加载项目设定
@@ -217,17 +246,14 @@ export default function ProjectDetailDialog({
    * @param settingId 要移除的设定 ID
    * @param categoryKey 设定分类
    */
-  const handleRemoveSetting = async (
-    settingId: number,
-    categoryKey: 'characters' | 'systems' | 'worlds' | 'misc'
-  ) => {
+  const handleRemoveSetting = async (settingId: number, categoryKey: SettingCategoryKey) => {
     if (!project) return;
 
     try {
       const projectId = Number(project.id);
 
       // 获取当前分类的所有 ID，移除指定的 ID
-      const currentIds = project[categoryKey] || [];
+      const currentIds = associatedSettingIds[categoryKey];
       const newIds = currentIds.filter((id) => String(id) !== String(settingId)).map(Number);
 
       // 根据分类调用对应的 API
@@ -246,6 +272,10 @@ export default function ProjectDetailDialog({
           break;
       }
 
+      setAssociatedSettingIds((prev) => ({
+        ...prev,
+        [categoryKey]: newIds.map(String),
+      }));
       toast.success('已移除设定关联');
 
       // 重新加载项目设定
@@ -339,7 +369,7 @@ export default function ProjectDetailDialog({
    * @returns 标签页内容 JSX 元素
    */
   const renderSettingsTab = (
-    categoryKey: 'characters' | 'systems' | 'worlds' | 'misc',
+    categoryKey: SettingCategoryKey,
     Icon: React.ComponentType<{ className?: string }>,
     color: string,
     label: string
@@ -403,16 +433,16 @@ export default function ProjectDetailDialog({
               项目信息
             </TabsTrigger>
             <TabsTrigger value="characters" className="shrink-0">
-              角色 ({project.characters?.length || 0})
+              角色 ({associatedSettingIds.characters.length})
             </TabsTrigger>
             <TabsTrigger value="systems" className="shrink-0">
-              系统 ({project.systems?.length || 0})
+              系统 ({associatedSettingIds.systems.length})
             </TabsTrigger>
             <TabsTrigger value="worlds" className="shrink-0">
-              世界 ({project.worlds?.length || 0})
+              世界 ({associatedSettingIds.worlds.length})
             </TabsTrigger>
             <TabsTrigger value="misc" className="shrink-0">
-              辅助 ({project.misc?.length || 0})
+              辅助 ({associatedSettingIds.misc.length})
             </TabsTrigger>
           </TabsList>
 
@@ -492,7 +522,7 @@ export default function ProjectDetailDialog({
                       <div>
                         <p className="text-xs text-[var(--moge-text-muted)]">角色设定</p>
                         <p className="mt-1 text-2xl font-bold text-[var(--moge-text-main)]">
-                          {project.characters?.length || 0}
+                          {associatedSettingIds.characters.length}
                         </p>
                       </div>
                     </div>
@@ -501,7 +531,7 @@ export default function ProjectDetailDialog({
                       <div>
                         <p className="text-xs text-[var(--moge-text-muted)]">系统设定</p>
                         <p className="mt-1 text-2xl font-bold text-[var(--moge-text-main)]">
-                          {project.systems?.length || 0}
+                          {associatedSettingIds.systems.length}
                         </p>
                       </div>
                     </div>
@@ -510,7 +540,7 @@ export default function ProjectDetailDialog({
                       <div>
                         <p className="text-xs text-[var(--moge-text-muted)]">世界设定</p>
                         <p className="mt-1 text-2xl font-bold text-[var(--moge-text-main)]">
-                          {project.worlds?.length || 0}
+                          {associatedSettingIds.worlds.length}
                         </p>
                       </div>
                     </div>
@@ -519,7 +549,7 @@ export default function ProjectDetailDialog({
                       <div>
                         <p className="text-xs text-[var(--moge-text-muted)]">辅助设定</p>
                         <p className="mt-1 text-2xl font-bold text-[var(--moge-text-main)]">
-                          {project.misc?.length || 0}
+                          {associatedSettingIds.misc.length}
                         </p>
                       </div>
                     </div>
@@ -569,7 +599,7 @@ export default function ProjectDetailDialog({
           onOpenChange={setSelectorOpen}
           category={currentCategory.key}
           categoryLabel={currentCategory.label}
-          selectedIds={project[currentCategory.key] || []}
+          selectedIds={associatedSettingIds[currentCategory.key]}
           onConfirm={(selectedIds) => {
             void handleConfirmSelection(selectedIds);
           }}
