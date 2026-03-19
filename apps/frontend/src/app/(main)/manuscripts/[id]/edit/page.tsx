@@ -53,6 +53,17 @@ export default function ManuscriptEditPage() {
   const savedContentRef = useRef(content); // 记录已保存的内容
 
   /**
+   * 计算字数
+   */
+  const calculateWordCount = useCallback((text: string) => {
+    // 移除 Markdown 标记和空白字符后计算字数
+    const cleanText = text
+      .replace(/[#*_`~[\]()]/g, '') // 移除 Markdown 符号
+      .replace(/\s+/g, ''); // 移除空白字符
+    return cleanText.length;
+  }, []);
+
+  /**
    * 加载文稿数据
    */
   const loadManuscript = useCallback(async () => {
@@ -78,15 +89,21 @@ export default function ManuscriptEditPage() {
     try {
       const response = await getChapterContent(Number(chapterId));
       const loadedContent = response.data?.content || '';
-      setContent(loadedContent);
-      contentRef.current = loadedContent;
       savedContentRef.current = loadedContent; // 记录已保存的内容
+      contentRef.current = loadedContent;
+      setContent(loadedContent);
+      setWordCount(calculateWordCount(loadedContent));
       setHasUnsavedChanges(false);
       setLastSaved(response.data?.updatedAt ? new Date(response.data.updatedAt) : null);
+
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
     } catch (error) {
       console.error('Load chapter content error:', error);
     }
-  }, [chapterId]);
+  }, [calculateWordCount, chapterId]);
 
   useEffect(() => {
     void loadManuscript();
@@ -97,17 +114,6 @@ export default function ManuscriptEditPage() {
       void loadChapterContent();
     }
   }, [chapterId, loadChapterContent]);
-
-  /**
-   * 计算字数
-   */
-  const calculateWordCount = useCallback((text: string) => {
-    // 移除 Markdown 标记和空白字符后计算字数
-    const cleanText = text
-      .replace(/[#*_`~[\]()]/g, '') // 移除 Markdown 符号
-      .replace(/\s+/g, ''); // 移除空白字符
-    return cleanText.length;
-  }, []);
 
   /**
    * 保存章节内容
@@ -139,29 +145,38 @@ export default function ManuscriptEditPage() {
     [chapterId, saving]
   );
 
-  /**
-   * 处理内容变更
-   */
-  const handleContentChange = useCallback(
+  const applyContentUpdate = useCallback(
     (newContent: string) => {
       setContent(newContent);
       contentRef.current = newContent;
       setWordCount(calculateWordCount(newContent));
 
-      // 标记有未保存的更改
-      setHasUnsavedChanges(newContent !== savedContentRef.current);
+      const contentChanged = newContent !== savedContentRef.current;
+      setHasUnsavedChanges(contentChanged);
 
-      // 清除之前的定时器
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
 
-      // 设置新的自动保存定时器（30秒后保存）
-      autoSaveTimerRef.current = setTimeout(() => {
-        void handleSave(false); // 自动保存不显示toast
-      }, 30000);
+      if (contentChanged) {
+        autoSaveTimerRef.current = setTimeout(() => {
+          void handleSave(false); // 自动保存不显示toast
+        }, 30000);
+      } else {
+        autoSaveTimerRef.current = null;
+      }
     },
     [calculateWordCount, handleSave]
+  );
+
+  /**
+   * 处理内容变更
+   */
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      applyContentUpdate(newContent);
+    },
+    [applyContentUpdate]
   );
 
   /**
@@ -202,7 +217,7 @@ export default function ManuscriptEditPage() {
    * 处理 AI 续写
    */
   const handleAIContinue = (generatedText: string) => {
-    setContent((prev) => prev + '\n\n' + generatedText);
+    applyContentUpdate(contentRef.current + '\n\n' + generatedText);
   };
 
   /**
@@ -211,10 +226,10 @@ export default function ManuscriptEditPage() {
   const handleAIPolish = (polishedText: string) => {
     // 如果有选中的文本，替换选中部分；否则替换全部内容
     if (selectedText) {
-      setContent((prev) => prev.replace(selectedText, polishedText));
+      applyContentUpdate(contentRef.current.replace(selectedText, polishedText));
       setSelectedText('');
     } else {
-      setContent(polishedText);
+      applyContentUpdate(polishedText);
     }
   };
 
@@ -224,10 +239,10 @@ export default function ManuscriptEditPage() {
   const handleAIExpand = (expandedText: string) => {
     // 如果有选中的文本，替换选中部分；否则追加到末尾
     if (selectedText) {
-      setContent((prev) => prev.replace(selectedText, expandedText));
+      applyContentUpdate(contentRef.current.replace(selectedText, expandedText));
       setSelectedText('');
     } else {
-      setContent((prev) => prev + '\n\n' + expandedText);
+      applyContentUpdate(contentRef.current + '\n\n' + expandedText);
     }
   };
 
