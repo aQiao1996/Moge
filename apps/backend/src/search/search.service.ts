@@ -17,6 +17,8 @@ export interface SearchResultItem {
 export class SearchService {
   constructor(private prisma: PrismaService) {}
 
+  private static readonly SEARCH_LIMIT = 10;
+
   /**
    * 统一搜索设定
    * @param q 搜索关键词
@@ -29,9 +31,6 @@ export class SearchService {
     projectId?: number,
     userId?: number
   ): Promise<SearchResultItem[]> {
-    const results: SearchResultItem[] = [];
-
-    // 搜索条件
     const searchCondition = {
       name: {
         contains: q,
@@ -40,94 +39,22 @@ export class SearchService {
       ...(userId && { userId }),
     };
 
-    // 1. 搜索角色设定
-    const characters = await this.prisma.character_settings.findMany({
-      where: searchCondition,
-      select: {
-        id: true,
-        name: true,
-        background: true,
-      },
-      take: 10,
-    });
+    let relatedIds:
+      | {
+          characters: number[];
+          systems: number[];
+          worlds: number[];
+          misc: number[];
+        }
+      | undefined;
 
-    characters.forEach((char) => {
-      results.push({
-        id: char.id,
-        type: 'character',
-        name: char.name,
-        description: char.background || '',
-        projectId: null, // character_settings 表没有 projectId 字段
-      });
-    });
-
-    // 2. 搜索系统设定
-    const systems = await this.prisma.system_settings.findMany({
-      where: searchCondition,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
-      take: 10,
-    });
-
-    systems.forEach((sys) => {
-      results.push({
-        id: sys.id,
-        type: 'system',
-        name: sys.name,
-        description: sys.description || '',
-        projectId: null, // system_settings 表没有 projectId 字段
-      });
-    });
-
-    // 3. 搜索世界设定
-    const worlds = await this.prisma.world_settings.findMany({
-      where: searchCondition,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
-      take: 10,
-    });
-
-    worlds.forEach((world) => {
-      results.push({
-        id: world.id,
-        type: 'world',
-        name: world.name,
-        description: world.description || '',
-        projectId: null, // world_settings 表没有 projectId 字段
-      });
-    });
-
-    // 4. 搜索辅助设定
-    const miscs = await this.prisma.misc_settings.findMany({
-      where: searchCondition,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
-      take: 10,
-    });
-
-    miscs.forEach((misc) => {
-      results.push({
-        id: misc.id,
-        type: 'misc',
-        name: misc.name,
-        description: misc.description || '',
-        projectId: null, // misc_settings 表没有 projectId 字段
-      });
-    });
-
-    // 如果指定了projectId，需要通过projects表关联查询
+    // 如果指定了项目，则先约束到当前项目关联的设定，再执行搜索。
     if (projectId) {
-      const project = await this.prisma.projects.findUnique({
-        where: { id: projectId },
+      const project = await this.prisma.projects.findFirst({
+        where: {
+          id: projectId,
+          ...(userId && { userId }),
+        },
         select: {
           characters: true,
           systems: true,
@@ -136,23 +63,26 @@ export class SearchService {
         },
       });
 
-      if (project) {
-        // 只返回项目关联的设定
-        const relatedIds = new Set([
-          ...project.characters.map((id) => `character-${id}`),
-          ...project.systems.map((id) => `system-${id}`),
-          ...project.worlds.map((id) => `world-${id}`),
-          ...project.misc.map((id) => `misc-${id}`),
-        ]);
-
-        return results.filter((item) => {
-          const itemKey = `${item.type}-${item.id}`;
-          return relatedIds.has(itemKey);
-        });
+      if (!project) {
+        return [];
       }
+
+      relatedIds = {
+        characters: this.parseSettingIds(project.characters),
+        systems: this.parseSettingIds(project.systems),
+        worlds: this.parseSettingIds(project.worlds),
+        misc: this.parseSettingIds(project.misc),
+      };
     }
 
-    return results;
+    const [characters, systems, worlds, miscs] = await Promise.all([
+      this.searchCharacters(searchCondition, relatedIds?.characters),
+      this.searchSystems(searchCondition, relatedIds?.systems),
+      this.searchWorlds(searchCondition, relatedIds?.worlds),
+      this.searchMiscs(searchCondition, relatedIds?.misc),
+    ]);
+
+    return [...characters, ...systems, ...worlds, ...miscs];
   }
 
   /**
@@ -196,6 +126,151 @@ export class SearchService {
       default:
         return null;
     }
+  }
+
+  private parseSettingIds(ids: string[]): number[] {
+    return ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
+  }
+
+  private buildSearchWhere(
+    searchCondition: {
+      name: { contains: string; mode: 'insensitive' };
+      userId?: number;
+    },
+    relatedIds?: number[]
+  ) {
+    if (relatedIds && relatedIds.length === 0) {
+      return null;
+    }
+
+    return {
+      ...searchCondition,
+      ...(relatedIds ? { id: { in: relatedIds } } : {}),
+    };
+  }
+
+  private async searchCharacters(
+    searchCondition: {
+      name: { contains: string; mode: 'insensitive' };
+      userId?: number;
+    },
+    relatedIds?: number[]
+  ): Promise<SearchResultItem[]> {
+    const where = this.buildSearchWhere(searchCondition, relatedIds);
+    if (!where) {
+      return [];
+    }
+
+    const characters = await this.prisma.character_settings.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        background: true,
+      },
+      take: SearchService.SEARCH_LIMIT,
+    });
+
+    return characters.map((char) => ({
+      id: char.id,
+      type: 'character',
+      name: char.name,
+      description: char.background || '',
+      projectId: null,
+    }));
+  }
+
+  private async searchSystems(
+    searchCondition: {
+      name: { contains: string; mode: 'insensitive' };
+      userId?: number;
+    },
+    relatedIds?: number[]
+  ): Promise<SearchResultItem[]> {
+    const where = this.buildSearchWhere(searchCondition, relatedIds);
+    if (!where) {
+      return [];
+    }
+
+    const systems = await this.prisma.system_settings.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+      },
+      take: SearchService.SEARCH_LIMIT,
+    });
+
+    return systems.map((sys) => ({
+      id: sys.id,
+      type: 'system',
+      name: sys.name,
+      description: sys.description || '',
+      projectId: null,
+    }));
+  }
+
+  private async searchWorlds(
+    searchCondition: {
+      name: { contains: string; mode: 'insensitive' };
+      userId?: number;
+    },
+    relatedIds?: number[]
+  ): Promise<SearchResultItem[]> {
+    const where = this.buildSearchWhere(searchCondition, relatedIds);
+    if (!where) {
+      return [];
+    }
+
+    const worlds = await this.prisma.world_settings.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+      },
+      take: SearchService.SEARCH_LIMIT,
+    });
+
+    return worlds.map((world) => ({
+      id: world.id,
+      type: 'world',
+      name: world.name,
+      description: world.description || '',
+      projectId: null,
+    }));
+  }
+
+  private async searchMiscs(
+    searchCondition: {
+      name: { contains: string; mode: 'insensitive' };
+      userId?: number;
+    },
+    relatedIds?: number[]
+  ): Promise<SearchResultItem[]> {
+    const where = this.buildSearchWhere(searchCondition, relatedIds);
+    if (!where) {
+      return [];
+    }
+
+    const miscs = await this.prisma.misc_settings.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+      },
+      take: SearchService.SEARCH_LIMIT,
+    });
+
+    return miscs.map((misc) => ({
+      id: misc.id,
+      type: 'misc',
+      name: misc.name,
+      description: misc.description || '',
+      projectId: null,
+    }));
   }
 
   /**

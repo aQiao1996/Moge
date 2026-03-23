@@ -29,6 +29,37 @@ export interface ExportFilePayload {
 const TXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
 
+interface ExportOutlineSummary {
+  name: string;
+}
+
+interface ExportChapterNode {
+  title: string;
+  content: {
+    content: string;
+  } | null;
+}
+
+interface ExportVolumeNode {
+  title: string;
+  description: string | null;
+  chapters: ExportChapterNode[];
+}
+
+interface ManuscriptExportData {
+  manuscript: {
+    name: string;
+    outlineId: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    lastEditedAt: Date | null;
+    totalWords: number;
+  };
+  outline: ExportOutlineSummary | null;
+  noVolumeChapters: ExportChapterNode[];
+  volumes: ExportVolumeNode[];
+}
+
 /**
  * 导出服务
  * 提供文稿的导出功能
@@ -36,6 +67,88 @@ const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
 @Injectable()
 export class ExportService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * 读取导出文稿所需的完整结构，保持无卷章节、卷、卷内章节三层顺序一致。
+   * @param manuscriptId 文稿ID
+   * @param userId 用户ID
+   * @returns 文稿导出所需数据
+   */
+  private async getManuscriptExportData(
+    manuscriptId: number,
+    userId: number
+  ): Promise<ManuscriptExportData> {
+    const manuscript = await this.prisma.manuscripts.findFirst({
+      where: {
+        id: manuscriptId,
+        userId,
+      },
+      select: {
+        name: true,
+        outlineId: true,
+        createdAt: true,
+        updatedAt: true,
+        lastEditedAt: true,
+        totalWords: true,
+      },
+    });
+
+    if (!manuscript) {
+      throw new NotFoundException('文稿不存在或无权访问');
+    }
+
+    const outlinePromise: Promise<ExportOutlineSummary | null> = manuscript.outlineId
+      ? this.prisma.outline.findUnique({
+          where: { id: manuscript.outlineId },
+          select: {
+            name: true,
+          },
+        })
+      : Promise.resolve<ExportOutlineSummary | null>(null);
+
+    const [outline, noVolumeChapters, volumes] = await Promise.all([
+      outlinePromise,
+      this.prisma.manuscript_chapter.findMany({
+        where: {
+          manuscriptId,
+          volumeId: null,
+        },
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          title: true,
+          content: true,
+        },
+      }),
+      this.prisma.manuscript_volume.findMany({
+        where: {
+          manuscriptId,
+        },
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          title: true,
+          description: true,
+          chapters: {
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              title: true,
+              content: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      manuscript,
+      outline,
+      noVolumeChapters,
+      volumes,
+    };
+  }
+
+  private buildMarkdownAnchorId(title: string): string {
+    return title.replace(/\s/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, '');
+  }
 
   async exportChapterToTxtFile(chapterId: number, userId: number): Promise<ExportFilePayload> {
     const chapter = await this.prisma.manuscript_chapter.findFirst({
@@ -98,45 +211,10 @@ export class ExportService {
     userId: number,
     options?: ExportOptions
   ): Promise<ExportFilePayload> {
-    const manuscript = await this.prisma.manuscripts.findFirst({
-      where: {
-        id: manuscriptId,
-        userId,
-      },
-    });
-
-    if (!manuscript) {
-      throw new NotFoundException('文稿不存在或无权访问');
-    }
-
-    // 获取所有章节
-    const chapters = await this.prisma.manuscript_chapter.findMany({
-      where: {
-        OR: [
-          { manuscriptId: manuscriptId },
-          {
-            volume: {
-              manuscriptId: manuscriptId,
-            },
-          },
-        ],
-      },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        content: true,
-        volume: true,
-      },
-    });
-
-    // 获取大纲信息
-    const outline = manuscript.outlineId
-      ? await this.prisma.outline.findUnique({
-          where: { id: manuscript.outlineId },
-          select: {
-            name: true,
-          },
-        })
-      : null;
+    const { manuscript, outline, noVolumeChapters, volumes } = await this.getManuscriptExportData(
+      manuscriptId,
+      userId
+    );
 
     // 构建导出内容
     let output = '';
@@ -150,27 +228,12 @@ export class ExportService {
       output += `创建时间：${this.formatDate(manuscript.createdAt)}\n`;
       output += `最后编辑：${this.formatDate(manuscript.lastEditedAt || manuscript.updatedAt)}\n`;
       output += `总字数：${manuscript.totalWords || 0} 字\n`;
-      output += `章节数：${chapters.length} 章\n`;
+      output += `章节数：${noVolumeChapters.length + volumes.reduce((sum, volume) => sum + volume.chapters.length, 0)} 章\n`;
       if (outline) {
         output += `大纲：${outline.name}\n`;
       }
       output += '\n' + '='.repeat(40) + '\n\n';
     }
-
-    // 按卷分组章节
-    const volumeMap = new Map<number | null, typeof chapters>();
-    const noVolumeChapters: typeof chapters = [];
-
-    chapters.forEach((chapter) => {
-      if (chapter.volumeId) {
-        if (!volumeMap.has(chapter.volumeId)) {
-          volumeMap.set(chapter.volumeId, []);
-        }
-        volumeMap.get(chapter.volumeId)?.push(chapter);
-      } else {
-        noVolumeChapters.push(chapter);
-      }
-    });
 
     // 导出无卷章节（如序章）
     if (noVolumeChapters.length > 0) {
@@ -191,31 +254,28 @@ export class ExportService {
 
     // 导出各卷章节
     let volumeIndex = 1;
-    for (const [volumeId, volumeChapters] of volumeMap) {
-      if (volumeId && volumeChapters.length > 0) {
-        const volumeInfo = volumeChapters[0].volume;
-        if (volumeInfo) {
-          output += `\n第${this.numberToChinese(volumeIndex)}卷 ${volumeInfo.title}\n`;
-          output += '='.repeat(20) + '\n\n';
-          volumeIndex++;
-        }
+    for (const volume of volumes) {
+      if (volume.chapters.length === 0) {
+        continue;
+      }
 
-        let chapterIndex = 1;
-        for (const chapter of volumeChapters) {
-          // 章节标题
-          output += `第${this.numberToChinese(chapterIndex)}章 ${chapter.title}\n`;
-          output += '-'.repeat(20) + '\n\n';
-          chapterIndex++;
+      output += `\n第${this.numberToChinese(volumeIndex)}卷 ${volume.title}\n`;
+      output += '='.repeat(20) + '\n\n';
+      volumeIndex++;
 
-          // 章节内容
-          if (chapter.content?.content) {
-            const cleanContent = options?.preserveFormatting
-              ? chapter.content.content
-              : this.cleanMarkdown(chapter.content.content);
-            output += cleanContent + '\n\n';
-          } else {
-            output += '（本章暂无内容）\n\n';
-          }
+      let chapterIndex = 1;
+      for (const chapter of volume.chapters) {
+        output += `第${this.numberToChinese(chapterIndex)}章 ${chapter.title}\n`;
+        output += '-'.repeat(20) + '\n\n';
+        chapterIndex++;
+
+        if (chapter.content?.content) {
+          const cleanContent = options?.preserveFormatting
+            ? chapter.content.content
+            : this.cleanMarkdown(chapter.content.content);
+          output += cleanContent + '\n\n';
+        } else {
+          output += '（本章暂无内容）\n\n';
         }
       }
     }
@@ -325,35 +385,10 @@ export class ExportService {
     manuscriptId: number,
     userId: number
   ): Promise<ExportFilePayload> {
-    const manuscript = await this.prisma.manuscripts.findFirst({
-      where: {
-        id: manuscriptId,
-        userId,
-      },
-    });
-
-    if (!manuscript) {
-      throw new NotFoundException('文稿不存在或无权访问');
-    }
-
-    // 获取所有章节
-    const chapters = await this.prisma.manuscript_chapter.findMany({
-      where: {
-        OR: [
-          { manuscriptId: manuscriptId },
-          {
-            volume: {
-              manuscriptId: manuscriptId,
-            },
-          },
-        ],
-      },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        content: true,
-        volume: true,
-      },
-    });
+    const { manuscript, noVolumeChapters, volumes } = await this.getManuscriptExportData(
+      manuscriptId,
+      userId
+    );
 
     let output = '';
 
@@ -362,22 +397,36 @@ export class ExportService {
 
     // 添加目录
     output += '## 目录\n\n';
-    let chapterNum = 1;
-    chapters.forEach((chapter) => {
-      const chapterTitle = chapter.volumeId
-        ? `第${this.numberToChinese(chapterNum++)}章 ${chapter.title}`
-        : chapter.title;
-      const anchorId = chapterTitle.replace(/\s/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, '');
-      output += `- [${chapterTitle}](#${anchorId})\n`;
+
+    noVolumeChapters.forEach((chapter) => {
+      const chapterTitle = chapter.title;
+      output += `- [${chapterTitle}](#${this.buildMarkdownAnchorId(chapterTitle)})\n`;
     });
+
+    let volumeIndex = 1;
+    volumes.forEach((volume) => {
+      if (volume.chapters.length === 0) {
+        return;
+      }
+
+      const volumeTitle = `第${this.numberToChinese(volumeIndex)}卷 ${volume.title}`;
+      output += `- [${volumeTitle}](#${this.buildMarkdownAnchorId(volumeTitle)})\n`;
+
+      let chapterIndex = 1;
+      volume.chapters.forEach((chapter) => {
+        const chapterTitle = `第${this.numberToChinese(chapterIndex)}章 ${chapter.title}`;
+        output += `  - [${chapterTitle}](#${this.buildMarkdownAnchorId(chapterTitle)})\n`;
+        chapterIndex++;
+      });
+
+      volumeIndex++;
+    });
+
     output += '\n---\n\n';
 
-    // 添加章节内容
-    chapterNum = 1;
-    for (const chapter of chapters) {
-      const chapterTitle = chapter.volumeId
-        ? `第${this.numberToChinese(chapterNum++)}章 ${chapter.title}`
-        : chapter.title;
+    // 添加无卷章节内容
+    for (const chapter of noVolumeChapters) {
+      const chapterTitle = chapter.title;
       output += `## ${chapterTitle}\n\n`;
       if (chapter.content?.content) {
         output += chapter.content.content + '\n\n';
@@ -385,6 +434,34 @@ export class ExportService {
         output += '> 本章暂无内容\n\n';
       }
       output += '---\n\n';
+    }
+
+    // 添加卷和卷内章节内容
+    volumeIndex = 1;
+    for (const volume of volumes) {
+      if (volume.chapters.length === 0) {
+        continue;
+      }
+
+      output += `## 第${this.numberToChinese(volumeIndex)}卷 ${volume.title}\n\n`;
+      if (volume.description) {
+        output += `${volume.description}\n\n`;
+      }
+
+      let chapterIndex = 1;
+      for (const chapter of volume.chapters) {
+        const chapterTitle = `第${this.numberToChinese(chapterIndex)}章 ${chapter.title}`;
+        output += `### ${chapterTitle}\n\n`;
+        if (chapter.content?.content) {
+          output += chapter.content.content + '\n\n';
+        } else {
+          output += '> 本章暂无内容\n\n';
+        }
+        output += '---\n\n';
+        chapterIndex++;
+      }
+
+      volumeIndex++;
     }
 
     return {
