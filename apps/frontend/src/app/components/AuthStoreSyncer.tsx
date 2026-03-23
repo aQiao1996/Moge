@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useAuthStore } from '@/stores/authStore';
 import type { User } from '@moge/types';
 import { setClientHandlers } from '@/lib/request';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { logoutClientSession } from '@/lib/auth/logout';
 
 /**
  * 一个"幽灵"组件, 它的唯一作用是：
@@ -17,7 +17,6 @@ import { useRouter } from 'next/navigation';
 export function AuthStoreSyncer() {
   const { data: session, status } = useSession();
   const { setUser, setToken, initializeFromStorage } = useAuthStore();
-  const router = useRouter();
 
   const sessionUser = session?.user;
   const backendToken = session?.backendToken;
@@ -54,14 +53,7 @@ export function AuthStoreSyncer() {
         useAuthStore.getState().token || localStorage.getItem('auth-token') || undefined,
       // onAuthError 在遇到 401 时触发
       onAuthError: () => {
-        // 清除本地状态和 next-auth session
-        useAuthStore.getState().setToken(null);
-        useAuthStore.getState().setUser(null);
-        void (async () => {
-          await signOut({ redirect: false });
-          // 重定向到登录页
-          router.push('/login');
-        })();
+        void logoutClientSession();
       },
       // 使用 sonner 作为通知处理器
       notify: (msg, level) => {
@@ -74,7 +66,7 @@ export function AuthStoreSyncer() {
         }
       },
     });
-  }, [router, setUser, setToken]); // 添加更多依赖
+  }, []); // 处理器只需要初始化一次
 
   // 这个组件不渲染任何 UI
   return null;

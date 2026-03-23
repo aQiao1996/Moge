@@ -10,9 +10,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { logoutClientSession } from '@/lib/auth/logout';
 
 // 动态导入认证设置组件，避免SSR问题
 const AuthSetting = dynamic(() => import('@/app/components/AuthSetting'), { ssr: false });
@@ -87,7 +87,7 @@ export default function MainHeader({ className }: { className?: string }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator style={{ backgroundColor: 'var(--moge-divider)' }} />
                 <DropdownMenuItem
-                  onClick={() => void signOut()}
+                  onClick={() => void logoutClientSession()}
                   className="flex cursor-pointer items-center"
                 >
                   <LogOut className="mr-2 h-4 w-4" />

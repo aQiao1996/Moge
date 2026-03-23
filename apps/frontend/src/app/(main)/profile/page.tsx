@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MogeInput } from '@/app/components/MogeInput';
@@ -20,6 +20,7 @@ import {
   type ChangePasswordData,
   type ProfileValues,
 } from '@moge/types';
+import { logoutClientSession } from '@/lib/auth/logout';
 
 /**
  * 个人中心页面组件
@@ -82,7 +83,7 @@ export default function ProfilePage() {
       await changePassword(values);
       toast.success('密码修改成功');
       passwordForm.reset();
-      await signOut();
+      await logoutClientSession();
     } catch (error) {
       console.log('🚀 ~ page.tsx:57 ~ handlePasswordSubmit ~ error:', error);
     }

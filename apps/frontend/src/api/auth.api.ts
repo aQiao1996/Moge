@@ -1,6 +1,6 @@
 /**
  * 认证相关 API 接口
- * 提供用户登录、注册、登出功能
+ * 提供用户登录、注册功能
  */
 import httpRequest from '@/lib/request';
 import type { LoginData, SignupData } from '@moge/types';
@@ -38,12 +38,4 @@ export const registerApi = async (data: SignupData): Promise<AuthResponse> => {
     requiresToken: false,
   });
   return response.data;
-};
-
-/**
- * 用户登出接口
- * @returns 无返回值
- */
-export const logoutApi = async (): Promise<undefined> => {
-  await httpRequest.post<void>('/auth/logout');
 };
