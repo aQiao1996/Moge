@@ -342,7 +342,7 @@ interface UserResponse {
  * 任务: 添加用户导出功能
  *
  * 完成清单:
- * [x] pnpm run lint 通过
+ * [x] pnpm run lint 通过（全量检查）
  * [x] pnpm run typecheck 通过
  * [x] 测试正常导出(100条数据)
  * [x] 测试大数据量导出(10000条)

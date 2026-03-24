@@ -20,7 +20,8 @@
 
 ```bash
 pnpm run dev              # 启动所有服务
-pnpm run lint             # 代码检查
+pnpm run lint             # 全量代码检查
+pnpm run lint:changed     # 当前改动快速检查
 pnpm run typecheck        # 类型检查
 pnpm --filter @moge/backend prisma studio  # 数据库可视化
 ```
@@ -30,7 +31,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 ## 2. 核心开发规则
 
 1. **类型安全**: 严禁 `as any`、`@ts-ignore`、`eslint-disable`
-2. **质量检查**: 每次修改后运行 `pnpm run lint && pnpm run typecheck`
+2. **质量检查**: 每次修改后运行 `pnpm run lint && pnpm run typecheck`，开发中可先用 `pnpm run lint:changed` 快速自检
 3. **三端统一**: 前端类型、后端接口、数据库字段必须完全对齐
 4. **小步迭代**: 一次只解决一个问题,每步立即验证
 5. **组件复用**: 优先使用已有UI组件(如 `MogeFormDialog`)

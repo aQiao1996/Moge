@@ -2,7 +2,8 @@
   "name": "@moge/root",
   "version": "1.0.0",
   "scripts": {
-    "lint": "node scripts/lint-files.js",
+    "lint": "pnpm run lint:all",
+    "lint:changed": "node scripts/lint-files.js",
     "lint:staged": "node scripts/lint-files.js --staged",
     "lint:all": "node scripts/lint-files.js --all",
     "lint:fix": "eslint --config eslint.config.mjs --fix --cache \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",

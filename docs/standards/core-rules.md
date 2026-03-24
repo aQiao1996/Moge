@@ -17,7 +17,9 @@
 ## 3. 代码质量检查
 
 - 🔧 **必须执行**：每次代码修改后在根目录执行 `pnpm run lint` 和 `pnpm run typecheck`
+- ℹ️ **命令语义**：`pnpm run lint` 是全量检查；`pnpm run lint:changed` 只检查当前改动，适合开发中快速自检
 - ✅ **通过标准**：代码必须通过所有lint和类型检查，无警告无错误
+- 🚫 **禁止替代**：`pnpm run lint:changed` 不能替代任务完成前的 `pnpm run lint`
 - 🚫 **禁止提交**：有lint或类型错误的代码不得提交,不需要执行 `git` 相关操作
 
 ## 4. 注释与文档

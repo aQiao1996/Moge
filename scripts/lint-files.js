@@ -16,7 +16,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 
 /**
  * lint 模式说明
- * - workspace: 默认模式，检查工作区改动，包含 staged、未暂存和未跟踪文件
+ * - changed: 默认模式，检查工作区改动，包含 staged、未暂存和未跟踪文件
  * - staged: 只检查已暂存文件，给 husky / 提交流程使用
  * - all: 检查仓库内全部受 git 管理的源文件，适合手动做全量兜底
  */
@@ -71,7 +71,7 @@ function getWorkspaceFiles() {
 }
 
 /**
- * 获取仓库内所有受 git 管理的源文件
+ * 获取仓库内所有源文件（已跟踪 + 未跟踪）
  * @returns {string[]}
  */
 function getAllFiles() {
@@ -92,10 +92,10 @@ function filterLintFiles(files) {
 /**
  * 根据命令参数解析 lint 模式
  * 三种模式的设计目标：
- * - workspace: 开发自检，避免未暂存改动被漏掉
+ * - changed: 开发自检，避免未暂存改动被漏掉
  * - staged: 提交前快检，尽量缩短 pre-commit 耗时
  * - all: 全量巡检，用于手动排查历史问题或大改后的兜底检查
- * @returns {{ mode: 'workspace' | 'staged' | 'all', label: string }}
+ * @returns {{ mode: 'workspace' | 'staged' | 'all', label: 'changed' | 'staged' | 'all' }}
  */
 function resolveMode() {
   const args = new Set(process.argv.slice(2));
@@ -108,7 +108,7 @@ function resolveMode() {
     return { mode: 'all', label: 'all' };
   }
 
-  return { mode: 'workspace', label: 'workspace' };
+  return { mode: 'workspace', label: 'changed' };
 }
 
 function main() {

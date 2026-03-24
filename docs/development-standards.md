@@ -37,7 +37,8 @@ pnpm --filter @moge/backend dev
 # 全局命令（在根目录）
 pnpm run dev        # 启动所有服务
 pnpm run build      # 构建所有项目
-pnpm run lint       # 检查所有代码
+pnpm run lint       # 全量检查所有代码
+pnpm run lint:changed # 只检查当前改动，适合开发中快速自检
 pnpm run typecheck  # 类型检查所有项目
 ```
 
@@ -48,9 +49,11 @@ pnpm run typecheck  # 类型检查所有项目
 每次代码修改后必须执行：
 
 ```bash
-pnpm run lint       # 必须通过，无警告无错误
+pnpm run lint       # 必须通过，无警告无错误（全量检查）
 pnpm run typecheck  # 必须通过
 ```
+
+开发过程中可先执行 `pnpm run lint:changed` 做快速自检，但任务完成前仍必须执行 `pnpm run lint`。
 
 ### 2. TypeScript类型安全
 
