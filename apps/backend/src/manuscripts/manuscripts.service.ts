@@ -13,12 +13,23 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AIService } from '../ai/ai.service';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { Prisma } from '../../generated/prisma';
 import {
   buildRecentDateKeySet,
   buildWritingDeltaEvents,
   countWrittenWords,
   getDateKeyInTimeZone,
 } from '../common/writing-stats.util';
+
+type ManuscriptDbClient = PrismaService | Prisma.TransactionClient;
+
+interface TransactionLock {
+  namespace: number;
+  scopeId: number;
+}
+
+const MANUSCRIPT_LOCK_NAMESPACE = 1001;
+const MANUSCRIPT_VOLUME_LOCK_NAMESPACE = 1002;
 
 /**
  * 文稿服务
@@ -50,6 +61,49 @@ export class ManuscriptsService {
         orderBy: { sortOrder: 'asc' as const },
       },
     };
+  }
+
+  private getManuscriptLock(manuscriptId: number): TransactionLock {
+    return {
+      namespace: MANUSCRIPT_LOCK_NAMESPACE,
+      scopeId: manuscriptId,
+    };
+  }
+
+  private getVolumeLock(volumeId: number): TransactionLock {
+    return {
+      namespace: MANUSCRIPT_VOLUME_LOCK_NAMESPACE,
+      scopeId: volumeId,
+    };
+  }
+
+  private async acquireTransactionLocks(
+    tx: Prisma.TransactionClient,
+    locks: TransactionLock[]
+  ): Promise<void> {
+    const uniqueLocks = Array.from(
+      new Map(locks.map((lock) => [`${lock.namespace}:${lock.scopeId}`, lock])).values()
+    ).sort((left, right) => {
+      if (left.namespace !== right.namespace) {
+        return left.namespace - right.namespace;
+      }
+
+      return left.scopeId - right.scopeId;
+    });
+
+    for (const lock of uniqueLocks) {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock.namespace}, ${lock.scopeId})`;
+    }
+  }
+
+  private async runLockedTransaction<T>(
+    locks: TransactionLock[],
+    operation: (tx: Prisma.TransactionClient) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.acquireTransactionLocks(tx, locks);
+      return operation(tx);
+    });
   }
 
   private getWritingChapterScope(userId: number) {
@@ -265,6 +319,21 @@ export class ManuscriptsService {
     ]);
 
     return buildWritingDeltaEvents(currentContents, versionRecords);
+  }
+
+  private async getChapterWithManuscript(
+    prismaClient: ManuscriptDbClient,
+    chapterId: number,
+    includeContent = false
+  ) {
+    return prismaClient.manuscript_chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        manuscript: true,
+        volume: { include: { manuscript: true } },
+        content: includeContent,
+      },
+    });
   }
 
   /**
@@ -503,24 +572,27 @@ export class ManuscriptsService {
     // 验证文稿权限
     await this.findOne(dto.manuscriptId, userId);
 
-    // 获取当前最大sortOrder
-    const lastVolume = await this.prisma.manuscript_volume.findFirst({
-      where: { manuscriptId: dto.manuscriptId },
-      orderBy: { sortOrder: 'desc' },
-    });
+    return this.runLockedTransaction([this.getManuscriptLock(dto.manuscriptId)], async (tx) => {
+      const lastVolume = await tx.manuscript_volume.findFirst({
+        where: { manuscriptId: dto.manuscriptId },
+        orderBy: { sortOrder: 'desc' },
+      });
 
-    const sortOrder = lastVolume
-      ? new Decimal(lastVolume.sortOrder.toString()).plus(1)
-      : new Decimal(1);
+      const sortOrder = lastVolume
+        ? new Decimal(lastVolume.sortOrder.toString()).plus(1)
+        : new Decimal(1);
 
-    return this.prisma.manuscript_volume.create({
-      data: {
-        ...dto,
-        sortOrder,
-      },
-      include: {
-        chapters: true,
-      },
+      return tx.manuscript_volume.create({
+        data: {
+          manuscriptId: dto.manuscriptId,
+          title: dto.title,
+          description: dto.description,
+          sortOrder,
+        },
+        include: {
+          chapters: true,
+        },
+      });
     });
   }
 
@@ -567,13 +639,15 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this volume');
     }
 
-    const deletedVolume = await this.prisma.manuscript_volume.delete({
-      where: { id: volumeId },
+    return this.runLockedTransaction([this.getManuscriptLock(volume.manuscript.id)], async (tx) => {
+      const deletedVolume = await tx.manuscript_volume.delete({
+        where: { id: volumeId },
+      });
+
+      await this.recalculateManuscriptTotalWords(volume.manuscript.id, tx);
+
+      return deletedVolume;
     });
-
-    await this.recalculateManuscriptTotalWords(volume.manuscript.id);
-
-    return deletedVolume;
   }
 
   /**
@@ -587,9 +661,12 @@ export class ManuscriptsService {
       throw new BadRequestException('manuscriptId 和 volumeId 必须且只能传一个');
     }
 
+    let locks: TransactionLock[];
+
     // 验证权限
     if (hasManuscriptId) {
       await this.findOne(dto.manuscriptId, userId);
+      locks = [this.getManuscriptLock(dto.manuscriptId)];
     } else if (hasVolumeId) {
       const volume = await this.prisma.manuscript_volume.findUnique({
         where: { id: dto.volumeId },
@@ -603,29 +680,32 @@ export class ManuscriptsService {
       if (volume.manuscript.userId !== userId) {
         throw new BadRequestException('You do not have permission to access this volume');
       }
+
+      locks = [this.getVolumeLock(dto.volumeId)];
     } else {
       throw new BadRequestException('Either manuscriptId or volumeId must be provided');
     }
 
-    // 获取当前最大sortOrder
-    const lastChapter = await this.prisma.manuscript_chapter.findFirst({
-      where: dto.manuscriptId
-        ? { manuscriptId: dto.manuscriptId, volumeId: null }
-        : { volumeId: dto.volumeId },
-      orderBy: { sortOrder: 'desc' },
-    });
+    return this.runLockedTransaction(locks, async (tx) => {
+      const lastChapter = await tx.manuscript_chapter.findFirst({
+        where: dto.manuscriptId
+          ? { manuscriptId: dto.manuscriptId, volumeId: null }
+          : { volumeId: dto.volumeId },
+        orderBy: { sortOrder: 'desc' },
+      });
 
-    const sortOrder = lastChapter
-      ? new Decimal(lastChapter.sortOrder.toString()).plus(1)
-      : new Decimal(1);
+      const sortOrder = lastChapter
+        ? new Decimal(lastChapter.sortOrder.toString()).plus(1)
+        : new Decimal(1);
 
-    return this.prisma.manuscript_chapter.create({
-      data: {
-        manuscriptId: hasManuscriptId ? dto.manuscriptId : undefined,
-        volumeId: hasVolumeId ? dto.volumeId : undefined,
-        title: dto.title,
-        sortOrder,
-      },
+      return tx.manuscript_chapter.create({
+        data: {
+          manuscriptId: hasManuscriptId ? dto.manuscriptId : undefined,
+          volumeId: hasVolumeId ? dto.volumeId : undefined,
+          title: dto.title,
+          sortOrder,
+        },
+      });
     });
   }
 
@@ -660,13 +740,7 @@ export class ManuscriptsService {
    * 删除章节
    */
   async deleteChapter(chapterId: number, userId: number) {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-      },
-    });
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId);
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with id ${chapterId} not found`);
@@ -677,13 +751,13 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this chapter');
     }
 
-    // 删除章节时会级联删除章节内容
-    await this.prisma.manuscript_chapter.delete({
-      where: { id: chapterId },
-    });
+    await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      await tx.manuscript_chapter.delete({
+        where: { id: chapterId },
+      });
 
-    // 重新计算文稿字数
-    await this.recalculateManuscriptTotalWords(manuscript.id);
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+    });
   }
 
   /**
@@ -715,14 +789,7 @@ export class ManuscriptsService {
    * 保存章节内容
    */
   async saveChapterContent(chapterId: number, dto: SaveChapterContentDto, userId: number) {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-        content: true,
-      },
-    });
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with id ${chapterId} not found`);
@@ -733,54 +800,56 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this chapter');
     }
 
-    const wordCount = this.calculateWordCount(dto.content);
+    await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const currentChapter = await this.getChapterWithManuscript(tx, chapterId, true);
 
-    // 保存内容版本历史
-    if (chapter.content) {
-      await this.prisma.manuscript_chapter_content_version.create({
+      if (!currentChapter) {
+        throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+      }
+
+      const currentWordCount = this.calculateWordCount(dto.content);
+
+      if (currentChapter.content) {
+        await tx.manuscript_chapter_content_version.create({
+          data: {
+            contentId: currentChapter.content.id,
+            version: currentChapter.content.version,
+            content: currentChapter.content.content,
+          },
+        });
+
+        await tx.manuscript_chapter_content.update({
+          where: { chapterId },
+          data: {
+            content: dto.content,
+            version: currentChapter.content.version + 1,
+          },
+        });
+      } else {
+        await tx.manuscript_chapter_content.create({
+          data: {
+            chapterId,
+            content: dto.content,
+            version: 1,
+          },
+        });
+      }
+
+      await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: { wordCount: currentWordCount },
+      });
+
+      await tx.manuscripts.update({
+        where: { id: manuscript.id },
         data: {
-          contentId: chapter.content.id,
-          version: chapter.content.version,
-          content: chapter.content.content,
+          lastEditedChapterId: chapterId,
+          lastEditedAt: new Date(),
         },
       });
 
-      // 更新内容并递增版本号
-      await this.prisma.manuscript_chapter_content.update({
-        where: { chapterId },
-        data: {
-          content: dto.content,
-          version: chapter.content.version + 1,
-        },
-      });
-    } else {
-      // 首次创建内容
-      await this.prisma.manuscript_chapter_content.create({
-        data: {
-          chapterId,
-          content: dto.content,
-          version: 1,
-        },
-      });
-    }
-
-    // 更新章节字数
-    await this.prisma.manuscript_chapter.update({
-      where: { id: chapterId },
-      data: { wordCount },
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
     });
-
-    // 更新文稿的lastEditedChapterId和lastEditedAt
-    await this.prisma.manuscripts.update({
-      where: { id: manuscript.id },
-      data: {
-        lastEditedChapterId: chapterId,
-        lastEditedAt: new Date(),
-      },
-    });
-
-    // 重新计算文稿总字数
-    await this.recalculateManuscriptTotalWords(manuscript.id);
 
     return this.getChapterContent(chapterId, userId);
   }
@@ -789,13 +858,7 @@ export class ManuscriptsService {
    * 发布章节
    */
   async publishChapter(chapterId: number, userId: number) {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-      },
-    });
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId);
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with id ${chapterId} not found`);
@@ -806,31 +869,32 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this chapter');
     }
 
-    const updatedChapter = await this.prisma.manuscript_chapter.update({
-      where: { id: chapterId },
-      data: {
-        status: 'PUBLISHED',
-        publishedAt: chapter.publishedAt || new Date(), // 只记录首次发布时间
-      },
+    return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const currentChapter = await this.getChapterWithManuscript(tx, chapterId);
+
+      if (!currentChapter) {
+        throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+      }
+
+      const updatedChapter = await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          status: 'PUBLISHED',
+          publishedAt: currentChapter.publishedAt || new Date(),
+        },
+      });
+
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+      return updatedChapter;
     });
-
-    // 重新计算已发布字数
-    await this.recalculateManuscriptTotalWords(manuscript.id);
-
-    return updatedChapter;
   }
 
   /**
    * 取消发布章节
    */
   async unpublishChapter(chapterId: number, userId: number) {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-      },
-    });
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId);
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with id ${chapterId} not found`);
@@ -841,17 +905,18 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this chapter');
     }
 
-    const updatedChapter = await this.prisma.manuscript_chapter.update({
-      where: { id: chapterId },
-      data: {
-        status: 'DRAFT',
-      },
+    return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const updatedChapter = await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          status: 'DRAFT',
+        },
+      });
+
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+      return updatedChapter;
     });
-
-    // 重新计算已发布字数
-    await this.recalculateManuscriptTotalWords(manuscript.id);
-
-    return updatedChapter;
   }
 
   /**
@@ -891,24 +956,36 @@ export class ManuscriptsService {
       manuscriptIds.add(manuscript.id);
     }
 
-    // 批量更新章节状态
-    const updatePromises = chapterIds.map((chapterId) => {
-      const chapter = chapters.find((ch) => ch.id === chapterId);
-      return this.prisma.manuscript_chapter.update({
-        where: { id: chapterId },
-        data: {
-          status: 'PUBLISHED',
-          publishedAt: chapter?.publishedAt || new Date(),
-        },
-      });
-    });
+    await this.runLockedTransaction(
+      Array.from(manuscriptIds).map((manuscriptId) => this.getManuscriptLock(manuscriptId)),
+      async (tx) => {
+        const currentChapters = await tx.manuscript_chapter.findMany({
+          where: {
+            id: { in: chapterIds },
+          },
+          select: {
+            id: true,
+            publishedAt: true,
+          },
+        });
 
-    await Promise.all(updatePromises);
+        for (const chapterId of chapterIds) {
+          const currentChapter = currentChapters.find((chapter) => chapter.id === chapterId);
 
-    // 重新计算所有相关文稿的字数
-    for (const manuscriptId of manuscriptIds) {
-      await this.recalculateManuscriptTotalWords(manuscriptId);
-    }
+          await tx.manuscript_chapter.update({
+            where: { id: chapterId },
+            data: {
+              status: 'PUBLISHED',
+              publishedAt: currentChapter?.publishedAt || new Date(),
+            },
+          });
+        }
+
+        for (const manuscriptId of manuscriptIds) {
+          await this.recalculateManuscriptTotalWords(manuscriptId, tx);
+        }
+      }
+    );
 
     return { count: chapterIds.length };
   }
@@ -923,8 +1000,11 @@ export class ManuscriptsService {
   /**
    * 重新计算文稿总字数、已发布字数以及各卷字数
    */
-  private async recalculateManuscriptTotalWords(manuscriptId: number) {
-    const manuscript = await this.prisma.manuscripts.findUnique({
+  private async recalculateManuscriptTotalWords(
+    manuscriptId: number,
+    prismaClient: ManuscriptDbClient = this.prisma
+  ) {
+    const manuscript = await prismaClient.manuscripts.findUnique({
       where: { id: manuscriptId },
       include: {
         chapters: true,
@@ -964,14 +1044,14 @@ export class ManuscriptsService {
       });
 
       // 更新卷的字数统计
-      await this.prisma.manuscript_volume.update({
+      await prismaClient.manuscript_volume.update({
         where: { id: vol.id },
         data: { wordCount: volumeWordCount },
       });
     }
 
     // 更新文稿总字数
-    await this.prisma.manuscripts.update({
+    await prismaClient.manuscripts.update({
       where: { id: manuscriptId },
       data: { totalWords, publishedWords },
     });
@@ -1372,14 +1452,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
    * 恢复到指定版本
    */
   async restoreChapterVersion(chapterId: number, version: number, userId: number) {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-        content: true,
-      },
-    });
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with id ${chapterId} not found`);
@@ -1394,54 +1467,66 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       throw new NotFoundException('Chapter content not found');
     }
 
-    // 查找目标版本
-    const targetVersion = await this.prisma.manuscript_chapter_content_version.findFirst({
-      where: {
-        contentId: chapter.content.id,
-        version,
-      },
+    await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const currentChapter = await this.getChapterWithManuscript(tx, chapterId, true);
+
+      if (!currentChapter) {
+        throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+      }
+
+      const currentManuscript = currentChapter.manuscript || currentChapter.volume?.manuscript;
+      if (!currentManuscript || currentManuscript.userId !== userId) {
+        throw new BadRequestException('You do not have permission to access this chapter');
+      }
+
+      if (!currentChapter.content) {
+        throw new NotFoundException('Chapter content not found');
+      }
+
+      const targetVersion = await tx.manuscript_chapter_content_version.findFirst({
+        where: {
+          contentId: currentChapter.content.id,
+          version,
+        },
+      });
+
+      if (!targetVersion) {
+        throw new NotFoundException(`Version ${version} not found`);
+      }
+
+      await tx.manuscript_chapter_content_version.create({
+        data: {
+          contentId: currentChapter.content.id,
+          version: currentChapter.content.version,
+          content: currentChapter.content.content,
+        },
+      });
+
+      await tx.manuscript_chapter_content.update({
+        where: { chapterId },
+        data: {
+          content: targetVersion.content,
+          version: currentChapter.content.version + 1,
+        },
+      });
+
+      await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          wordCount: this.calculateWordCount(targetVersion.content),
+        },
+      });
+
+      await tx.manuscripts.update({
+        where: { id: manuscript.id },
+        data: {
+          lastEditedChapterId: chapterId,
+          lastEditedAt: new Date(),
+        },
+      });
+
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
     });
-
-    if (!targetVersion) {
-      throw new NotFoundException(`Version ${version} not found`);
-    }
-
-    // 保存当前版本到历史
-    await this.prisma.manuscript_chapter_content_version.create({
-      data: {
-        contentId: chapter.content.id,
-        version: chapter.content.version,
-        content: chapter.content.content,
-      },
-    });
-
-    // 恢复目标版本的内容，并递增版本号
-    await this.prisma.manuscript_chapter_content.update({
-      where: { chapterId },
-      data: {
-        content: targetVersion.content,
-        version: chapter.content.version + 1,
-      },
-    });
-
-    // 重新计算字数
-    const wordCount = this.calculateWordCount(targetVersion.content);
-    await this.prisma.manuscript_chapter.update({
-      where: { id: chapterId },
-      data: { wordCount },
-    });
-
-    // 更新文稿的lastEditedChapterId和lastEditedAt
-    await this.prisma.manuscripts.update({
-      where: { id: manuscript.id },
-      data: {
-        lastEditedChapterId: chapterId,
-        lastEditedAt: new Date(),
-      },
-    });
-
-    // 重新计算文稿总字数
-    await this.recalculateManuscriptTotalWords(manuscript.id);
 
     return this.getChapterContent(chapterId, userId);
   }
@@ -1550,6 +1635,10 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       throw new BadRequestException('Volume IDs cannot be empty');
     }
 
+    if (new Set(volumeIds).size !== volumeIds.length) {
+      throw new BadRequestException('Volume IDs cannot contain duplicates');
+    }
+
     // 验证所有卷的权限
     const volumes = await this.prisma.manuscript_volume.findMany({
       where: {
@@ -1571,15 +1660,52 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       }
     }
 
-    // 批量更新 sortOrder
-    const updatePromises = volumeIds.map((volumeId, index) => {
-      return this.prisma.manuscript_volume.update({
-        where: { id: volumeId },
-        data: { sortOrder: new Decimal(index + 1) },
-      });
-    });
+    const manuscriptIds = Array.from(new Set(volumes.map((volume) => volume.manuscriptId)));
+    if (manuscriptIds.length !== 1) {
+      throw new BadRequestException('只能对同一文稿下的卷进行排序');
+    }
 
-    await Promise.all(updatePromises);
+    const manuscriptId = manuscriptIds[0];
+    const totalVolumeCount = await this.prisma.manuscript_volume.count({
+      where: { manuscriptId },
+    });
+    if (totalVolumeCount !== volumeIds.length) {
+      throw new BadRequestException('卷排序必须提交当前文稿的全部卷 ID');
+    }
+
+    await this.runLockedTransaction([this.getManuscriptLock(manuscriptId)], async (tx) => {
+      const currentVolumes = await tx.manuscript_volume.findMany({
+        where: {
+          id: { in: volumeIds },
+        },
+        select: {
+          id: true,
+          manuscriptId: true,
+        },
+      });
+
+      if (currentVolumes.length !== volumeIds.length) {
+        throw new NotFoundException('Some volumes not found');
+      }
+
+      if (currentVolumes.some((volume) => volume.manuscriptId !== manuscriptId)) {
+        throw new BadRequestException('只能对同一文稿下的卷进行排序');
+      }
+
+      const currentTotalVolumeCount = await tx.manuscript_volume.count({
+        where: { manuscriptId },
+      });
+      if (currentTotalVolumeCount !== volumeIds.length) {
+        throw new BadRequestException('卷排序必须提交当前文稿的全部卷 ID');
+      }
+
+      for (const [index, volumeId] of volumeIds.entries()) {
+        await tx.manuscript_volume.update({
+          where: { id: volumeId },
+          data: { sortOrder: new Decimal(index + 1) },
+        });
+      }
+    });
 
     return {};
   }
@@ -1592,6 +1718,10 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   async reorderChapters(chapterIds: number[], userId: number) {
     if (!chapterIds || chapterIds.length === 0) {
       throw new BadRequestException('Chapter IDs cannot be empty');
+    }
+
+    if (new Set(chapterIds).size !== chapterIds.length) {
+      throw new BadRequestException('Chapter IDs cannot contain duplicates');
     }
 
     // 验证所有章节的权限
@@ -1621,15 +1751,99 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       }
     }
 
-    // 批量更新 sortOrder
-    const updatePromises = chapterIds.map((chapterId, index) => {
-      return this.prisma.manuscript_chapter.update({
-        where: { id: chapterId },
-        data: { sortOrder: new Decimal(index + 1) },
-      });
+    const firstChapter = chapters[0];
+    const targetVolumeId = firstChapter.volumeId;
+    const targetManuscriptId =
+      firstChapter.manuscriptId ?? firstChapter.volume?.manuscript.id ?? null;
+
+    if (!targetManuscriptId) {
+      throw new BadRequestException('章节所属文稿不存在');
+    }
+
+    const isSameParent = chapters.every((chapter) => {
+      if (targetVolumeId !== null) {
+        return chapter.volumeId === targetVolumeId;
+      }
+
+      return chapter.volumeId === null && chapter.manuscriptId === targetManuscriptId;
     });
 
-    await Promise.all(updatePromises);
+    if (!isSameParent) {
+      throw new BadRequestException('只能对同一父级下的章节进行排序');
+    }
+
+    const totalSiblingCount =
+      targetVolumeId !== null
+        ? await this.prisma.manuscript_chapter.count({
+            where: { volumeId: targetVolumeId },
+          })
+        : await this.prisma.manuscript_chapter.count({
+            where: {
+              manuscriptId: targetManuscriptId,
+              volumeId: null,
+            },
+          });
+
+    if (totalSiblingCount !== chapterIds.length) {
+      throw new BadRequestException('章节排序必须提交当前父级下的全部章节 ID');
+    }
+
+    const lock =
+      targetVolumeId !== null
+        ? this.getVolumeLock(targetVolumeId)
+        : this.getManuscriptLock(targetManuscriptId);
+
+    await this.runLockedTransaction([lock], async (tx) => {
+      const currentChapters = await tx.manuscript_chapter.findMany({
+        where: {
+          id: { in: chapterIds },
+        },
+        select: {
+          id: true,
+          manuscriptId: true,
+          volumeId: true,
+        },
+      });
+
+      if (currentChapters.length !== chapterIds.length) {
+        throw new NotFoundException('Some chapters not found');
+      }
+
+      const currentSameParent = currentChapters.every((chapter) => {
+        if (targetVolumeId !== null) {
+          return chapter.volumeId === targetVolumeId;
+        }
+
+        return chapter.volumeId === null && chapter.manuscriptId === targetManuscriptId;
+      });
+
+      if (!currentSameParent) {
+        throw new BadRequestException('只能对同一父级下的章节进行排序');
+      }
+
+      const currentSiblingCount =
+        targetVolumeId !== null
+          ? await tx.manuscript_chapter.count({
+              where: { volumeId: targetVolumeId },
+            })
+          : await tx.manuscript_chapter.count({
+              where: {
+                manuscriptId: targetManuscriptId,
+                volumeId: null,
+              },
+            });
+
+      if (currentSiblingCount !== chapterIds.length) {
+        throw new BadRequestException('章节排序必须提交当前父级下的全部章节 ID');
+      }
+
+      for (const [index, chapterId] of chapterIds.entries()) {
+        await tx.manuscript_chapter.update({
+          where: { id: chapterId },
+          data: { sortOrder: new Decimal(index + 1) },
+        });
+      }
+    });
 
     return {};
   }

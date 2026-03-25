@@ -5,6 +5,7 @@ import {
   Logger,
   BadRequestException,
   HttpException,
+  MessageEvent,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
@@ -14,11 +15,11 @@ import type { AIStreamingDebugInfo } from '../ai/ai.service';
 import { Observable, Subject } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { MessageEvent } from '@nestjs/common';
 import { SensitiveFilterService, FilterLevel } from '../sensitive-filter/sensitive-filter.service';
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
 import { MarkdownParserService, ParsedOutlineStructure } from './markdown-parser.service';
 import type { OutlineChapterInput, OutlineVolumeInput } from './outline.schemas';
+import { Prisma } from '../../generated/prisma';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -52,6 +53,15 @@ interface NormalizedOutlineStreamError {
   type?: string;
   requestId?: string;
 }
+
+type OutlineDbClient = PrismaService | Prisma.TransactionClient;
+
+interface TransactionLock {
+  namespace: number;
+  scopeId: number;
+}
+
+const OUTLINE_LOCK_NAMESPACE = 2001;
 
 @Injectable()
 export class OutlineService extends BaseService {
@@ -90,6 +100,183 @@ export class OutlineService extends BaseService {
         })
       )
     );
+  }
+
+  private getOutlineLock(outlineId: number): TransactionLock {
+    return {
+      namespace: OUTLINE_LOCK_NAMESPACE,
+      scopeId: outlineId,
+    };
+  }
+
+  private async acquireTransactionLocks(
+    tx: Prisma.TransactionClient,
+    locks: TransactionLock[]
+  ): Promise<void> {
+    const uniqueLocks = Array.from(
+      new Map(locks.map((lock) => [`${lock.namespace}:${lock.scopeId}`, lock])).values()
+    ).sort((left, right) => {
+      if (left.namespace !== right.namespace) {
+        return left.namespace - right.namespace;
+      }
+
+      return left.scopeId - right.scopeId;
+    });
+
+    for (const lock of uniqueLocks) {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock.namespace}, ${lock.scopeId})`;
+    }
+  }
+
+  private async runLockedTransaction<T>(
+    outlineId: number,
+    operation: (tx: Prisma.TransactionClient) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.acquireTransactionLocks(tx, [this.getOutlineLock(outlineId)]);
+      return operation(tx);
+    });
+  }
+
+  private async saveOutlineContentRecord(
+    prismaClient: OutlineDbClient,
+    outlineId: number,
+    content: string
+  ) {
+    const existingContent = await prismaClient.outline_content.findUnique({
+      where: { outlineId },
+    });
+
+    if (existingContent) {
+      await prismaClient.outline_content_version.create({
+        data: {
+          contentId: existingContent.id,
+          version: existingContent.version,
+          content: existingContent.content,
+        },
+      });
+
+      return prismaClient.outline_content.update({
+        where: { outlineId },
+        data: {
+          content,
+          version: existingContent.version + 1,
+        },
+      });
+    }
+
+    return prismaClient.outline_content.create({
+      data: {
+        outlineId,
+        content,
+        version: 1,
+      },
+    });
+  }
+
+  private async saveOutlineChapterContentRecord(
+    prismaClient: OutlineDbClient,
+    chapterId: number,
+    content: string
+  ) {
+    const existingContent = await prismaClient.outline_chapter_content.findUnique({
+      where: { chapterId },
+    });
+
+    if (existingContent) {
+      await prismaClient.outline_chapter_content_version.create({
+        data: {
+          contentId: existingContent.id,
+          version: existingContent.version,
+          content: existingContent.content,
+        },
+      });
+
+      return prismaClient.outline_chapter_content.update({
+        where: { chapterId },
+        data: {
+          content,
+          version: existingContent.version + 1,
+        },
+      });
+    }
+
+    return prismaClient.outline_chapter_content.create({
+      data: {
+        chapterId,
+        content,
+        version: 1,
+      },
+    });
+  }
+
+  private async replaceStructuredOutline(
+    prismaClient: OutlineDbClient,
+    outlineId: number,
+    structure: ParsedOutlineStructure
+  ): Promise<void> {
+    await prismaClient.outline_volume.deleteMany({
+      where: { outlineId },
+    });
+    await prismaClient.outline_chapter.deleteMany({
+      where: { outlineId },
+    });
+
+    let volumeSortOrder = 1;
+    for (const volumeData of structure.volumes) {
+      const volume = await prismaClient.outline_volume.create({
+        data: {
+          outlineId,
+          title: volumeData.title,
+          description: volumeData.description,
+          sortOrder: volumeSortOrder,
+        },
+      });
+
+      let chapterSortOrder = 1;
+      for (const chapterData of volumeData.chapters) {
+        const chapter = await prismaClient.outline_chapter.create({
+          data: {
+            volumeId: volume.id,
+            title: chapterData.title,
+            sortOrder: chapterSortOrder,
+          },
+        });
+
+        if (chapterData.scenes.length > 0) {
+          await this.saveOutlineChapterContentRecord(
+            prismaClient,
+            chapter.id,
+            chapterData.scenes.join('\n\n')
+          );
+        }
+
+        chapterSortOrder++;
+      }
+
+      volumeSortOrder++;
+    }
+
+    let directChapterSortOrder = 1;
+    for (const chapterData of structure.directChapters) {
+      const chapter = await prismaClient.outline_chapter.create({
+        data: {
+          outlineId,
+          title: chapterData.title,
+          sortOrder: directChapterSortOrder,
+        },
+      });
+
+      if (chapterData.scenes.length > 0) {
+        await this.saveOutlineChapterContentRecord(
+          prismaClient,
+          chapter.id,
+          chapterData.scenes.join('\n\n')
+        );
+      }
+
+      directChapterSortOrder++;
+    }
   }
 
   private async assertOutlineCharactersOwned(userId: string, ids: number[]) {
@@ -361,9 +548,6 @@ export class OutlineService extends BaseService {
 
     try {
       const outline = await this.findOne(parseInt(id, 10), userId);
-      if (!outline) {
-        throw new NotFoundException('大纲不存在或无权限访问');
-      }
 
       // ⭐ 获取关联的设定作为上下文
       const settings = await this.getOutlineSettings(parseInt(id, 10), userId);
@@ -780,37 +964,27 @@ export class OutlineService extends BaseService {
     );
 
     try {
-      // 保存内容到 outline_content 表
-      const existingContent = await this.prisma.outline_content.findUnique({
-        where: { outlineId },
-      });
-
-      if (existingContent) {
-        await this.prisma.outline_content.update({
-          where: { outlineId },
-          data: {
-            content,
-            version: existingContent.version + 1,
-          },
-        });
-      } else {
-        await this.prisma.outline_content.create({
-          data: {
-            outlineId,
-            content,
-            version: 1,
-          },
-        });
-      }
-
-      // 解析并存储结构化数据
       const parsedStructure = await this.markdownParser.parseOutlineMarkdown(content);
+
       if (this.markdownParser.validateParsedStructure(parsedStructure)) {
-        await this.saveStructuredOutline(outlineId, parsedStructure);
-        this.logger.debug(`[自动保存完成] 大纲ID: ${outlineId}, 已存储结构化数据`);
+        try {
+          await this.runLockedTransaction(outlineId, async (tx) => {
+            await this.saveOutlineContentRecord(tx, outlineId, content);
+            await this.replaceStructuredOutline(tx, outlineId, parsedStructure);
+          });
+
+          this.logger.debug(`[自动保存完成] 大纲ID: ${outlineId}, 已存储结构化数据`);
+          return;
+        } catch (error) {
+          this.logger.error(`[自动保存结构化存储失败] 大纲ID: ${outlineId}`, error);
+        }
       } else {
         this.logger.warn(`[自动保存警告] 大纲ID: ${outlineId}, 结构化数据不合理`);
       }
+
+      await this.runLockedTransaction(outlineId, async (tx) => {
+        await this.saveOutlineContentRecord(tx, outlineId, content);
+      });
     } catch (error) {
       this.logger.error(`[自动保存失败] 大纲ID: ${outlineId}`, error);
       // 不抛出错误，避免影响生成流程
@@ -960,20 +1134,20 @@ export class OutlineService extends BaseService {
       where: { id },
     });
 
-    if (outline?.userId !== parseInt(userId)) {
+    if (!outline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    if (outline.userId !== this.parseUserId(userId)) {
       throw new ForbiddenException('无权访问此大纲');
     }
 
     // 转换为前端期望的字符串格式
-    if (outline) {
-      return {
-        ...outline,
-        id: outline.id.toString(),
-        userId: outline.userId.toString(),
-      };
-    }
-
-    return outline;
+    return {
+      ...outline,
+      id: outline.id.toString(),
+      userId: outline.userId.toString(),
+    };
   }
 
   async findDetail(id: number, userId: string) {
@@ -982,7 +1156,11 @@ export class OutlineService extends BaseService {
       where: { id },
     });
 
-    if (!outline || outline.userId !== parseInt(userId)) {
+    if (!outline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    if (outline.userId !== this.parseUserId(userId)) {
       throw new ForbiddenException('无权访问此大纲');
     }
 
@@ -1064,51 +1242,37 @@ export class OutlineService extends BaseService {
     // 先检查权限
     await this.findOne(id, userId);
 
-    // 检查是否已有内容记录
-    const existingContent = await this.prisma.outline_content.findUnique({
-      where: { outlineId: id },
-    });
-
-    let result: {
-      id: number;
-      outlineId: number;
-      content: string;
-      version: number;
-      createdAt: Date;
-      updatedAt: Date;
-    };
-    if (existingContent) {
-      // 更新现有内容，版本号递增
-      result = await this.prisma.outline_content.update({
-        where: { outlineId: id },
-        data: {
-          content,
-          version: existingContent.version + 1,
-        },
-      });
-    } else {
-      // 创建新的内容记录
-      result = await this.prisma.outline_content.create({
-        data: {
-          outlineId: id,
-          content,
-          version: 1,
-        },
-      });
-    }
-
-    // 尝试解析并存储结构化数据
+    let parsedStructure: ParsedOutlineStructure | null = null;
     try {
-      const parsedStructure = await this.markdownParser.parseOutlineMarkdown(content);
-      if (this.markdownParser.validateParsedStructure(parsedStructure)) {
-        await this.saveStructuredOutline(id, parsedStructure);
-        this.logger.debug(`[解析成功] 大纲ID: ${id}, 已存储结构化数据`);
+      const candidateStructure = await this.markdownParser.parseOutlineMarkdown(content);
+      if (this.markdownParser.validateParsedStructure(candidateStructure)) {
+        parsedStructure = candidateStructure;
       } else {
         this.logger.warn(`[解析失败] 大纲ID: ${id}, 结构化数据不合理`);
       }
     } catch (error) {
       this.logger.error(`[解析异常] 大纲ID: ${id}`, error);
-      // 不影响主流程，继续返回结果
+    }
+
+    let result: Awaited<ReturnType<OutlineService['saveOutlineContentRecord']>>;
+    if (parsedStructure) {
+      try {
+        result = await this.runLockedTransaction(id, async (tx) => {
+          const savedContent = await this.saveOutlineContentRecord(tx, id, content);
+          await this.replaceStructuredOutline(tx, id, parsedStructure);
+          return savedContent;
+        });
+        this.logger.debug(`[解析成功] 大纲ID: ${id}, 已存储结构化数据`);
+      } catch (error) {
+        this.logger.error(`[结构化存储失败] 大纲ID: ${id}`, error);
+        result = await this.runLockedTransaction(id, async (tx) => {
+          return this.saveOutlineContentRecord(tx, id, content);
+        });
+      }
+    } else {
+      result = await this.runLockedTransaction(id, async (tx) => {
+        return this.saveOutlineContentRecord(tx, id, content);
+      });
     }
 
     // 转换为前端期望的格式
@@ -1183,12 +1347,25 @@ export class OutlineService extends BaseService {
       );
     }
 
-    const updatedVolume = await this.prisma.outline_volume.update({
-      where: { id: volumeId },
-      data: {
-        title: data.title,
-        description: data.description,
-      },
+    const updatedVolume = await this.runLockedTransaction(outlineId, async (tx) => {
+      const currentVolume = await tx.outline_volume.findFirst({
+        where: {
+          id: volumeId,
+          outlineId,
+        },
+      });
+
+      if (!currentVolume) {
+        throw new NotFoundException('卷不存在或不属于该大纲');
+      }
+
+      return tx.outline_volume.update({
+        where: { id: volumeId },
+        data: {
+          title: data.title,
+          description: data.description,
+        },
+      });
     });
 
     return {
@@ -1241,52 +1418,45 @@ export class OutlineService extends BaseService {
       );
     }
 
-    // 更新章节标题
-    const updatedChapter = await this.prisma.outline_chapter.update({
-      where: { id: chapterId },
-      data: {
-        title: data.title,
-      },
-    });
-
-    // 如果有内容，更新或创建章节内容
-    type ChapterContentType = {
-      id: number;
-      chapterId: number;
-      content: string;
-      version: number;
-      createdAt: Date;
-      updatedAt: Date;
-    };
-
-    let chapterContentResult: ChapterContentType | null = null;
-    if (data.content !== undefined) {
-      // 查找现有内容
-      const existingContent = await this.prisma.outline_chapter_content.findFirst({
-        where: { chapterId: chapterId },
-        orderBy: { version: 'desc' },
-      });
-
-      if (existingContent) {
-        // 更新现有内容
-        chapterContentResult = (await this.prisma.outline_chapter_content.update({
-          where: { id: existingContent.id },
-          data: {
-            content: data.content,
-            version: existingContent.version + 1,
+    const { updatedChapter, chapterContentResult } = await this.runLockedTransaction(
+      outlineId,
+      async (tx) => {
+        const currentChapter = await tx.outline_chapter.findFirst({
+          where: {
+            id: chapterId,
+            OR: [
+              { outlineId },
+              {
+                volume: {
+                  outlineId,
+                },
+              },
+            ],
           },
-        })) as ChapterContentType;
-      } else {
-        // 创建新内容
-        chapterContentResult = (await this.prisma.outline_chapter_content.create({
+        });
+
+        if (!currentChapter) {
+          throw new NotFoundException('章节不存在或不属于该大纲');
+        }
+
+        const updatedChapter = await tx.outline_chapter.update({
+          where: { id: chapterId },
           data: {
-            chapterId: chapterId,
-            content: data.content,
-            version: 1,
+            title: data.title,
           },
-        })) as ChapterContentType;
+        });
+
+        const chapterContentResult =
+          data.content !== undefined
+            ? await this.saveOutlineChapterContentRecord(tx, chapterId, data.content)
+            : null;
+
+        return {
+          updatedChapter,
+          chapterContentResult,
+        };
       }
-    }
+    );
 
     return {
       ...updatedChapter,
@@ -1327,82 +1497,8 @@ export class OutlineService extends BaseService {
     );
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        // 1. 清理现有的结构化数据（如果有的话）
-        await tx.outline_volume.deleteMany({
-          where: { outlineId },
-        });
-        await tx.outline_chapter.deleteMany({
-          where: { outlineId },
-        });
-
-        // 2. 存储卷和章节
-        let volumeSortOrder = 1;
-        for (const volumeData of structure.volumes) {
-          // 创建卷
-          const volume = await tx.outline_volume.create({
-            data: {
-              outlineId,
-              title: volumeData.title,
-              description: volumeData.description,
-              sortOrder: volumeSortOrder,
-            },
-          });
-
-          // 创建卷下的章节
-          let chapterSortOrder = 1;
-          for (const chapterData of volumeData.chapters) {
-            const chapter = await tx.outline_chapter.create({
-              data: {
-                volumeId: volume.id,
-                title: chapterData.title,
-                sortOrder: chapterSortOrder,
-              },
-            });
-
-            // 如果有场景内容，存储到章节内容表
-            if (chapterData.scenes.length > 0) {
-              const sceneContent = chapterData.scenes.join('\n\n');
-              await tx.outline_chapter_content.create({
-                data: {
-                  chapterId: chapter.id,
-                  content: sceneContent,
-                  version: 1,
-                },
-              });
-            }
-
-            chapterSortOrder++;
-          }
-
-          volumeSortOrder++;
-        }
-
-        // 3. 存储直接章节（无卷的章节）
-        let directChapterSortOrder = 1;
-        for (const chapterData of structure.directChapters) {
-          const chapter = await tx.outline_chapter.create({
-            data: {
-              outlineId,
-              title: chapterData.title,
-              sortOrder: directChapterSortOrder,
-            },
-          });
-
-          // 如果有场景内容，存储到章节内容表
-          if (chapterData.scenes.length > 0) {
-            const sceneContent = chapterData.scenes.join('\n\n');
-            await tx.outline_chapter_content.create({
-              data: {
-                chapterId: chapter.id,
-                content: sceneContent,
-                version: 1,
-              },
-            });
-          }
-
-          directChapterSortOrder++;
-        }
+      await this.runLockedTransaction(outlineId, async (tx) => {
+        await this.replaceStructuredOutline(tx, outlineId, structure);
       });
 
       this.logger.debug(`[结构化存储完成] 大纲ID: ${outlineId}`);
@@ -1421,9 +1517,6 @@ export class OutlineService extends BaseService {
   async getOutlineSettings(outlineId: number, userId: string) {
     // 验证大纲所有权
     const outline = await this.findOne(outlineId, userId);
-    if (!outline) {
-      throw new NotFoundException('大纲不存在');
-    }
 
     // 并行获取所有关联的设定
     const [characters, systems, worlds, misc] = await Promise.all([
@@ -1627,22 +1720,23 @@ export class OutlineService extends BaseService {
       );
     }
 
-    // 获取当前最大的 sortOrder
-    const maxSortOrder = await this.prisma.outline_volume.findFirst({
-      where: { outlineId },
-      orderBy: { sortOrder: 'desc' },
-      select: { sortOrder: true },
-    });
+    const volume = await this.runLockedTransaction(outlineId, async (tx) => {
+      const maxSortOrder = await tx.outline_volume.findFirst({
+        where: { outlineId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
+      });
 
-    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+      const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
 
-    const volume = await this.prisma.outline_volume.create({
-      data: {
-        outlineId,
-        title: data.title,
-        description: data.description,
-        sortOrder,
-      },
+      return tx.outline_volume.create({
+        data: {
+          outlineId,
+          title: data.title,
+          description: data.description,
+          sortOrder,
+        },
+      });
     });
 
     return {
@@ -1674,43 +1768,32 @@ export class OutlineService extends BaseService {
       );
     }
 
-    // 获取当前最大的 sortOrder（仅针对直接章节）
-    const maxSortOrder = await this.prisma.outline_chapter.findFirst({
-      where: { outlineId, volumeId: null },
-      orderBy: { sortOrder: 'desc' },
-      select: { sortOrder: true },
-    });
+    const { chapter, chapterContent } = await this.runLockedTransaction(outlineId, async (tx) => {
+      const maxSortOrder = await tx.outline_chapter.findFirst({
+        where: { outlineId, volumeId: null },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
+      });
 
-    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+      const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
 
-    const chapter = await this.prisma.outline_chapter.create({
-      data: {
-        outlineId,
-        title: data.title,
-        sortOrder,
-      },
-    });
-
-    // 如果有内容，创建章节内容
-    type ChapterContentType = {
-      id: number;
-      chapterId: number;
-      content: string;
-      version: number;
-      createdAt: Date;
-      updatedAt: Date;
-    };
-
-    let chapterContent: ChapterContentType | null = null;
-    if (data.content) {
-      chapterContent = await this.prisma.outline_chapter_content.create({
+      const chapter = await tx.outline_chapter.create({
         data: {
-          chapterId: chapter.id,
-          content: data.content,
-          version: 1,
+          outlineId,
+          title: data.title,
+          sortOrder,
         },
       });
-    }
+
+      const chapterContent = data.content
+        ? await this.saveOutlineChapterContentRecord(tx, chapter.id, data.content)
+        : null;
+
+      return {
+        chapter,
+        chapterContent,
+      };
+    });
 
     return {
       ...chapter,
@@ -1767,43 +1850,40 @@ export class OutlineService extends BaseService {
       );
     }
 
-    // 获取当前卷内最大的 sortOrder
-    const maxSortOrder = await this.prisma.outline_chapter.findFirst({
-      where: { volumeId },
-      orderBy: { sortOrder: 'desc' },
-      select: { sortOrder: true },
-    });
+    const { chapter, chapterContent } = await this.runLockedTransaction(outlineId, async (tx) => {
+      const currentVolume = await tx.outline_volume.findFirst({
+        where: { id: volumeId, outlineId },
+      });
 
-    const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
+      if (!currentVolume) {
+        throw new NotFoundException('卷不存在或不属于该大纲');
+      }
 
-    const chapter = await this.prisma.outline_chapter.create({
-      data: {
-        volumeId,
-        title: data.title,
-        sortOrder,
-      },
-    });
+      const maxSortOrder = await tx.outline_chapter.findFirst({
+        where: { volumeId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
+      });
 
-    // 如果有内容，创建章节内容
-    type ChapterContentType = {
-      id: number;
-      chapterId: number;
-      content: string;
-      version: number;
-      createdAt: Date;
-      updatedAt: Date;
-    };
+      const sortOrder = maxSortOrder?.sortOrder ? Number(maxSortOrder.sortOrder) + 1 : 1;
 
-    let chapterContent: ChapterContentType | null = null;
-    if (data.content) {
-      chapterContent = await this.prisma.outline_chapter_content.create({
+      const chapter = await tx.outline_chapter.create({
         data: {
-          chapterId: chapter.id,
-          content: data.content,
-          version: 1,
+          volumeId,
+          title: data.title,
+          sortOrder,
         },
       });
-    }
+
+      const chapterContent = data.content
+        ? await this.saveOutlineChapterContentRecord(tx, chapter.id, data.content)
+        : null;
+
+      return {
+        chapter,
+        chapterContent,
+      };
+    });
 
     return {
       ...chapter,
@@ -1842,9 +1922,18 @@ export class OutlineService extends BaseService {
       throw new NotFoundException('卷不存在或不属于该大纲');
     }
 
-    // 删除卷（级联删除章节会由数据库处理）
-    await this.prisma.outline_volume.delete({
-      where: { id: volumeId },
+    await this.runLockedTransaction(outlineId, async (tx) => {
+      const currentVolume = await tx.outline_volume.findFirst({
+        where: { id: volumeId, outlineId },
+      });
+
+      if (!currentVolume) {
+        throw new NotFoundException('卷不存在或不属于该大纲');
+      }
+
+      await tx.outline_volume.delete({
+        where: { id: volumeId },
+      });
     });
 
     this.logger.debug(`[删除卷] 大纲ID: ${outlineId}, 卷ID: ${volumeId}`);
@@ -1879,9 +1968,28 @@ export class OutlineService extends BaseService {
       throw new NotFoundException('章节不存在或不属于该大纲');
     }
 
-    // 删除章节（级联删除内容会由数据库处理）
-    await this.prisma.outline_chapter.delete({
-      where: { id: chapterId },
+    await this.runLockedTransaction(outlineId, async (tx) => {
+      const currentChapter = await tx.outline_chapter.findFirst({
+        where: {
+          id: chapterId,
+          OR: [
+            { outlineId },
+            {
+              volume: {
+                outlineId,
+              },
+            },
+          ],
+        },
+      });
+
+      if (!currentChapter) {
+        throw new NotFoundException('章节不存在或不属于该大纲');
+      }
+
+      await tx.outline_chapter.delete({
+        where: { id: chapterId },
+      });
     });
 
     this.logger.debug(`[删除章节] 大纲ID: ${outlineId}, 章节ID: ${chapterId}`);
