@@ -13,6 +13,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AIService } from '../ai/ai.service';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { buildWritingDeltaEvents, countWrittenWords } from '../common/writing-stats.util';
 
 /**
  * 文稿服务
@@ -46,13 +47,241 @@ export class ManuscriptsService {
     };
   }
 
+  private getWritingChapterScope(userId: number) {
+    return {
+      OR: [
+        {
+          manuscript: {
+            userId,
+            deletedAt: null,
+          },
+        },
+        {
+          volume: {
+            manuscript: {
+              userId,
+              deletedAt: null,
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  private normalizeStoredSettingIds(ids?: string[]): string[] | undefined {
+    if (ids === undefined) {
+      return undefined;
+    }
+
+    const normalizedIds = ids.map((id) => {
+      const normalizedId = String(id).trim();
+
+      if (!/^\d+$/.test(normalizedId)) {
+        throw new BadRequestException('设定 ID 格式不正确');
+      }
+
+      return String(Number(normalizedId));
+    });
+
+    return Array.from(new Set(normalizedIds));
+  }
+
+  private async assertProjectOwned(userId: number, projectId?: number) {
+    if (projectId === undefined) {
+      return;
+    }
+
+    const project = await this.prisma.projects.findFirst({
+      where: {
+        id: projectId,
+        userId,
+      },
+      select: { id: true },
+    });
+
+    if (!project) {
+      throw new BadRequestException('项目不存在或无权限访问');
+    }
+  }
+
+  private async assertOutlineOwned(userId: number, outlineId?: number) {
+    if (outlineId === undefined) {
+      return;
+    }
+
+    const outline = await this.prisma.outline.findFirst({
+      where: {
+        id: outlineId,
+        userId,
+      },
+      select: { id: true },
+    });
+
+    if (!outline) {
+      throw new BadRequestException('大纲不存在或无权限访问');
+    }
+  }
+
+  private async assertCharactersOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.character_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分角色设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertSystemsOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.system_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分系统设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertWorldsOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.world_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分世界设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertMiscOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.misc_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分辅助设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async validateManuscriptAssociations(
+    userId: number,
+    data: {
+      outlineId?: number;
+      projectId?: number;
+      characters?: string[];
+      systems?: string[];
+      worlds?: string[];
+      misc?: string[];
+    }
+  ) {
+    await Promise.all([
+      this.assertOutlineOwned(userId, data.outlineId),
+      this.assertProjectOwned(userId, data.projectId),
+    ]);
+
+    const [characters, systems, worlds, misc] = await Promise.all([
+      this.assertCharactersOwned(userId, data.characters),
+      this.assertSystemsOwned(userId, data.systems),
+      this.assertWorldsOwned(userId, data.worlds),
+      this.assertMiscOwned(userId, data.misc),
+    ]);
+
+    return { characters, systems, worlds, misc };
+  }
+
+  private async getWritingEvents(userId: number) {
+    const chapterScope = this.getWritingChapterScope(userId);
+
+    const [currentContents, versionRecords] = await Promise.all([
+      this.prisma.manuscript_chapter_content.findMany({
+        where: {
+          chapter: chapterScope,
+        },
+        select: {
+          id: true,
+          version: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.manuscript_chapter_content_version.findMany({
+        where: {
+          contentRecord: {
+            chapter: chapterScope,
+          },
+        },
+        select: {
+          contentId: true,
+          version: true,
+          content: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return buildWritingDeltaEvents(currentContents, versionRecords);
+  }
+
   /**
    * 创建文稿
    */
   async createManuscript(userId: number, dto: CreateManuscriptDto) {
+    const relations = await this.validateManuscriptAssociations(userId, dto);
+
     return this.prisma.manuscripts.create({
       data: {
-        ...dto,
+        name: dto.name,
+        description: dto.description,
+        type: dto.type,
+        tags: dto.tags ?? [],
+        outlineId: dto.outlineId,
+        projectId: dto.projectId,
+        characters: relations.characters ?? [],
+        systems: relations.systems ?? [],
+        worlds: relations.worlds ?? [],
+        misc: relations.misc ?? [],
+        targetWords: dto.targetWords,
+        coverUrl: dto.coverUrl,
         userId,
       },
       include: this.getManuscriptInclude(),
@@ -95,61 +324,68 @@ export class ManuscriptsService {
     if (outline.userId !== userId) {
       throw new BadRequestException('You do not have permission to access this outline');
     }
-
-    // 创建文稿
-    const manuscript = await this.prisma.manuscripts.create({
-      data: {
-        name: dto.name,
-        description: dto.description?.trim() || `根据大纲《${outline.name}》创建`,
-        type: dto.type ?? outline.type,
-        tags: dto.tags ?? outline.tags,
-        outlineId: outline.id,
-        userId,
-        projectId: dto.projectId,
-        characters: dto.characters ?? outline.characters,
-        systems: dto.systems ?? outline.systems,
-        worlds: dto.worlds ?? outline.worlds,
-        misc: dto.misc ?? outline.misc,
-        targetWords: dto.targetWords,
-        coverUrl: dto.coverUrl,
-      },
+    const relations = await this.validateManuscriptAssociations(userId, {
+      projectId: dto.projectId,
+      characters: dto.characters ?? outline.characters,
+      systems: dto.systems ?? outline.systems,
+      worlds: dto.worlds ?? outline.worlds,
+      misc: dto.misc ?? outline.misc,
     });
 
-    // 复制卷结构
-    for (const outlineVolume of outline.volumes) {
-      const volume = await this.prisma.manuscript_volume.create({
+    const manuscriptId = await this.prisma.$transaction(async (tx) => {
+      const manuscript = await tx.manuscripts.create({
         data: {
-          manuscriptId: manuscript.id,
-          title: outlineVolume.title,
-          description: outlineVolume.description,
-          sortOrder: outlineVolume.sortOrder,
+          name: dto.name,
+          description: dto.description?.trim() || `根据大纲《${outline.name}》创建`,
+          type: dto.type ?? outline.type,
+          tags: dto.tags ?? outline.tags,
+          outlineId: outline.id,
+          userId,
+          projectId: dto.projectId,
+          characters: relations.characters ?? [],
+          systems: relations.systems ?? [],
+          worlds: relations.worlds ?? [],
+          misc: relations.misc ?? [],
+          targetWords: dto.targetWords,
+          coverUrl: dto.coverUrl,
         },
       });
 
-      // 复制卷内章节
-      for (const outlineChapter of outlineVolume.chapters) {
-        await this.prisma.manuscript_chapter.create({
+      for (const outlineVolume of outline.volumes) {
+        const volume = await tx.manuscript_volume.create({
           data: {
-            volumeId: volume.id,
+            manuscriptId: manuscript.id,
+            title: outlineVolume.title,
+            description: outlineVolume.description,
+            sortOrder: outlineVolume.sortOrder,
+          },
+        });
+
+        for (const outlineChapter of outlineVolume.chapters) {
+          await tx.manuscript_chapter.create({
+            data: {
+              volumeId: volume.id,
+              title: outlineChapter.title,
+              sortOrder: outlineChapter.sortOrder,
+            },
+          });
+        }
+      }
+
+      for (const outlineChapter of outline.chapters) {
+        await tx.manuscript_chapter.create({
+          data: {
+            manuscriptId: manuscript.id,
             title: outlineChapter.title,
             sortOrder: outlineChapter.sortOrder,
           },
         });
       }
-    }
 
-    // 复制无卷章节
-    for (const outlineChapter of outline.chapters) {
-      await this.prisma.manuscript_chapter.create({
-        data: {
-          manuscriptId: manuscript.id,
-          title: outlineChapter.title,
-          sortOrder: outlineChapter.sortOrder,
-        },
-      });
-    }
+      return manuscript.id;
+    });
 
-    return this.findOne(manuscript.id, userId);
+    return this.findOne(manuscriptId, userId);
   }
 
   /**
@@ -191,10 +427,54 @@ export class ManuscriptsService {
    */
   async updateManuscript(id: number, userId: number, dto: UpdateManuscriptDto) {
     await this.findOne(id, userId);
+    const relations = await this.validateManuscriptAssociations(userId, dto);
+    const updateData: Partial<UpdateManuscriptDto> & {
+      characters?: string[];
+      systems?: string[];
+      worlds?: string[];
+      misc?: string[];
+    } = {};
+
+    if (dto.name !== undefined) {
+      updateData.name = dto.name;
+    }
+    if (dto.description !== undefined) {
+      updateData.description = dto.description;
+    }
+    if (dto.type !== undefined) {
+      updateData.type = dto.type;
+    }
+    if (dto.tags !== undefined) {
+      updateData.tags = dto.tags;
+    }
+    if (dto.status !== undefined) {
+      updateData.status = dto.status;
+    }
+    if (dto.projectId !== undefined) {
+      updateData.projectId = dto.projectId;
+    }
+    if (relations.characters !== undefined) {
+      updateData.characters = relations.characters;
+    }
+    if (relations.systems !== undefined) {
+      updateData.systems = relations.systems;
+    }
+    if (relations.worlds !== undefined) {
+      updateData.worlds = relations.worlds;
+    }
+    if (relations.misc !== undefined) {
+      updateData.misc = relations.misc;
+    }
+    if (dto.targetWords !== undefined) {
+      updateData.targetWords = dto.targetWords;
+    }
+    if (dto.coverUrl !== undefined) {
+      updateData.coverUrl = dto.coverUrl;
+    }
 
     return this.prisma.manuscripts.update({
       where: { id },
-      data: dto,
+      data: updateData,
       include: this.getManuscriptInclude(),
     });
   }
@@ -282,10 +562,13 @@ export class ManuscriptsService {
       throw new BadRequestException('You do not have permission to access this volume');
     }
 
-    // 删除卷时会级联删除卷内章节
-    return this.prisma.manuscript_volume.delete({
+    const deletedVolume = await this.prisma.manuscript_volume.delete({
       where: { id: volumeId },
     });
+
+    await this.recalculateManuscriptTotalWords(volume.manuscript.id);
+
+    return deletedVolume;
   }
 
   /**
@@ -620,9 +903,7 @@ export class ManuscriptsService {
    * 计算字数（中文字符）
    */
   private calculateWordCount(content: string): number {
-    // 移除所有空白字符
-    const cleanContent = content.replace(/\s/g, '');
-    return cleanContent.length;
+    return countWrittenWords(content);
   }
 
   /**
@@ -690,8 +971,11 @@ export class ManuscriptsService {
 
     if (manuscript.projectId) {
       // 通过项目获取设定
-      const project = await this.prisma.projects.findUnique({
-        where: { id: manuscript.projectId },
+      const project = await this.prisma.projects.findFirst({
+        where: {
+          id: manuscript.projectId,
+          userId,
+        },
       });
 
       if (!project) {
@@ -700,10 +984,10 @@ export class ManuscriptsService {
 
       // 并行获取所有关联的设定详情
       const [characters, systems, worlds, misc] = await Promise.all([
-        this.getCharactersByIds(project.characters || []),
-        this.getSystemsByIds(project.systems || []),
-        this.getWorldsByIds(project.worlds || []),
-        this.getMiscByIds(project.misc || []),
+        this.getCharactersByIds(project.characters || [], userId),
+        this.getSystemsByIds(project.systems || [], userId),
+        this.getWorldsByIds(project.worlds || [], userId),
+        this.getMiscByIds(project.misc || [], userId),
       ]);
 
       return {
@@ -715,10 +999,10 @@ export class ManuscriptsService {
     } else {
       // 直接使用文稿的设定数组
       const [characters, systems, worlds, misc] = await Promise.all([
-        this.getCharactersByIds(manuscript.characters || []),
-        this.getSystemsByIds(manuscript.systems || []),
-        this.getWorldsByIds(manuscript.worlds || []),
-        this.getMiscByIds(manuscript.misc || []),
+        this.getCharactersByIds(manuscript.characters || [], userId),
+        this.getSystemsByIds(manuscript.systems || [], userId),
+        this.getWorldsByIds(manuscript.worlds || [], userId),
+        this.getMiscByIds(manuscript.misc || [], userId),
       ]);
 
       return {
@@ -982,10 +1266,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   /**
    * 根据 ID 列表获取角色设定
    */
-  private async getCharactersByIds(ids: string[]) {
+  private async getCharactersByIds(ids: string[], userId: number) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.character_settings.findMany({
       where: {
+        userId,
         id: { in: ids.map(Number) },
       },
     });
@@ -994,10 +1279,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   /**
    * 根据 ID 列表获取系统设定
    */
-  private async getSystemsByIds(ids: string[]) {
+  private async getSystemsByIds(ids: string[], userId: number) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.system_settings.findMany({
       where: {
+        userId,
         id: { in: ids.map(Number) },
       },
     });
@@ -1006,10 +1292,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   /**
    * 根据 ID 列表获取世界设定
    */
-  private async getWorldsByIds(ids: string[]) {
+  private async getWorldsByIds(ids: string[], userId: number) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.world_settings.findMany({
       where: {
+        userId,
         id: { in: ids.map(Number) },
       },
     });
@@ -1018,10 +1305,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
   /**
    * 根据 ID 列表获取辅助设定
    */
-  private async getMiscByIds(ids: string[]) {
+  private async getMiscByIds(ids: string[], userId: number) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.misc_settings.findMany({
       where: {
+        userId,
         id: { in: ids.map(Number) },
       },
     });
@@ -1208,49 +1496,20 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       }
     }
 
-    // 最近7天的写作统计
     const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const recentChapters = await this.prisma.manuscript_chapter_content.findMany({
-      where: {
-        updatedAt: {
-          gte: sevenDaysAgo,
-        },
-        chapter: {
-          OR: [
-            {
-              manuscript: {
-                userId,
-                deletedAt: null,
-              },
-            },
-            {
-              volume: {
-                manuscript: {
-                  userId,
-                  deletedAt: null,
-                },
-              },
-            },
-          ],
-        },
-      },
-      select: {
-        updatedAt: true,
-        content: true,
-      },
-      orderBy: {
-        updatedAt: 'asc',
-      },
-    });
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const writingEvents = await this.getWritingEvents(userId);
 
     // 按天统计字数
     const dailyStats: Record<string, number> = {};
-    for (const chapter of recentChapters) {
-      const dateKey = chapter.updatedAt.toISOString().split('T')[0];
-      const wordCount = this.calculateWordCount(chapter.content);
-      dailyStats[dateKey] = (dailyStats[dateKey] || 0) + wordCount;
+    for (const event of writingEvents) {
+      if (event.occurredAt < sevenDaysAgo) {
+        continue;
+      }
+
+      const dateKey = event.occurredAt.toISOString().split('T')[0];
+      dailyStats[dateKey] = (dailyStats[dateKey] || 0) + event.words;
     }
 
     return {

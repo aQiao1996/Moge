@@ -33,7 +33,13 @@ async function bootstrap() {
 
   // * ValidationPipe 使用 class-validator npm包及其声明式验证装饰器。
   // https://nest.nodejs.cn/techniques/validation
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    })
+  );
 
   // * 注册全局守卫 执行在 拦截器 之前 执行在 中间件 之后
   // app.useGlobalGuards(new AuthGuard());

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { projects, Prisma } from '../../generated/prisma';
+import type { projects } from '../../generated/prisma';
+import type { CreateProjectRequest, UpdateProjectRequest } from './projects.schemas';
 
 /**
  * 项目服务
@@ -9,6 +10,133 @@ import type { projects, Prisma } from '../../generated/prisma';
 @Injectable()
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
+
+  private normalizeStoredSettingIds(ids?: string[]): string[] | undefined {
+    if (ids === undefined) {
+      return undefined;
+    }
+
+    const normalizedIds = ids.map((id) => {
+      const normalizedId = String(id).trim();
+
+      if (!/^\d+$/.test(normalizedId)) {
+        throw new BadRequestException('设定 ID 格式不正确');
+      }
+
+      return String(Number(normalizedId));
+    });
+
+    return Array.from(new Set(normalizedIds));
+  }
+
+  private normalizeNumericSettingIds(ids: number[]): number[] {
+    return Array.from(
+      new Set(
+        ids.map((id) => {
+          if (!Number.isInteger(id) || id <= 0) {
+            throw new BadRequestException('设定 ID 格式不正确');
+          }
+
+          return id;
+        })
+      )
+    );
+  }
+
+  private async assertCharactersOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.character_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分角色设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertSystemsOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.system_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分系统设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertWorldsOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.world_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分世界设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertMiscOwned(userId: number, ids?: string[]) {
+    if (!ids || ids.length === 0) {
+      return ids;
+    }
+
+    const normalizedIds = this.normalizeStoredSettingIds(ids) ?? [];
+    const count = await this.prisma.misc_settings.count({
+      where: {
+        userId,
+        id: { in: normalizedIds.map(Number) },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分辅助设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async validateProjectAssociations(
+    userId: number,
+    data: Pick<CreateProjectRequest, 'characters' | 'systems' | 'worlds' | 'misc'> &
+      Pick<UpdateProjectRequest, 'characters' | 'systems' | 'worlds' | 'misc'>
+  ) {
+    const [characters, systems, worlds, misc] = await Promise.all([
+      this.assertCharactersOwned(userId, data.characters),
+      this.assertSystemsOwned(userId, data.systems),
+      this.assertWorldsOwned(userId, data.worlds),
+      this.assertMiscOwned(userId, data.misc),
+    ]);
+
+    return { characters, systems, worlds, misc };
+  }
 
   /**
    * 获取用户的所有项目
@@ -46,13 +174,19 @@ export class ProjectsService {
    * @param data 项目创建数据
    * @returns 创建的项目
    */
-  async createProject(
-    userId: number,
-    data: Omit<Prisma.projectsCreateInput, 'user'>
-  ): Promise<projects> {
+  async createProject(userId: number, data: CreateProjectRequest): Promise<projects> {
+    const relations = await this.validateProjectAssociations(userId, data);
+
     return this.prisma.projects.create({
       data: {
-        ...data,
+        name: data.name,
+        type: data.type,
+        description: data.description,
+        tags: data.tags ?? [],
+        characters: relations.characters ?? [],
+        systems: relations.systems ?? [],
+        worlds: relations.worlds ?? [],
+        misc: relations.misc ?? [],
         user: {
           connect: { id: userId },
         },
@@ -67,11 +201,7 @@ export class ProjectsService {
    * @param data 更新的项目数据
    * @returns 更新后的项目
    */
-  async updateProject(
-    userId: number,
-    id: number,
-    data: Prisma.projectsUpdateInput
-  ): Promise<projects> {
+  async updateProject(userId: number, id: number, data: UpdateProjectRequest): Promise<projects> {
     // 检查项目是否存在且属于当前用户
     const project = await this.prisma.projects.findFirst({
       where: { id, userId },
@@ -81,10 +211,37 @@ export class ProjectsService {
       throw new NotFoundException('项目不存在或无权限访问');
     }
 
-    // 更新项目
+    const relations = await this.validateProjectAssociations(userId, data);
+    const updateData: Partial<projects> = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+    if (data.type !== undefined) {
+      updateData.type = data.type;
+    }
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+    if (data.tags !== undefined) {
+      updateData.tags = data.tags;
+    }
+    if (relations.characters !== undefined) {
+      updateData.characters = relations.characters;
+    }
+    if (relations.systems !== undefined) {
+      updateData.systems = relations.systems;
+    }
+    if (relations.worlds !== undefined) {
+      updateData.worlds = relations.worlds;
+    }
+    if (relations.misc !== undefined) {
+      updateData.misc = relations.misc;
+    }
+
     return this.prisma.projects.update({
       where: { id },
-      data,
+      data: updateData,
     });
   }
 
@@ -235,15 +392,15 @@ export class ProjectsService {
       throw new NotFoundException('项目不存在或无权限访问');
     }
 
-    // 验证所有角色设定是否存在且属于当前用户
-    const characters = await this.prisma.character_settings.findMany({
+    const normalizedIds = this.normalizeNumericSettingIds(characterIds);
+    const characters = await this.prisma.character_settings.count({
       where: {
         userId,
-        id: { in: characterIds },
+        id: { in: normalizedIds },
       },
     });
 
-    if (characters.length !== characterIds.length) {
+    if (characters !== normalizedIds.length) {
       throw new BadRequestException('部分角色设定不存在或无权限访问');
     }
 
@@ -251,7 +408,7 @@ export class ProjectsService {
     return this.prisma.projects.update({
       where: { id },
       data: {
-        characters: characterIds.map(String),
+        characters: normalizedIds.map(String),
       },
     });
   }
@@ -274,14 +431,15 @@ export class ProjectsService {
     }
 
     // 验证所有系统设定是否存在且属于当前用户
-    const systems = await this.prisma.system_settings.findMany({
+    const normalizedIds = this.normalizeNumericSettingIds(systemIds);
+    const systems = await this.prisma.system_settings.count({
       where: {
         userId,
-        id: { in: systemIds },
+        id: { in: normalizedIds },
       },
     });
 
-    if (systems.length !== systemIds.length) {
+    if (systems !== normalizedIds.length) {
       throw new BadRequestException('部分系统设定不存在或无权限访问');
     }
 
@@ -289,7 +447,7 @@ export class ProjectsService {
     return this.prisma.projects.update({
       where: { id },
       data: {
-        systems: systemIds.map(String),
+        systems: normalizedIds.map(String),
       },
     });
   }
@@ -312,14 +470,15 @@ export class ProjectsService {
     }
 
     // 验证所有世界设定是否存在且属于当前用户
-    const worlds = await this.prisma.world_settings.findMany({
+    const normalizedIds = this.normalizeNumericSettingIds(worldIds);
+    const worlds = await this.prisma.world_settings.count({
       where: {
         userId,
-        id: { in: worldIds },
+        id: { in: normalizedIds },
       },
     });
 
-    if (worlds.length !== worldIds.length) {
+    if (worlds !== normalizedIds.length) {
       throw new BadRequestException('部分世界设定不存在或无权限访问');
     }
 
@@ -327,7 +486,7 @@ export class ProjectsService {
     return this.prisma.projects.update({
       where: { id },
       data: {
-        worlds: worldIds.map(String),
+        worlds: normalizedIds.map(String),
       },
     });
   }
@@ -350,14 +509,15 @@ export class ProjectsService {
     }
 
     // 验证所有辅助设定是否存在且属于当前用户
-    const misc = await this.prisma.misc_settings.findMany({
+    const normalizedIds = this.normalizeNumericSettingIds(miscIds);
+    const misc = await this.prisma.misc_settings.count({
       where: {
         userId,
-        id: { in: miscIds },
+        id: { in: normalizedIds },
       },
     });
 
-    if (misc.length !== miscIds.length) {
+    if (misc !== normalizedIds.length) {
       throw new BadRequestException('部分辅助设定不存在或无权限访问');
     }
 
@@ -365,7 +525,7 @@ export class ProjectsService {
     return this.prisma.projects.update({
       where: { id },
       data: {
-        misc: miscIds.map(String),
+        misc: normalizedIds.map(String),
       },
     });
   }

@@ -24,7 +24,21 @@ import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { Request } from 'express';
 import type { User } from '@moge/types';
-import type { Prisma } from '../../generated/prisma';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import {
+  createProjectRequestSchema,
+  type CreateProjectRequest,
+  updateProjectRequestSchema,
+  type UpdateProjectRequest,
+  updateProjectCharactersSchema,
+  type UpdateProjectCharactersInput,
+  updateProjectSystemsSchema,
+  type UpdateProjectSystemsInput,
+  updateProjectWorldsSchema,
+  type UpdateProjectWorldsInput,
+  updateProjectMiscSchema,
+  type UpdateProjectMiscInput,
+} from './projects.schemas';
 
 // 扩展Request类型以包含用户信息
 interface AuthenticatedRequest extends Request {
@@ -144,7 +158,7 @@ export class ProjectsController {
   })
   async createProject(
     @Req() req: AuthenticatedRequest,
-    @Body() data: Omit<Prisma.projectsCreateInput, 'user'>
+    @Body(new ZodValidationPipe(createProjectRequestSchema)) data: CreateProjectRequest
   ) {
     return this.projectsService.createProject(Number(req.user.id), data);
   }
@@ -160,7 +174,7 @@ export class ProjectsController {
   async updateProject(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Prisma.projectsUpdateInput
+    @Body(new ZodValidationPipe(updateProjectRequestSchema)) data: UpdateProjectRequest
   ) {
     return this.projectsService.updateProject(Number(req.user.id), id, data);
   }
@@ -241,7 +255,7 @@ export class ProjectsController {
   async updateProjectCharacters(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { characterIds: number[] }
+    @Body(new ZodValidationPipe(updateProjectCharactersSchema)) body: UpdateProjectCharactersInput
   ) {
     return this.projectsService.updateProjectCharacters(Number(req.user.id), id, body.characterIds);
   }
@@ -273,7 +287,7 @@ export class ProjectsController {
   async updateProjectSystems(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { systemIds: number[] }
+    @Body(new ZodValidationPipe(updateProjectSystemsSchema)) body: UpdateProjectSystemsInput
   ) {
     return this.projectsService.updateProjectSystems(Number(req.user.id), id, body.systemIds);
   }
@@ -305,7 +319,7 @@ export class ProjectsController {
   async updateProjectWorlds(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { worldIds: number[] }
+    @Body(new ZodValidationPipe(updateProjectWorldsSchema)) body: UpdateProjectWorldsInput
   ) {
     return this.projectsService.updateProjectWorlds(Number(req.user.id), id, body.worldIds);
   }
@@ -337,7 +351,7 @@ export class ProjectsController {
   async updateProjectMisc(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { miscIds: number[] }
+    @Body(new ZodValidationPipe(updateProjectMiscSchema)) body: UpdateProjectMiscInput
   ) {
     return this.projectsService.updateProjectMisc(Number(req.user.id), id, body.miscIds);
   }

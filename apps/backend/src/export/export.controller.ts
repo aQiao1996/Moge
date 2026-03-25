@@ -15,6 +15,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestj
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ExportFilePayload, ExportService } from './export.service';
 import type { Response } from 'express';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { exportChaptersBatchSchema, type ExportChaptersBatchInput } from './export.schemas';
 
 interface AuthRequest {
   user?: { id: number };
@@ -112,12 +114,12 @@ export class ExportController {
   @Post('chapters/batch')
   @ApiOperation({ summary: '批量导出多个章节' })
   async exportChaptersBatch(
-    @Body() body: { chapterIds: number[]; format?: string },
+    @Body(new ZodValidationPipe(exportChaptersBatchSchema)) body: ExportChaptersBatchInput,
     @Request() req: AuthRequest
   ) {
     const userId = this.getUserId(req);
     return this.exportService.exportChaptersBatch(body.chapterIds, userId, {
-      format: (body.format || 'txt') as 'txt' | 'markdown',
+      format: body.format || 'txt',
     });
   }
 

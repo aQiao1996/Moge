@@ -18,17 +18,10 @@ import {
   type ChangePasswordData,
 } from '@moge/types';
 import { Public } from '../common/decorators/public.decorator';
+import { gitlabLoginSchema, type GitlabLoginData } from './auth.schemas';
 
 interface AuthenticatedRequest extends Request {
   user: User;
-}
-
-interface GitlabLoginData {
-  provider: string;
-  providerAccountId: string;
-  email: string;
-  name?: string;
-  avatarUrl?: string;
 }
 
 @ApiTags('认证')
@@ -64,7 +57,7 @@ export class AuthController {
   @ApiOperation({ summary: 'GitLab 登录' })
   @ApiResponse({ status: 200, description: 'GitLab 登录成功' })
   @ApiResponse({ status: 400, description: 'GitLab 登录失败' })
-  async gitlabLogin(@Body() gitlabData: GitlabLoginData) {
+  async gitlabLogin(@Body(new ZodValidationPipe(gitlabLoginSchema)) gitlabData: GitlabLoginData) {
     return this.authService.gitlabLogin(
       gitlabData.provider,
       gitlabData.providerAccountId,

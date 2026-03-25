@@ -18,6 +18,7 @@ import { MessageEvent } from '@nestjs/common';
 import { SensitiveFilterService, FilterLevel } from '../sensitive-filter/sensitive-filter.service';
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
 import { MarkdownParserService, ParsedOutlineStructure } from './markdown-parser.service';
+import type { OutlineChapterInput, OutlineVolumeInput } from './outline.schemas';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -65,6 +66,118 @@ export class OutlineService extends BaseService {
     private readonly markdownParser: MarkdownParserService
   ) {
     super();
+  }
+
+  private parseUserId(userId: string): number {
+    const numericUserId = Number(userId);
+
+    if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
+      throw new BadRequestException('用户信息无效');
+    }
+
+    return numericUserId;
+  }
+
+  private normalizeSettingIds(ids: number[]): number[] {
+    return Array.from(
+      new Set(
+        ids.map((id) => {
+          if (!Number.isInteger(id) || id <= 0) {
+            throw new BadRequestException('设定 ID 格式不正确');
+          }
+
+          return id;
+        })
+      )
+    );
+  }
+
+  private async assertOutlineCharactersOwned(userId: string, ids: number[]) {
+    const numericUserId = this.parseUserId(userId);
+    const normalizedIds = this.normalizeSettingIds(ids);
+
+    if (normalizedIds.length === 0) {
+      return normalizedIds;
+    }
+
+    const count = await this.prisma.character_settings.count({
+      where: {
+        userId: numericUserId,
+        id: { in: normalizedIds },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分角色设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertOutlineSystemsOwned(userId: string, ids: number[]) {
+    const numericUserId = this.parseUserId(userId);
+    const normalizedIds = this.normalizeSettingIds(ids);
+
+    if (normalizedIds.length === 0) {
+      return normalizedIds;
+    }
+
+    const count = await this.prisma.system_settings.count({
+      where: {
+        userId: numericUserId,
+        id: { in: normalizedIds },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分系统设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertOutlineWorldsOwned(userId: string, ids: number[]) {
+    const numericUserId = this.parseUserId(userId);
+    const normalizedIds = this.normalizeSettingIds(ids);
+
+    if (normalizedIds.length === 0) {
+      return normalizedIds;
+    }
+
+    const count = await this.prisma.world_settings.count({
+      where: {
+        userId: numericUserId,
+        id: { in: normalizedIds },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分世界设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
+  }
+
+  private async assertOutlineMiscOwned(userId: string, ids: number[]) {
+    const numericUserId = this.parseUserId(userId);
+    const normalizedIds = this.normalizeSettingIds(ids);
+
+    if (normalizedIds.length === 0) {
+      return normalizedIds;
+    }
+
+    const count = await this.prisma.misc_settings.count({
+      where: {
+        userId: numericUserId,
+        id: { in: normalizedIds },
+      },
+    });
+
+    if (count !== normalizedIds.length) {
+      throw new BadRequestException('部分辅助设定不存在或无权限访问');
+    }
+
+    return normalizedIds;
   }
 
   /**
@@ -1041,7 +1154,7 @@ export class OutlineService extends BaseService {
     outlineId: number,
     volumeId: number,
     userId: string,
-    data: { title: string; description?: string }
+    data: OutlineVolumeInput
   ) {
     // 验证大纲权限
     await this.findOne(outlineId, userId);
@@ -1092,7 +1205,7 @@ export class OutlineService extends BaseService {
     outlineId: number,
     chapterId: number,
     userId: string,
-    data: { title: string; content?: string }
+    data: OutlineChapterInput
   ) {
     // 验证大纲权限
     await this.findOne(outlineId, userId);
@@ -1314,10 +1427,10 @@ export class OutlineService extends BaseService {
 
     // 并行获取所有关联的设定
     const [characters, systems, worlds, misc] = await Promise.all([
-      this.getCharactersByIds(outline.characters || []),
-      this.getSystemsByIds(outline.systems || []),
-      this.getWorldsByIds(outline.worlds || []),
-      this.getMiscByIds(outline.misc || []),
+      this.getCharactersByIds(outline.characters || [], userId),
+      this.getSystemsByIds(outline.systems || [], userId),
+      this.getWorldsByIds(outline.worlds || [], userId),
+      this.getMiscByIds(outline.misc || [], userId),
     ]);
 
     return {
@@ -1337,12 +1450,13 @@ export class OutlineService extends BaseService {
   async updateOutlineCharacters(outlineId: number, userId: string, characterIds: number[]) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
+    const normalizedIds = await this.assertOutlineCharactersOwned(userId, characterIds);
 
     // 更新关联
     const updated = await this.prisma.outline.update({
       where: { id: outlineId },
       data: {
-        characters: characterIds.map(String),
+        characters: normalizedIds.map(String),
       },
     });
 
@@ -1362,12 +1476,13 @@ export class OutlineService extends BaseService {
   async updateOutlineSystems(outlineId: number, userId: string, systemIds: number[]) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
+    const normalizedIds = await this.assertOutlineSystemsOwned(userId, systemIds);
 
     // 更新关联
     const updated = await this.prisma.outline.update({
       where: { id: outlineId },
       data: {
-        systems: systemIds.map(String),
+        systems: normalizedIds.map(String),
       },
     });
 
@@ -1387,12 +1502,13 @@ export class OutlineService extends BaseService {
   async updateOutlineWorlds(outlineId: number, userId: string, worldIds: number[]) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
+    const normalizedIds = await this.assertOutlineWorldsOwned(userId, worldIds);
 
     // 更新关联
     const updated = await this.prisma.outline.update({
       where: { id: outlineId },
       data: {
-        worlds: worldIds.map(String),
+        worlds: normalizedIds.map(String),
       },
     });
 
@@ -1412,12 +1528,13 @@ export class OutlineService extends BaseService {
   async updateOutlineMisc(outlineId: number, userId: string, miscIds: number[]) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
+    const normalizedIds = await this.assertOutlineMiscOwned(userId, miscIds);
 
     // 更新关联
     const updated = await this.prisma.outline.update({
       where: { id: outlineId },
       data: {
-        misc: miscIds.map(String),
+        misc: normalizedIds.map(String),
       },
     });
 
@@ -1433,10 +1550,11 @@ export class OutlineService extends BaseService {
    * @param ids 角色设定 ID 数组（字符串格式）
    * @returns 角色设定列表
    */
-  private async getCharactersByIds(ids: string[]) {
+  private async getCharactersByIds(ids: string[], userId: string) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.character_settings.findMany({
       where: {
+        userId: this.parseUserId(userId),
         id: { in: ids.map(Number) },
       },
     });
@@ -1447,10 +1565,11 @@ export class OutlineService extends BaseService {
    * @param ids 系统设定 ID 数组（字符串格式）
    * @returns 系统设定列表
    */
-  private async getSystemsByIds(ids: string[]) {
+  private async getSystemsByIds(ids: string[], userId: string) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.system_settings.findMany({
       where: {
+        userId: this.parseUserId(userId),
         id: { in: ids.map(Number) },
       },
     });
@@ -1461,10 +1580,11 @@ export class OutlineService extends BaseService {
    * @param ids 世界设定 ID 数组（字符串格式）
    * @returns 世界设定列表
    */
-  private async getWorldsByIds(ids: string[]) {
+  private async getWorldsByIds(ids: string[], userId: string) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.world_settings.findMany({
       where: {
+        userId: this.parseUserId(userId),
         id: { in: ids.map(Number) },
       },
     });
@@ -1475,10 +1595,11 @@ export class OutlineService extends BaseService {
    * @param ids 辅助设定 ID 数组（字符串格式）
    * @returns 辅助设定列表
    */
-  private async getMiscByIds(ids: string[]) {
+  private async getMiscByIds(ids: string[], userId: string) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.misc_settings.findMany({
       where: {
+        userId: this.parseUserId(userId),
         id: { in: ids.map(Number) },
       },
     });
@@ -1490,11 +1611,7 @@ export class OutlineService extends BaseService {
    * @param userId 用户 ID
    * @param data 卷信息
    */
-  async createVolume(
-    outlineId: number,
-    userId: string,
-    data: { title: string; description?: string }
-  ) {
+  async createVolume(outlineId: number, userId: string, data: OutlineVolumeInput) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
 
@@ -1541,11 +1658,7 @@ export class OutlineService extends BaseService {
    * @param userId 用户 ID
    * @param data 章节信息
    */
-  async createChapter(
-    outlineId: number,
-    userId: string,
-    data: { title: string; content?: string }
-  ) {
+  async createChapter(outlineId: number, userId: string, data: OutlineChapterInput) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);
 
@@ -1628,7 +1741,7 @@ export class OutlineService extends BaseService {
     outlineId: number,
     volumeId: number,
     userId: string,
-    data: { title: string; content?: string }
+    data: OutlineChapterInput
   ) {
     // 验证大纲所有权
     await this.findOne(outlineId, userId);

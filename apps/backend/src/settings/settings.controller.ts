@@ -24,8 +24,25 @@ import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { Request } from 'express';
 import type { User } from '@moge/types';
-import type { Prisma } from '../../generated/prisma';
-import type { CreateWorldDto, UpdateWorldDto } from './dto/world.dto';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import {
+  createCharacterRequestSchema,
+  type CreateCharacterRequest,
+  updateCharacterRequestSchema,
+  type UpdateCharacterRequest,
+  createSystemRequestSchema,
+  type CreateSystemRequest,
+  updateSystemRequestSchema,
+  type UpdateSystemRequest,
+  createWorldRequestSchema,
+  type CreateWorldRequest,
+  updateWorldRequestSchema,
+  type UpdateWorldRequest,
+  createMiscRequestSchema,
+  type CreateMiscRequest,
+  updateMiscRequestSchema,
+  type UpdateMiscRequest,
+} from './settings.schemas';
 
 // 扩展Request类型以包含用户信息
 interface AuthenticatedRequest extends Request {
@@ -251,7 +268,7 @@ export class SettingsController {
   })
   async createCharacter(
     @Req() req: AuthenticatedRequest,
-    @Body() data: Omit<Prisma.character_settingsCreateInput, 'user'>
+    @Body(new ZodValidationPipe(createCharacterRequestSchema)) data: CreateCharacterRequest
   ) {
     return this.settingsService.createCharacter(Number(req.user.id), data);
   }
@@ -266,7 +283,7 @@ export class SettingsController {
   async updateCharacter(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Prisma.character_settingsUpdateInput
+    @Body(new ZodValidationPipe(updateCharacterRequestSchema)) data: UpdateCharacterRequest
   ) {
     return this.settingsService.updateCharacter(Number(req.user.id), id, data);
   }
@@ -357,7 +374,7 @@ export class SettingsController {
   })
   async createSystem(
     @Req() req: AuthenticatedRequest,
-    @Body() data: Omit<Prisma.system_settingsCreateInput, 'user'>
+    @Body(new ZodValidationPipe(createSystemRequestSchema)) data: CreateSystemRequest
   ) {
     return this.settingsService.createSystem(Number(req.user.id), data);
   }
@@ -372,7 +389,7 @@ export class SettingsController {
   async updateSystem(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Prisma.system_settingsUpdateInput
+    @Body(new ZodValidationPipe(updateSystemRequestSchema)) data: UpdateSystemRequest
   ) {
     return this.settingsService.updateSystem(Number(req.user.id), id, data);
   }
@@ -462,7 +479,10 @@ export class SettingsController {
       },
     },
   })
-  async createWorld(@Req() req: AuthenticatedRequest, @Body() data: CreateWorldDto) {
+  async createWorld(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createWorldRequestSchema)) data: CreateWorldRequest
+  ) {
     return this.settingsService.createWorld(Number(req.user.id), data);
   }
 
@@ -476,7 +496,7 @@ export class SettingsController {
   async updateWorld(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: UpdateWorldDto
+    @Body(new ZodValidationPipe(updateWorldRequestSchema)) data: UpdateWorldRequest
   ) {
     return this.settingsService.updateWorld(Number(req.user.id), id, data);
   }
@@ -541,7 +561,7 @@ export class SettingsController {
   })
   async createMisc(
     @Req() req: AuthenticatedRequest,
-    @Body() data: Omit<Prisma.misc_settingsCreateInput, 'user'>
+    @Body(new ZodValidationPipe(createMiscRequestSchema)) data: CreateMiscRequest
   ) {
     return this.settingsService.createMisc(Number(req.user.id), data);
   }
@@ -556,7 +576,7 @@ export class SettingsController {
   async updateMisc(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Prisma.misc_settingsUpdateInput
+    @Body(new ZodValidationPipe(updateMiscRequestSchema)) data: UpdateMiscRequest
   ) {
     return this.settingsService.updateMisc(Number(req.user.id), id, data);
   }

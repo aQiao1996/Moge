@@ -30,6 +30,22 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import {
+  updateOutlineContentSchema,
+  type UpdateOutlineContentInput,
+  outlineVolumeSchema,
+  type OutlineVolumeInput,
+  outlineChapterSchema,
+  type OutlineChapterInput,
+  updateOutlineCharactersSchema,
+  type UpdateOutlineCharactersInput,
+  updateOutlineSystemsSchema,
+  type UpdateOutlineSystemsInput,
+  updateOutlineWorldsSchema,
+  type UpdateOutlineWorldsInput,
+  updateOutlineMiscSchema,
+  type UpdateOutlineMiscInput,
+} from './outline.schemas';
 
 import type { Outline, User } from '@moge/types';
 
@@ -168,7 +184,7 @@ export class OutlineController {
   async updateContent(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { content: string }
+    @Body(new ZodValidationPipe(updateOutlineContentSchema)) data: UpdateOutlineContentInput
   ): Promise<unknown> {
     const userId = req.user.id;
     return this.outlineService.updateContent(id, userId, data.content);
@@ -197,7 +213,7 @@ export class OutlineController {
     @Param('id', ParseIntPipe) id: number,
     @Param('volumeId', ParseIntPipe) volumeId: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; description?: string }
+    @Body(new ZodValidationPipe(outlineVolumeSchema)) data: OutlineVolumeInput
   ): Promise<unknown> {
     const userId = req.user.id;
     return this.outlineService.updateVolume(id, volumeId, userId, data);
@@ -226,7 +242,7 @@ export class OutlineController {
     @Param('id', ParseIntPipe) id: number,
     @Param('chapterId', ParseIntPipe) chapterId: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; content?: string }
+    @Body(new ZodValidationPipe(outlineChapterSchema)) data: OutlineChapterInput
   ): Promise<unknown> {
     const userId = req.user.id;
     return this.outlineService.updateChapter(id, chapterId, userId, data);
@@ -315,7 +331,7 @@ export class OutlineController {
   async updateOutlineCharacters(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { characters: number[] }
+    @Body(new ZodValidationPipe(updateOutlineCharactersSchema)) data: UpdateOutlineCharactersInput
   ) {
     const userId = req.user.id;
     return this.outlineService.updateOutlineCharacters(id, userId, data.characters);
@@ -344,7 +360,7 @@ export class OutlineController {
   async updateOutlineSystems(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { systems: number[] }
+    @Body(new ZodValidationPipe(updateOutlineSystemsSchema)) data: UpdateOutlineSystemsInput
   ) {
     const userId = req.user.id;
     return this.outlineService.updateOutlineSystems(id, userId, data.systems);
@@ -373,7 +389,7 @@ export class OutlineController {
   async updateOutlineWorlds(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { worlds: number[] }
+    @Body(new ZodValidationPipe(updateOutlineWorldsSchema)) data: UpdateOutlineWorldsInput
   ) {
     const userId = req.user.id;
     return this.outlineService.updateOutlineWorlds(id, userId, data.worlds);
@@ -402,7 +418,7 @@ export class OutlineController {
   async updateOutlineMisc(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { misc: number[] }
+    @Body(new ZodValidationPipe(updateOutlineMiscSchema)) data: UpdateOutlineMiscInput
   ) {
     const userId = req.user.id;
     return this.outlineService.updateOutlineMisc(id, userId, data.misc);
@@ -432,7 +448,7 @@ export class OutlineController {
   async createVolume(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; description?: string }
+    @Body(new ZodValidationPipe(outlineVolumeSchema)) data: OutlineVolumeInput
   ) {
     const userId = req.user.id;
     return this.outlineService.createVolume(id, userId, data);
@@ -462,7 +478,7 @@ export class OutlineController {
   async createChapter(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; content?: string }
+    @Body(new ZodValidationPipe(outlineChapterSchema)) data: OutlineChapterInput
   ) {
     const userId = req.user.id;
     return this.outlineService.createChapter(id, userId, data);
@@ -494,7 +510,7 @@ export class OutlineController {
     @Param('id', ParseIntPipe) id: number,
     @Param('volumeId', ParseIntPipe) volumeId: number,
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; content?: string }
+    @Body(new ZodValidationPipe(outlineChapterSchema)) data: OutlineChapterInput
   ) {
     const userId = req.user.id;
     return this.outlineService.createChapterInVolume(id, volumeId, userId, data);

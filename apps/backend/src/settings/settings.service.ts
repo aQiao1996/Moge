@@ -8,7 +8,16 @@ import type {
   projects,
   Prisma,
 } from '../../generated/prisma';
-import type { CreateWorldDto, UpdateWorldDto } from './dto/world.dto';
+import type {
+  CreateCharacterRequest,
+  UpdateCharacterRequest,
+  CreateSystemRequest,
+  UpdateSystemRequest,
+  CreateWorldRequest,
+  UpdateWorldRequest,
+  CreateMiscRequest,
+  UpdateMiscRequest,
+} from './settings.schemas';
 
 /**
  * 设定库服务
@@ -75,13 +84,23 @@ export class SettingsService {
    * @param data 角色设定数据
    * @returns 创建的角色设定
    */
-  async createCharacter(
-    userId: number,
-    data: Omit<Prisma.character_settingsCreateInput, 'user'>
-  ): Promise<character_settings> {
+  async createCharacter(userId: number, data: CreateCharacterRequest): Promise<character_settings> {
     return this.prisma.character_settings.create({
       data: {
-        ...data,
+        name: data.name ?? '',
+        type: data.type,
+        gender: data.gender,
+        age: data.age,
+        height: data.height,
+        appearance: data.appearance,
+        personality: data.personality,
+        background: data.background,
+        occupation: data.occupation,
+        powerLevel: data.powerLevel,
+        abilities: data.abilities,
+        relationships: data.relationships,
+        tags: data.tags ?? [],
+        remarks: data.remarks,
         user: {
           connect: { id: userId },
         },
@@ -99,7 +118,7 @@ export class SettingsService {
   async updateCharacter(
     userId: number,
     id: number,
-    data: Prisma.character_settingsUpdateInput
+    data: UpdateCharacterRequest
   ): Promise<character_settings> {
     // 检查角色是否存在且属于当前用户
     const character = await this.prisma.character_settings.findFirst({
@@ -204,13 +223,21 @@ export class SettingsService {
    * @param data 系统设定数据
    * @returns 创建的系统设定
    */
-  async createSystem(
-    userId: number,
-    data: Omit<Prisma.system_settingsCreateInput, 'user'>
-  ): Promise<system_settings> {
+  async createSystem(userId: number, data: CreateSystemRequest): Promise<system_settings> {
     return this.prisma.system_settings.create({
       data: {
-        ...data,
+        name: data.name ?? '',
+        type: data.type,
+        description: data.description,
+        modules: data.modules,
+        levels: data.levels,
+        items: data.items,
+        parameters: data.parameters,
+        rules: data.rules,
+        triggers: data.triggers,
+        constraints: data.constraints,
+        tags: data.tags ?? [],
+        remarks: data.remarks,
         user: {
           connect: { id: userId },
         },
@@ -228,7 +255,7 @@ export class SettingsService {
   async updateSystem(
     userId: number,
     id: number,
-    data: Prisma.system_settingsUpdateInput
+    data: UpdateSystemRequest
   ): Promise<system_settings> {
     // 检查系统设定是否存在且属于当前用户
     const system = await this.prisma.system_settings.findFirst({
@@ -333,7 +360,7 @@ export class SettingsService {
    * @returns 数据库所需的 JSON 格式数据
    */
   private transformWorldDtoToPrisma(
-    dto: CreateWorldDto | UpdateWorldDto
+    dto: CreateWorldRequest | UpdateWorldRequest
   ): Omit<Prisma.world_settingsCreateInput, 'user'> {
     const {
       // 提取扁平字段
@@ -515,7 +542,7 @@ export class SettingsService {
    * @param dto 世界设定数据（扁平格式）
    * @returns 创建的世界设定（扁平格式）
    */
-  async createWorld(userId: number, dto: CreateWorldDto): Promise<world_settings> {
+  async createWorld(userId: number, dto: CreateWorldRequest): Promise<world_settings> {
     // 将扁平字段转换为数据库 JSON 格式
     const prismaData = this.transformWorldDtoToPrisma(dto);
 
@@ -539,7 +566,7 @@ export class SettingsService {
    * @param dto 更新的世界设定数据（扁平格式）
    * @returns 更新后的世界设定（扁平格式）
    */
-  async updateWorld(userId: number, id: number, dto: UpdateWorldDto): Promise<world_settings> {
+  async updateWorld(userId: number, id: number, dto: UpdateWorldRequest): Promise<world_settings> {
     // 检查世界设定是否存在且属于当前用户
     const world = await this.prisma.world_settings.findFirst({
       where: { id, userId },
@@ -649,13 +676,20 @@ export class SettingsService {
    * @param data 辅助设定数据
    * @returns 创建的辅助设定
    */
-  async createMisc(
-    userId: number,
-    data: Omit<Prisma.misc_settingsCreateInput, 'user'>
-  ): Promise<misc_settings> {
+  async createMisc(userId: number, data: CreateMiscRequest): Promise<misc_settings> {
     return this.prisma.misc_settings.create({
       data: {
-        ...data,
+        name: data.name ?? '',
+        type: data.type,
+        description: data.description,
+        inspirations: data.inspirations,
+        references: data.references,
+        notes: data.notes,
+        terminology: data.terminology,
+        templates: data.templates,
+        projectTags: data.projectTags,
+        tags: data.tags ?? [],
+        remarks: data.remarks,
         user: {
           connect: { id: userId },
         },
@@ -670,11 +704,7 @@ export class SettingsService {
    * @param data 更新的辅助设定数据
    * @returns 更新后的辅助设定
    */
-  async updateMisc(
-    userId: number,
-    id: number,
-    data: Prisma.misc_settingsUpdateInput
-  ): Promise<misc_settings> {
+  async updateMisc(userId: number, id: number, data: UpdateMiscRequest): Promise<misc_settings> {
     // 检查辅助设定是否存在且属于当前用户
     const misc = await this.prisma.misc_settings.findFirst({
       where: { id, userId },

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildWritingDeltaEvents } from '../common/writing-stats.util';
 
 /**
  * 工作台服务
@@ -8,6 +9,61 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class WorkspaceService {
   constructor(private prisma: PrismaService) {}
+
+  private getWritingChapterScope(userId: number) {
+    return {
+      OR: [
+        {
+          manuscript: {
+            userId,
+            deletedAt: null,
+          },
+        },
+        {
+          volume: {
+            manuscript: {
+              userId,
+              deletedAt: null,
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  private async getWritingEvents(userId: number) {
+    const chapterScope = this.getWritingChapterScope(userId);
+
+    const [currentContents, versionRecords] = await Promise.all([
+      this.prisma.manuscript_chapter_content.findMany({
+        where: {
+          chapter: chapterScope,
+        },
+        select: {
+          id: true,
+          version: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.manuscript_chapter_content_version.findMany({
+        where: {
+          contentRecord: {
+            chapter: chapterScope,
+          },
+        },
+        select: {
+          contentId: true,
+          version: true,
+          content: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return buildWritingDeltaEvents(currentContents, versionRecords);
+  }
 
   /**
    * 获取最近的项目
@@ -84,53 +140,23 @@ export class WorkspaceService {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
+    weekAgo.setDate(weekAgo.getDate() - 6);
+    const writingEvents = await this.getWritingEvents(userId);
 
-    // 获取今日写作字数
-    const todayChapters = await this.prisma.manuscript_chapter_content.findMany({
-      where: {
-        chapter: {
-          manuscript: {
-            userId,
-          },
-        },
-        updatedAt: {
-          gte: today,
-        },
-      },
-      select: {
-        content: true,
-        chapterId: true,
-      },
-    });
+    const todayWords = writingEvents.reduce((sum, event) => {
+      if (event.occurredAt < today) {
+        return sum;
+      }
 
-    // 计算今日字数
-    const todayWords = todayChapters.reduce((sum, ch) => {
-      const cleanContent = ch.content.replace(/[#*_`~[\]()]/g, '').replace(/\s+/g, '');
-      return sum + cleanContent.length;
+      return sum + event.words;
     }, 0);
 
-    // 获取本周写作字数
-    const weekChapters = await this.prisma.manuscript_chapter_content.findMany({
-      where: {
-        chapter: {
-          manuscript: {
-            userId,
-          },
-        },
-        updatedAt: {
-          gte: weekAgo,
-        },
-      },
-      select: {
-        content: true,
-      },
-    });
+    const weekWords = writingEvents.reduce((sum, event) => {
+      if (event.occurredAt < weekAgo) {
+        return sum;
+      }
 
-    // 计算本周字数
-    const weekWords = weekChapters.reduce((sum, ch) => {
-      const cleanContent = ch.content.replace(/[#*_`~[\]()]/g, '').replace(/\s+/g, '');
-      return sum + cleanContent.length;
+      return sum + event.words;
     }, 0);
 
     // 获取总字数
