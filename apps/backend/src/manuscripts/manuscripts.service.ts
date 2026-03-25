@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateManuscriptDto,
@@ -396,7 +402,7 @@ export class ManuscriptsService {
     }
 
     if (outline.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this outline');
+      throw new ForbiddenException('无权访问该大纲');
     }
     const relations = await this.validateManuscriptAssociations(userId, {
       projectId: dto.projectId,
@@ -610,7 +616,7 @@ export class ManuscriptsService {
     }
 
     if (volume.manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this volume');
+      throw new ForbiddenException('无权访问该卷');
     }
 
     return this.prisma.manuscript_volume.update({
@@ -636,7 +642,7 @@ export class ManuscriptsService {
     }
 
     if (volume.manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this volume');
+      throw new ForbiddenException('无权访问该卷');
     }
 
     return this.runLockedTransaction([this.getManuscriptLock(volume.manuscript.id)], async (tx) => {
@@ -678,7 +684,7 @@ export class ManuscriptsService {
       }
 
       if (volume.manuscript.userId !== userId) {
-        throw new BadRequestException('You do not have permission to access this volume');
+        throw new ForbiddenException('无权访问该卷');
       }
 
       locks = [this.getVolumeLock(dto.volumeId)];
@@ -727,7 +733,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     return this.prisma.manuscript_chapter.update({
@@ -748,7 +754,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
@@ -779,7 +785,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     return chapter.content;
@@ -797,7 +803,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
@@ -866,7 +872,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
@@ -902,7 +908,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
@@ -951,7 +957,7 @@ export class ManuscriptsService {
     for (const chapter of chapters) {
       const manuscript = chapter.manuscript || chapter.volume?.manuscript;
       if (!manuscript || manuscript.userId !== userId) {
-        throw new BadRequestException('You do not have permission to publish these chapters');
+        throw new ForbiddenException('无权发布这些章节');
       }
       manuscriptIds.add(manuscript.id);
     }
@@ -1170,7 +1176,7 @@ export class ManuscriptsService {
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     // 获取设定上下文
@@ -1243,7 +1249,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     // 构建 AI 提示词
@@ -1308,7 +1314,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     // 获取设定上下文
@@ -1428,7 +1434,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     if (!chapter.content) {
@@ -1460,7 +1466,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
     if (!manuscript || manuscript.userId !== userId) {
-      throw new BadRequestException('You do not have permission to access this chapter');
+      throw new ForbiddenException('无权访问该章节');
     }
 
     if (!chapter.content) {
@@ -1476,7 +1482,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 
       const currentManuscript = currentChapter.manuscript || currentChapter.volume?.manuscript;
       if (!currentManuscript || currentManuscript.userId !== userId) {
-        throw new BadRequestException('You do not have permission to access this chapter');
+        throw new ForbiddenException('无权访问该章节');
       }
 
       if (!currentChapter.content) {
@@ -1656,7 +1662,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     // 验证权限
     for (const volume of volumes) {
       if (volume.manuscript.userId !== userId) {
-        throw new BadRequestException('You do not have permission to reorder these volumes');
+        throw new ForbiddenException('无权排序这些卷');
       }
     }
 
@@ -1747,7 +1753,7 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     for (const chapter of chapters) {
       const manuscript = chapter.manuscript || chapter.volume?.manuscript;
       if (!manuscript || manuscript.userId !== userId) {
-        throw new BadRequestException('You do not have permission to reorder these chapters');
+        throw new ForbiddenException('无权排序这些章节');
       }
     }
 

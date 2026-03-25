@@ -23,6 +23,7 @@ interface OutlineState {
     search?: string;
     type?: string;
     era?: string;
+    status?: Outline['status'];
     tags?: string[];
     sortBy?: 'name' | 'createdAt' | 'type';
     sortOrder?: 'asc' | 'desc';

@@ -134,7 +134,7 @@ export default function Home() {
    */
   useEffect(() => {
     // 状态映射：前端显示文本 -> 后端枚举值
-    const statusMap: Record<string, string> = {
+    const statusMap: Partial<Record<string, Outline['status']>> = {
       草稿: 'DRAFT',
       已完成: 'PUBLISHED',
       已放弃: 'DISCARDED',
@@ -149,7 +149,7 @@ export default function Home() {
       status: (() => {
         if (!filters.status) return undefined;
         const statusValue = filters.status as string;
-        return statusMap[statusValue] ?? statusValue;
+        return statusMap[statusValue];
       })(),
       tags: (filters.tags as string[]).length > 0 ? (filters.tags as string[]) : undefined,
       sortBy: filters.sortBy as 'createdAt' | 'name' | 'type',

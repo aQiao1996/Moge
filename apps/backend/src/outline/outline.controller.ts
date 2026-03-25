@@ -30,6 +30,8 @@ import {
   updateOutlineContentSchema,
   type UpdateOutlineContentInput,
   updateOutlineRequestSchema,
+  outlineListQuerySchema,
+  type OutlineListQueryInput,
   outlineVolumeSchema,
   type OutlineVolumeInput,
   outlineChapterSchema,
@@ -42,9 +44,12 @@ import {
   type UpdateOutlineWorldsInput,
   updateOutlineMiscSchema,
   type UpdateOutlineMiscInput,
+  OUTLINE_STATUS_VALUES,
+  OUTLINE_SORT_BY_VALUES,
+  OUTLINE_SORT_ORDER_VALUES,
 } from './outline.schemas';
 
-import type { Outline, User } from '@moge/types';
+import type { User } from '@moge/types';
 
 interface AuthenticatedRequest extends Request {
   user: User;
@@ -99,48 +104,44 @@ export class OutlineController {
   @ApiQuery({ name: 'search', required: false, type: String, description: '搜索关键词' })
   @ApiQuery({ name: 'type', required: false, type: String, description: '大纲类型' })
   @ApiQuery({ name: 'era', required: false, type: String, description: '时代' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: OUTLINE_STATUS_VALUES,
+    description: '大纲状态',
+  })
   @ApiQuery({ name: 'tags', required: false, type: [String], description: '标签' })
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['name', 'createdAt', 'type'],
+    enum: OUTLINE_SORT_BY_VALUES,
     description: '排序字段',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
-    enum: ['asc', 'desc'],
+    enum: OUTLINE_SORT_ORDER_VALUES,
     description: '排序方向',
   })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 400, description: '查询参数不合法' })
   @ApiUnauthorizedResponse({ description: '未授权' })
   async findAll(
     @Request() req: AuthenticatedRequest,
-    @Query('pageNum') pageNum?: number,
-    @Query('pageSize') pageSize?: number,
-    @Query('search') search?: string,
-    @Query('type') type?: string,
-    @Query('era') era?: string,
-    @Query('status') status?: Outline['status'],
-    @Query('tags') tags?: string | string[],
-    @Query('sortBy') sortBy?: 'name' | 'createdAt' | 'type',
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc'
+    @Query(new ZodValidationPipe(outlineListQuerySchema)) query: OutlineListQueryInput
   ) {
     const userId = req.user.id;
 
-    // 处理 tags 参数（可能是字符串或数组）
-    const tagsArray = tags ? (Array.isArray(tags) ? tags : [tags]) : undefined;
-
     return this.outlineService.findAll(userId, {
-      pageNum,
-      pageSize,
-      search,
-      type,
-      era,
-      status,
-      tags: tagsArray,
-      sortBy,
-      sortOrder,
+      pageNum: query.pageNum,
+      pageSize: query.pageSize,
+      search: query.search,
+      type: query.type,
+      era: query.era,
+      status: query.status,
+      tags: query.tags,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 
@@ -150,6 +151,7 @@ export class OutlineController {
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
@@ -162,6 +164,7 @@ export class OutlineController {
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async findDetail(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;

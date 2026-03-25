@@ -19,9 +19,9 @@ export type CreateOutlineValues = z.infer<typeof createOutlineSchema>;
 export const outlineSchema = createOutlineSchema.extend({
   id: z.string(),
   status: z.enum(['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED']),
-  userId: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type Outline = z.infer<typeof outlineSchema>;
@@ -32,9 +32,9 @@ export const outlineVolumeSchema = z.object({
   outlineId: z.string(),
   title: z.string(),
   description: z.string().nullable().optional(),
-  sortOrder: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  sortOrder: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type OutlineVolume = z.infer<typeof outlineVolumeSchema>;
@@ -45,8 +45,8 @@ export const outlineChapterContentSchema = z.object({
   chapterId: z.string(),
   content: z.string(),
   version: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type OutlineChapterContent = z.infer<typeof outlineChapterContentSchema>;
@@ -57,9 +57,9 @@ export const outlineChapterSchema = z.object({
   outlineId: z.string().nullable().optional(),
   volumeId: z.string().nullable().optional(),
   title: z.string(),
-  sortOrder: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  sortOrder: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   content: outlineChapterContentSchema.nullable().optional(),
 });
 
@@ -80,8 +80,8 @@ export const outlineWithStructureSchema = outlineSchema.extend({
       outlineId: z.string(),
       content: z.string(),
       version: z.number(),
-      createdAt: z.date(),
-      updatedAt: z.date(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
     })
     .nullable()
     .optional(),
