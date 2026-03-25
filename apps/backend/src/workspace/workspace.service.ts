@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildWritingDeltaEvents } from '../common/writing-stats.util';
+import {
+  buildRecentDateKeySet,
+  buildWritingDeltaEvents,
+  getDateKeyInTimeZone,
+} from '../common/writing-stats.util';
 
 /**
  * 工作台服务
@@ -137,14 +141,12 @@ export class WorkspaceService {
    * @param userId 用户ID
    */
   async getWritingStats(userId: number) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 6);
+    const todayKey = getDateKeyInTimeZone(new Date());
+    const recentDateKeys = buildRecentDateKeySet(7);
     const writingEvents = await this.getWritingEvents(userId);
 
     const todayWords = writingEvents.reduce((sum, event) => {
-      if (event.occurredAt < today) {
+      if (getDateKeyInTimeZone(event.occurredAt) !== todayKey) {
         return sum;
       }
 
@@ -152,7 +154,7 @@ export class WorkspaceService {
     }, 0);
 
     const weekWords = writingEvents.reduce((sum, event) => {
-      if (event.occurredAt < weekAgo) {
+      if (!recentDateKeys.has(getDateKeyInTimeZone(event.occurredAt))) {
         return sum;
       }
 

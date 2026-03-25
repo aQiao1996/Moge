@@ -18,8 +18,45 @@ export interface WritingDeltaEvent {
   words: number;
 }
 
+const WRITING_STATS_TIME_ZONE = 'Asia/Shanghai';
+
 export function countWrittenWords(content: string): number {
   return content.replace(/\s/g, '').length;
+}
+
+export function getDateKeyInTimeZone(date: Date, timeZone = WRITING_STATS_TIME_ZONE): string {
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  if (!year || !month || !day) {
+    throw new Error('无法生成日期键');
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+export function buildRecentDateKeySet(
+  days: number,
+  baseDate = new Date(),
+  timeZone = WRITING_STATS_TIME_ZONE
+): Set<string> {
+  const keys = new Set<string>();
+
+  for (let offset = 0; offset < days; offset += 1) {
+    const date = new Date(baseDate);
+    date.setDate(date.getDate() - offset);
+    keys.add(getDateKeyInTimeZone(date, timeZone));
+  }
+
+  return keys;
 }
 
 export function buildWritingDeltaEvents(

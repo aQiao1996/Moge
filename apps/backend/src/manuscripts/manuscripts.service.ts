@@ -13,7 +13,12 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { AIService } from '../ai/ai.service';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { buildWritingDeltaEvents, countWrittenWords } from '../common/writing-stats.util';
+import {
+  buildRecentDateKeySet,
+  buildWritingDeltaEvents,
+  countWrittenWords,
+  getDateKeyInTimeZone,
+} from '../common/writing-stats.util';
 
 /**
  * 文稿服务
@@ -575,10 +580,17 @@ export class ManuscriptsService {
    * 创建章节
    */
   async createChapter(dto: CreateChapterDto, userId: number) {
+    const hasManuscriptId = dto.manuscriptId !== undefined;
+    const hasVolumeId = dto.volumeId !== undefined;
+
+    if (hasManuscriptId === hasVolumeId) {
+      throw new BadRequestException('manuscriptId 和 volumeId 必须且只能传一个');
+    }
+
     // 验证权限
-    if (dto.manuscriptId) {
+    if (hasManuscriptId) {
       await this.findOne(dto.manuscriptId, userId);
-    } else if (dto.volumeId) {
+    } else if (hasVolumeId) {
       const volume = await this.prisma.manuscript_volume.findUnique({
         where: { id: dto.volumeId },
         include: { manuscript: true },
@@ -609,7 +621,9 @@ export class ManuscriptsService {
 
     return this.prisma.manuscript_chapter.create({
       data: {
-        ...dto,
+        manuscriptId: hasManuscriptId ? dto.manuscriptId : undefined,
+        volumeId: hasVolumeId ? dto.volumeId : undefined,
+        title: dto.title,
         sortOrder,
       },
     });
@@ -1496,19 +1510,18 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       }
     }
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const recentDateKeys = buildRecentDateKeySet(7);
     const writingEvents = await this.getWritingEvents(userId);
 
     // 按天统计字数
     const dailyStats: Record<string, number> = {};
     for (const event of writingEvents) {
-      if (event.occurredAt < sevenDaysAgo) {
+      const dateKey = getDateKeyInTimeZone(event.occurredAt);
+
+      if (!recentDateKeys.has(dateKey)) {
         continue;
       }
 
-      const dateKey = event.occurredAt.toISOString().split('T')[0];
       dailyStats[dateKey] = (dailyStats[dateKey] || 0) + event.words;
     }
 

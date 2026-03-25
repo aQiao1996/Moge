@@ -1,8 +1,12 @@
+import { createOutlineSchema, updateOutlineSchema } from '@moge/types';
 import { z } from 'zod';
 
 const titleSchema = z.string().trim().min(1, '标题不能为空');
 const optionalTextSchema = z.string().optional();
 const relationIdsSchema = z.array(z.coerce.number().int().positive('设定 ID 必须大于 0'));
+
+export const createOutlineRequestSchema = createOutlineSchema.strict();
+export const updateOutlineRequestSchema = updateOutlineSchema.strict();
 
 export const updateOutlineContentSchema = z
   .object({
@@ -49,6 +53,8 @@ export const updateOutlineMiscSchema = z
   .strict();
 
 export type UpdateOutlineContentInput = z.infer<typeof updateOutlineContentSchema>;
+export type CreateOutlineRequestInput = z.infer<typeof createOutlineRequestSchema>;
+export type UpdateOutlineRequestInput = z.infer<typeof updateOutlineRequestSchema>;
 export type OutlineVolumeInput = z.infer<typeof outlineVolumeSchema>;
 export type OutlineChapterInput = z.infer<typeof outlineChapterSchema>;
 export type UpdateOutlineCharactersInput = z.infer<typeof updateOutlineCharactersSchema>;

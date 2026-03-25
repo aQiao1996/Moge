@@ -14,12 +14,7 @@ import {
 } from '@nestjs/common';
 import { OutlineService } from './outline.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import {
-  createOutlineSchema,
-  type CreateOutlineValues,
-  updateOutlineSchema,
-  type UpdateOutlineValues,
-} from '@moge/types';
+import { type CreateOutlineValues, type UpdateOutlineValues } from '@moge/types';
 import {
   ApiTags,
   ApiOperation,
@@ -31,8 +26,10 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import {
+  createOutlineRequestSchema,
   updateOutlineContentSchema,
   type UpdateOutlineContentInput,
+  updateOutlineRequestSchema,
   outlineVolumeSchema,
   type OutlineVolumeInput,
   outlineChapterSchema,
@@ -65,12 +62,19 @@ export class OutlineController {
     description: '大纲信息',
     schema: {
       type: 'object',
+      required: ['name', 'type'],
       properties: {
-        title: { type: 'string', description: '标题' },
-        content: { type: 'string', description: '内容' },
-        model: { type: 'string', description: '模型' },
+        name: { type: 'string', description: '小说名称' },
+        type: { type: 'string', description: '小说类型' },
+        era: { type: 'string', description: '时代背景' },
+        conflict: { type: 'string', description: '核心冲突' },
+        tags: { type: 'array', items: { type: 'string' }, description: '标签' },
+        remark: { type: 'string', description: '备注信息' },
+        characters: { type: 'array', items: { type: 'string' }, description: '角色设定ID数组' },
+        systems: { type: 'array', items: { type: 'string' }, description: '系统设定ID数组' },
+        worlds: { type: 'array', items: { type: 'string' }, description: '世界设定ID数组' },
+        misc: { type: 'array', items: { type: 'string' }, description: '辅助设定ID数组' },
       },
-      required: ['title', 'content', 'model'],
     },
   })
   @ApiResponse({
@@ -81,7 +85,7 @@ export class OutlineController {
   @ApiResponse({ status: 400, description: '大纲创建失败' })
   async create(
     @Request() req: AuthenticatedRequest,
-    @Body(new ZodValidationPipe(createOutlineSchema)) data: CreateOutlineValues
+    @Body(new ZodValidationPipe(createOutlineRequestSchema)) data: CreateOutlineValues
   ) {
     const userId = req.user.id;
     return this.outlineService.create(userId, data);
@@ -252,14 +256,36 @@ export class OutlineController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '更新大纲' })
   @ApiParam({ name: 'id', description: '大纲ID' })
-  @ApiBody({ description: '要更新的大纲信息', type: Object })
+  @ApiBody({
+    description: '要更新的大纲信息',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '小说名称' },
+        type: { type: 'string', description: '小说类型' },
+        era: { type: 'string', description: '时代背景' },
+        conflict: { type: 'string', description: '核心冲突' },
+        tags: { type: 'array', items: { type: 'string' }, description: '标签' },
+        remark: { type: 'string', description: '备注信息' },
+        status: {
+          type: 'string',
+          enum: ['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED'],
+          description: '大纲状态',
+        },
+        characters: { type: 'array', items: { type: 'string' }, description: '角色设定ID数组' },
+        systems: { type: 'array', items: { type: 'string' }, description: '系统设定ID数组' },
+        worlds: { type: 'array', items: { type: 'string' }, description: '世界设定ID数组' },
+        misc: { type: 'array', items: { type: 'string' }, description: '辅助设定ID数组' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
-    @Body(new ZodValidationPipe(updateOutlineSchema)) data: UpdateOutlineValues
+    @Body(new ZodValidationPipe(updateOutlineRequestSchema)) data: UpdateOutlineValues
   ) {
     const userId = req.user.id;
     return this.outlineService.update(id, userId, data);
