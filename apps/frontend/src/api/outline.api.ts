@@ -106,22 +106,6 @@ export const getOutlineDetailApi = async (id: string): Promise<OutlineWithStruct
 };
 
 /**
- * 获取大纲内容
- * @deprecated 使用 getOutlineDetailApi 替代
- * @param id 大纲 ID
- * @returns 大纲内容或 null
- */
-export const getOutlineContentApi = async (id: string): Promise<OutlineContent | null> => {
-  try {
-    const response = await httpRequest.get<OutlineContent>(`/outline/${id}/content`);
-    return response.data;
-  } catch {
-    // 如果内容不存在，返回 null
-    return null;
-  }
-};
-
-/**
  * 更新大纲内容
  * @param id 大纲 ID
  * @param data 内容数据

@@ -187,6 +187,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '保存成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateContent(
     @Param('id', ParseIntPipe) id: number,
@@ -215,6 +216,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲或卷不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateVolume(
     @Param('id', ParseIntPipe) id: number,
@@ -244,6 +246,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲或章节不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateChapter(
     @Param('id', ParseIntPipe) id: number,
@@ -284,6 +287,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -300,6 +304,7 @@ export class OutlineController {
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async delete(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
@@ -313,6 +318,7 @@ export class OutlineController {
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '开始流式传输' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @Sse()
   generateContentStream(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
@@ -328,6 +334,7 @@ export class OutlineController {
   @ApiParam({ name: 'id', description: '大纲ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async getOutlineSettings(
     @Param('id', ParseIntPipe) id: number,
@@ -356,6 +363,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateOutlineCharacters(
     @Param('id', ParseIntPipe) id: number,
@@ -385,6 +393,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateOutlineSystems(
     @Param('id', ParseIntPipe) id: number,
@@ -414,6 +423,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateOutlineWorlds(
     @Param('id', ParseIntPipe) id: number,
@@ -443,6 +453,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async updateOutlineMisc(
     @Param('id', ParseIntPipe) id: number,
@@ -473,6 +484,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async createVolume(
     @Param('id', ParseIntPipe) id: number,
@@ -503,6 +515,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async createChapter(
     @Param('id', ParseIntPipe) id: number,
@@ -534,6 +547,7 @@ export class OutlineController {
   })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲或卷不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async createChapterInVolume(
     @Param('id', ParseIntPipe) id: number,
@@ -555,6 +569,7 @@ export class OutlineController {
   @ApiParam({ name: 'volumeId', description: '卷ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲或卷不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async deleteVolume(
     @Param('id', ParseIntPipe) id: number,
@@ -576,6 +591,7 @@ export class OutlineController {
   @ApiParam({ name: 'chapterId', description: '章节ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲或章节不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   async deleteChapter(
     @Param('id', ParseIntPipe) id: number,
