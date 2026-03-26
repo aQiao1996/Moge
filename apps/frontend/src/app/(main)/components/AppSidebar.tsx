@@ -90,7 +90,7 @@ export default function AppSidebar() {
       {/* 底部品牌标语 */}
       <SidebarFooter>
         <p
-          className={`font-han brand-sub text-moge-text-sub drop-shadow-moge-glow-weak mt-4 origin-left whitespace-nowrap text-base transition-all duration-200 ${
+          className={`font-han text-moge-text-sub drop-shadow-moge-glow-weak mt-4 origin-left overflow-hidden text-ellipsis whitespace-nowrap text-base transition-all duration-200 ${
             open ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
           }`}
         >
