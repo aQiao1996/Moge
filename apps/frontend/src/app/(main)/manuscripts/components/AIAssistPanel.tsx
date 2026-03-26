@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,6 +57,7 @@ export default function AIAssistPanel({
   const [prompt, setPrompt] = useState('');
   const [generatedText, setGeneratedText] = useState('');
   const [activeTab, setActiveTab] = useState<'continue' | 'polish' | 'expand'>('continue');
+  const promptInputId = useId();
 
   /**
    * 处理 AI 续写
@@ -213,10 +214,12 @@ export default function AIAssistPanel({
 
       {/* 提示词输入 */}
       <div className="mb-4">
-        <label className="mb-2 block text-sm text-[var(--moge-text-sub)]">
+        <label htmlFor={promptInputId} className="mb-2 block text-sm text-[var(--moge-text-sub)]">
           自定义提示词（可选）
         </label>
         <Textarea
+          id={promptInputId}
+          name={`ai-assist-${activeTab}-prompt`}
           placeholder={
             activeTab === 'continue'
               ? '例如：继续描写主角的内心活动...'

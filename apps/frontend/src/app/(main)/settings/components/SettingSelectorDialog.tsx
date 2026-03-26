@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useId, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -97,6 +97,7 @@ export default function SettingSelectorDialog({
    * 提交中状态
    */
   const [submitting, setSubmitting] = useState(false);
+  const searchInputId = useId();
 
   /**
    * 加载设定库数据
@@ -188,8 +189,13 @@ export default function SettingSelectorDialog({
 
         {/* 搜索框 */}
         <div className="relative">
+          <label htmlFor={searchInputId} className="sr-only">
+            搜索{categoryLabel}
+          </label>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--moge-text-muted)]" />
           <Input
+            id={searchInputId}
+            name={`${category}-setting-search`}
             placeholder={`搜索${categoryLabel}...`}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
