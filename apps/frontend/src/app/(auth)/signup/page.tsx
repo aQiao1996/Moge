@@ -20,6 +20,7 @@ import HookForm from '@/app/components/HookForm';
 import { signIn } from 'next-auth/react';
 import { registerApi } from '@/api/auth.api';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 /**
  * SignupPage 组件
@@ -27,7 +28,7 @@ import { Button } from '@/components/ui/button';
  */
 export default function SignupPage() {
   const router = useRouter();
-  const { loading, resetError } = useAuthStore();
+  const { resetError } = useAuthStore();
 
   // 初始化表单，使用 Zod 进行验证
   const form = useForm<SignupData>({
@@ -56,16 +57,18 @@ export default function SignupPage() {
     });
 
     if (signInResult?.ok) {
-      // 自动登录成功，跳转到工作台
-      setTimeout(() => {
-        router.replace('/workspace');
-      }, 1000);
+      // 自动登录成功后短暂停留，保持提交态直到路由切换
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 1000);
+      });
+      router.replace('/workspace');
     } else {
       // 自动登录失败，引导用户手动登录
       toast.error(signInResult?.error || '自动登录失败, 请手动登录');
-      setTimeout(() => {
-        router.push('/login');
-      }, 1000);
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 1000);
+      });
+      router.push('/login');
     }
   };
 
@@ -94,7 +97,6 @@ export default function SignupPage() {
           { name: 'password', label: '密码', required: true },
           { name: 'confirm', label: '确认密码', required: true },
         ]}
-        loading={loading}
         onSubmit={onSubmit}
         renderControl={(field, name) => (
           <MogeInput
@@ -120,7 +122,14 @@ export default function SignupPage() {
                 '0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))',
             }}
           >
-            {isLoading ? '注册中...' : '注册'}
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                注册中...
+              </>
+            ) : (
+              '注册'
+            )}
           </Button>
         )}
       />

@@ -72,6 +72,8 @@ export default function HookForm<T extends FieldValues>({
   hiddenFields,
   renderSubmitButton,
 }: HookFormProps<T>) {
+  const submitLoading = loading || form.formState.isSubmitting;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit) as (e: FormEvent) => void} className="space-y-4">
@@ -120,14 +122,14 @@ export default function HookForm<T extends FieldValues>({
             </Button>
           )}
           {renderSubmitButton ? (
-            renderSubmitButton({ loading })
+            renderSubmitButton({ loading: submitLoading })
           ) : (
             <Button
               type="submit"
-              disabled={loading}
+              disabled={submitLoading}
               className={`gap-2 shadow-[var(--moge-glow-btn)] ${submitButtonClassName}`}
             >
-              {loading ? `${submitText}中...` : submitText}
+              {submitLoading ? `${submitText}中...` : submitText}
             </Button>
           )}
         </div>

@@ -20,6 +20,7 @@ import { MogeInput } from '@/app/components/MogeInput';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { SiGitlab } from '@icons-pack/react-simple-icons';
+import { Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 
 /**
@@ -28,7 +29,7 @@ import { signIn } from 'next-auth/react';
  */
 export default function LoginPage() {
   const router = useRouter();
-  const { loading, resetError } = useAuthStore();
+  const { resetError } = useAuthStore();
 
   // 初始化表单，使用 Zod 进行验证
   const form = useForm<LoginData>({
@@ -53,10 +54,11 @@ export default function LoginPage() {
 
     if (result?.ok) {
       toast.success('登录成功');
-      // 延迟跳转，让用户看到成功提示
-      setTimeout(() => {
-        router.replace('/workspace');
-      }, 1000);
+      // 等待提示展示后再跳转，保持提交态直到真正开始路由切换
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 1000);
+      });
+      router.replace('/workspace');
     } else {
       toast.error(result?.error || '用户名或密码错误');
     }
@@ -86,7 +88,6 @@ export default function LoginPage() {
           { name: 'username', label: '账号', required: true },
           { name: 'password', label: '密码', required: true },
         ]}
-        loading={loading}
         onSubmit={onSubmit}
         renderControl={(field, name) =>
           name === 'username' ? (
@@ -110,7 +111,14 @@ export default function LoginPage() {
                 '0 10px 25px -5px var(--moge-glow-btn-color, rgba(56,189,248,.32)), 0 8px 10px -6px var(--moge-glow-btn-color, rgba(56,189,248,.22))',
             }}
           >
-            {isLoading ? '登录中...' : '登录'}
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                登录中...
+              </>
+            ) : (
+              '登录'
+            )}
           </Button>
         )}
       />
