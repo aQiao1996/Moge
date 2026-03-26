@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useMemo, useEffect, useRef, useId, forwardRef, useImperativeHandle } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +48,7 @@ const MdEditor = forwardRef<MdEditorRef, MdEditorProps>(
     const { resolvedTheme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
     const selectedTextRef = useRef<string>('');
+    const textareaId = useId().replace(/:/g, '');
 
     // 根据当前主题确定编辑器颜色模式
     const colorMode: 'dark' | 'light' = resolvedTheme === 'dark' ? 'dark' : 'light';
@@ -109,6 +110,10 @@ const MdEditor = forwardRef<MdEditorRef, MdEditorProps>(
         },
         placeholder,
         preview,
+        textareaProps: {
+          id: `md-editor-${textareaId}`,
+          name: `md-editor-${textareaId}`,
+        },
         'data-color-mode': colorMode,
       };
 
@@ -118,7 +123,7 @@ const MdEditor = forwardRef<MdEditorRef, MdEditorProps>(
       }
 
       return props;
-    }, [value, onChange, placeholder, height, preview, colorMode]);
+    }, [value, onChange, placeholder, height, preview, colorMode, textareaId]);
 
     return (
       <div
