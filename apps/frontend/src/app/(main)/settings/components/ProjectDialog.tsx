@@ -165,6 +165,7 @@ export default function ProjectDialog({
       if (name === 'description') {
         return (
           <MogeTextarea
+            autoComplete="off"
             placeholder="简要描述您的小说项目（可选）"
             value={(field.value as string) || ''}
             onChange={(e) => field.onChange(e.target.value)}
@@ -246,6 +247,7 @@ export default function ProjectDialog({
 
       return (
         <MogeInput
+          autoComplete="off"
           placeholder={name === 'name' ? '输入项目名称，如"仙侠传说"' : ''}
           value={(field.value as string) || ''}
           onChange={(e) => field.onChange(e.target.value)}

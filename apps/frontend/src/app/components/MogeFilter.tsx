@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, Filter, RotateCcw, SortAsc, SortDesc, Grid3X3, List } from 'lucide-react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useId } from 'react';
 
 /**
  * 筛选器状态接口
@@ -72,6 +72,7 @@ export default function MogeFilter({
 }: MogeFilterProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search);
+  const searchInputId = useId();
 
   const updateFilters = (updates: Partial<MogeFilterState>) => {
     const newFilters = { ...filters, ...updates };
@@ -171,12 +172,18 @@ export default function MogeFilter({
       {/* 搜索栏和主要控制 */}
       <div className="flex items-center gap-3">
         <div className="relative flex flex-1 items-center">
+          <label htmlFor={searchInputId} className="sr-only">
+            搜索
+          </label>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--moge-text-muted)]" />
           <Input
+            id={searchInputId}
+            name="search"
             placeholder={searchPlaceholder}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleSearchKeyDown}
+            autoComplete="off"
             className="pl-10 pr-20"
           />
           <Button

@@ -24,6 +24,11 @@ interface MogeMultiSelectProps {
   value?: string[]; // 当前选中的值数组
   onChange?: (value: string[]) => void; // 值变化时的回调函数
   onBlur?: () => void; // 失去焦点时的回调函数
+  id?: string; // 表单字段 ID
+  name?: string; // 表单字段名称
+  'aria-describedby'?: string; // 表单辅助说明 ID
+  'aria-invalid'?: boolean | 'true' | 'false'; // 表单校验状态
+  'aria-labelledby'?: string; // 标签元素 ID
   placeholder?: string; // 占位符文本
   disabled?: boolean; // 是否禁用
   className?: string; // 额外的CSS类名
@@ -43,6 +48,11 @@ const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps
       value = [],
       onChange,
       onBlur,
+      id,
+      name,
+      'aria-describedby': ariaDescribedBy,
+      'aria-invalid': ariaInvalid,
+      'aria-labelledby': ariaLabelledBy,
       placeholder = '请选择',
       disabled = false,
       className = '',
@@ -122,9 +132,14 @@ const MogeMultiSelect = React.forwardRef<HTMLButtonElement, MogeMultiSelectProps
         <PopoverTrigger asChild>
           <Button
             ref={ref}
+            id={id}
+            name={name}
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-describedby={ariaDescribedBy}
+            aria-invalid={ariaInvalid}
+            aria-labelledby={ariaLabelledBy}
             className={`input-moge w-full justify-start text-left font-normal ${className}`}
             disabled={disabled}
             onBlur={onBlur}

@@ -91,17 +91,16 @@ export default function DictItemDialog({
       // 启用状态：按钮切换
       if (name === 'isEnabled') {
         return (
-          <div className="flex items-center space-x-2">
-            <Button
-              type="button"
-              size="sm"
-              variant={field.value ? 'default' : 'outline'}
-              onClick={() => field.onChange(!field.value)}
-            >
-              {field.value ? '启用' : '禁用'}
-            </Button>
-            <span className="text-sm text-[var(--moge-text-sub)]">点击切换状态</span>
-          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant={field.value ? 'default' : 'outline'}
+            title="点击切换状态"
+            onClick={() => field.onChange(!field.value)}
+          >
+            {field.value ? '启用' : '禁用'}
+            <span className="sr-only">，点击切换状态</span>
+          </Button>
         );
       }
 

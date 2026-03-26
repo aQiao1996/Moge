@@ -154,28 +154,26 @@ export default function OutlineDialog({
         const selectedIds = (field.value as string[]) || [];
 
         return (
-          <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => {
-                setCurrentCategory(categoryConfig);
-                setCurrentSettingIds(selectedIds);
-                // 保存field.onChange引用以便在选择器确认时调用
-                fieldOnChangeRef.current = field.onChange;
-                setSelectorOpen(true);
-              }}
-            >
-              <Icon className={`h-4 w-4 ${color}`} />
-              <span>选择{label}</span>
-              {selectedIds.length > 0 && (
-                <span className="ml-auto text-sm text-[var(--moge-text-muted)]">
-                  已选 {selectedIds.length} 项
-                </span>
-              )}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start gap-2"
+            onClick={() => {
+              setCurrentCategory(categoryConfig);
+              setCurrentSettingIds(selectedIds);
+              // 保存field.onChange引用以便在选择器确认时调用
+              fieldOnChangeRef.current = field.onChange;
+              setSelectorOpen(true);
+            }}
+          >
+            <Icon className={`h-4 w-4 ${color}`} />
+            <span>选择{label}</span>
+            {selectedIds.length > 0 && (
+              <span className="ml-auto text-sm text-[var(--moge-text-muted)]">
+                已选 {selectedIds.length} 项
+              </span>
+            )}
+          </Button>
         );
       }
 
@@ -183,6 +181,7 @@ export default function OutlineDialog({
         return (
           <MogeTextarea
             rows={name === 'conflict' ? 3 : 2}
+            autoComplete="off"
             placeholder={
               name === 'conflict' ? '例:一颗会说话的核弹要求主角 24 小时内帮它自杀……' : '备忘信息'
             }
@@ -191,7 +190,7 @@ export default function OutlineDialog({
         );
       }
 
-      return <MogeInput placeholder="会说话的核弹" {...field} />;
+      return <MogeInput autoComplete="off" placeholder="会说话的核弹" {...field} />;
     },
     [novelTypes, novelEras, novelTags]
   );
