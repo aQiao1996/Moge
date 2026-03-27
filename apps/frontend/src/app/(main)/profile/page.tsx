@@ -146,6 +146,7 @@ export default function ProfilePage() {
                   <MogeInput
                     type={name === 'email' ? 'email' : 'text'}
                     placeholder={name === 'name' ? '请输入用户名' : '请输入邮箱'}
+                    autoComplete={name === 'email' ? 'email' : 'name'}
                     {...field}
                   />
                 )}
