@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Users, Zap, Globe, Folder, Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 // 模拟项目数据
 const mockProject = {
@@ -57,12 +57,8 @@ const settingCategories = [
 ];
 
 export default function ProjectSettingsPage() {
-  const params = useParams();
-  const projectId = params.projectId as string;
-
-  const handleCategoryClick = (categoryKey: string) => {
-    // 将来跳转到具体的设定列表页
-    console.log(`Navigate to /settings/${projectId}/${categoryKey}`);
+  const handleCategoryClick = (categoryLabel: string) => {
+    toast.info(`${categoryLabel}功能正在开发中，请先前往设定库查看`);
   };
 
   return (
@@ -140,13 +136,18 @@ export default function ProjectSettingsPage() {
               <div className="mt-4 flex items-center gap-2">
                 <Button
                   className="flex-1"
-                  onClick={() => handleCategoryClick(category.key)}
+                  onClick={() => handleCategoryClick(category.label)}
                   disabled={category.count === 0}
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   查看全部
                 </Button>
-                <Button variant="outline" onClick={() => handleCategoryClick(category.key)}>
+                <Button
+                  variant="outline"
+                  title={`新建${category.label}`}
+                  aria-label={`新建${category.label}`}
+                  onClick={() => handleCategoryClick(category.label)}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>

@@ -35,7 +35,7 @@ import { logoutClientSession } from '@/lib/auth/logout';
 export default function ProfilePage() {
   const { update } = useSession();
   const user = useAuthStore((state) => state.user);
-  const { updateProfile, changePassword, loading, resetError } = useUserStore();
+  const { updateProfile, changePassword, resetError } = useUserStore();
 
   // 个人信息表单配置
   const profileForm = useForm<ProfileValues>({
@@ -138,7 +138,6 @@ export default function ProfilePage() {
                   { name: 'name', label: '用户昵称', required: true },
                   { name: 'email', label: '邮箱', required: true },
                 ]}
-                loading={loading}
                 onSubmit={handleProfileSubmit}
                 submitText="保存信息"
                 submitButtonClassName="w-30"
@@ -217,7 +216,6 @@ export default function ProfilePage() {
                 hiddenFields={[
                   { name: 'username', value: user.username, autoComplete: 'username' },
                 ]}
-                loading={loading}
                 onSubmit={handlePasswordSubmit}
                 submitText="修改密码"
                 submitButtonClassName="w-30"
