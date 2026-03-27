@@ -481,8 +481,8 @@ export default function ChapterTree({ manuscript, onRefresh }: ChapterTreeProps)
         toast.success('卷创建成功');
       } else {
         await createChapter({
-          manuscriptId: manuscript.id,
-          volumeId: currentVolumeId || undefined,
+          manuscriptId: currentVolumeId ? undefined : manuscript.id,
+          volumeId: currentVolumeId ?? undefined,
           title: data.title,
         });
         toast.success('章节创建成功');

@@ -98,7 +98,9 @@ export class ManuscriptsService {
     });
 
     for (const lock of uniqueLocks) {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock.namespace}, ${lock.scopeId})`;
+      await tx.$executeRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(CAST(${lock.namespace} AS integer), CAST(${lock.scopeId} AS integer))`
+      );
     }
   }
 
