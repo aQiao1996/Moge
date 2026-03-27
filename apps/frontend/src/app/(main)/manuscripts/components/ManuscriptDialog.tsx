@@ -215,9 +215,15 @@ export default function ManuscriptDialog({
         return (
           <MogeInput
             type="number"
+            autoComplete="off"
             placeholder="例如: 500000"
-            {...field}
-            onChange={(e) => field.onChange(Number(e.target.value))}
+            value={field.value ?? ''}
+            onChange={(e) =>
+              field.onChange(e.target.value === '' ? undefined : Number(e.target.value))
+            }
+            onBlur={field.onBlur}
+            name={field.name}
+            disabled={field.disabled}
           />
         );
       }
@@ -231,35 +237,54 @@ export default function ManuscriptDialog({
         const selectedIds = (field.value as string[]) || [];
 
         return (
-          <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => {
-                setCurrentCategory(categoryConfig);
-                setCurrentSettingIds(selectedIds);
-                fieldOnChangeRef.current = field.onChange;
-                setSelectorOpen(true);
-              }}
-            >
-              <Icon className={`h-4 w-4 ${color}`} />
-              <span>选择{label}</span>
-              {selectedIds.length > 0 && (
-                <span className="ml-auto text-sm text-[var(--moge-text-muted)]">
-                  已选 {selectedIds.length} 项
-                </span>
-              )}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start gap-2"
+            onClick={() => {
+              setCurrentCategory(categoryConfig);
+              setCurrentSettingIds(selectedIds);
+              fieldOnChangeRef.current = field.onChange;
+              setSelectorOpen(true);
+            }}
+          >
+            <Icon className={`h-4 w-4 ${color}`} />
+            <span>选择{label}</span>
+            {selectedIds.length > 0 && (
+              <span className="ml-auto text-sm text-[var(--moge-text-muted)]">
+                已选 {selectedIds.length} 项
+              </span>
+            )}
+          </Button>
         );
       }
 
       if (name === 'description') {
-        return <MogeTextarea rows={3} placeholder="文稿简介或备注信息" {...field} />;
+        return (
+          <MogeTextarea
+            rows={3}
+            autoComplete="off"
+            placeholder="文稿简介或备注信息"
+            value={(field.value as string) ?? ''}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            name={field.name}
+            disabled={field.disabled}
+          />
+        );
       }
 
-      return <MogeInput placeholder="文稿名称" {...field} />;
+      return (
+        <MogeInput
+          autoComplete="off"
+          placeholder="文稿名称"
+          value={(field.value as string) ?? ''}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          name={field.name}
+          disabled={field.disabled}
+        />
+      );
     },
     [novelTypes, novelTags, outlines, isFromOutline]
   );
