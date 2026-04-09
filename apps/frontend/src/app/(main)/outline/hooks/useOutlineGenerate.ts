@@ -64,15 +64,12 @@ export function useOutlineGenerate({
     toast.info('正在生成大纲内容，请稍候...');
 
     const token = useAuthStore.getState().token;
-    const baseUrl = process.env.NEXT_APP_BASE_URL ?? '';
+    const streamUrl = `/moge-api/outline/${outlineId}/generate-stream`;
 
-    const eventSource = new EventSourcePolyfill(
-      `${baseUrl}/moge-api/outline/${outlineId}/generate-stream`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        heartbeatTimeout: 120000,
-      }
-    );
+    const eventSource = new EventSourcePolyfill(streamUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      heartbeatTimeout: 120000,
+    });
 
     let errorHandled = false;
 
