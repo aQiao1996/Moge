@@ -19,6 +19,9 @@ export default withAuth(
     /* 其余情况由 withAuth 自带的 authorized 回调处理 */
   },
   {
+    pages: {
+      signIn: '/login',
+    },
     callbacks: {
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname;

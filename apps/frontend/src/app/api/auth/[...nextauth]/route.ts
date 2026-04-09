@@ -4,6 +4,8 @@ import GitlabProvider, { type GitLabProfile } from 'next-auth/providers/gitlab';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import httpRequest from '@/lib/request';
 
+const AUTH_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+
 const authOptions: NextAuthOptions = {
   // 配置认证提供者
   providers: [
@@ -97,8 +99,9 @@ const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // 配置 Session 策略为 JWT
-  session: { strategy: 'jwt' },
+  // 配置 Session 策略为 JWT，并与后端业务 Token 保持相同寿命
+  session: { strategy: 'jwt', maxAge: AUTH_MAX_AGE_SECONDS },
+  jwt: { maxAge: AUTH_MAX_AGE_SECONDS },
 
   // 配置 Callbacks, 用于控制 session 和 token 的内容
   callbacks: {
