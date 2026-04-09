@@ -12,8 +12,6 @@
     "sourceMap": true, // 生成相应的 '.map' 文件
     "rootDir": "./src", // 指定项目的根目录
     "outDir": "./dist", // 指定输出目录
-    "baseUrl": "./", // 解析非相对模块名的基准目录
-    "ignoreDeprecations": "6.0",
     "incremental": true, // 启用增量编译
     "composite": false, // 禁用复合项目模式，解决路径解析问题
     "skipLibCheck": true, // 跳过库文件的类型检查

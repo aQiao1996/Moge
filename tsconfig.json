@@ -7,9 +7,8 @@
     "lib": ["ES2022", "dom", "decorators"], // 包含的库文件，支持ES2022、DOM API和装饰器
 
     // 模块解析
-    "baseUrl": ".", // 基础路径，用于解析非相对模块名
     "paths": {
-      "@moge/*": ["packages/*", "apps/*"] // 路径映射，简化@moge的导入
+      "@moge/*": ["./packages/*", "./apps/*"] // 路径映射，简化@moge的导入
     },
 
     // 类型检查与声明
