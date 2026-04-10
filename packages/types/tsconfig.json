@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
+    // 使用 Node16 语义替代已弃用的 node/node10 解析模式，兼容 TypeScript 6+ 的配置要求
+    "module": "Node16",
+    "moduleResolution": "node16",
     "declaration": true,
     "outDir": "./dist",
     "composite": true,
