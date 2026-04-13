@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next dist"
+    "clean": "rm -rf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@dnd-kit/core": "catalog:",
