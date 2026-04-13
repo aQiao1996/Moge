@@ -20,6 +20,7 @@
     "build:frontend": "pnpm --filter @moge/frontend build",
     "build:backend": "pnpm --filter @moge/backend build",
     "clean": "pnpm -r run clean",
+    "deps:check": "node scripts/check-catalog-usage.js",
     "reset": "pnpm clean && rm -rf node_modules && rm -rf **/node_modules && pnpm install",
     "seed:dict": "pnpm --filter @moge/backend seed:dict",
     "prepare": "husky",
@@ -62,7 +63,29 @@
       "prettier --write"
     ]
   },
-  "dependencies": {
-    "@playwright/test": "^1.56.0"
+  "dependencies": {},
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@eslint/js": "catalog:",
+    "@types/minimatch": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "concurrently": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
+    "husky": "catalog:",
+    "inquirer": "catalog:",
+    "lint-staged": "catalog:",
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "prisma": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
   }
 }

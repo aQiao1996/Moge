@@ -18,6 +18,15 @@ catalogs:
     '@commitlint/config-conventional':
       specifier: ^19.8.1
       version: 19.8.1
+    '@dnd-kit/core':
+      specifier: ^6.3.1
+      version: 6.3.1
+    '@dnd-kit/sortable':
+      specifier: ^10.0.0
+      version: 10.0.0
+    '@dnd-kit/utilities':
+      specifier: ^3.2.2
+      version: 3.2.2
     '@eslint/eslintrc':
       specifier: ^3.1.0
       version: 3.3.1
@@ -72,6 +81,9 @@ catalogs:
     '@nestjs/testing':
       specifier: ^10.4.5
       version: 10.4.20
+    '@playwright/test':
+      specifier: ^1.56.0
+      version: 1.56.0
     '@prisma/client':
       specifier: 6.15.0
       version: 6.15.0
@@ -87,12 +99,21 @@ catalogs:
     '@radix-ui/react-dropdown-menu':
       specifier: ^2.1.16
       version: 2.1.16
+    '@radix-ui/react-hover-card':
+      specifier: ^1.1.15
+      version: 1.1.15
     '@radix-ui/react-label':
       specifier: 2.1.7
       version: 2.1.7
     '@radix-ui/react-popover':
       specifier: ^1.1.15
       version: 1.1.15
+    '@radix-ui/react-progress':
+      specifier: ^1.1.8
+      version: 1.1.8
+    '@radix-ui/react-scroll-area':
+      specifier: ^1.2.10
+      version: 1.2.10
     '@radix-ui/react-select':
       specifier: ^2.2.6
       version: 2.2.6
@@ -102,6 +123,9 @@ catalogs:
     '@radix-ui/react-slot':
       specifier: 1.2.3
       version: 1.2.3
+    '@radix-ui/react-tabs':
+      specifier: ^1.1.13
+      version: 1.1.13
     '@radix-ui/react-tooltip':
       specifier: ^1.2.8
       version: 1.2.8
@@ -126,6 +150,9 @@ catalogs:
     '@types/jsonwebtoken':
       specifier: ^9.0.3
       version: 9.0.10
+    '@types/lodash':
+      specifier: ^4.17.20
+      version: 4.17.20
     '@types/minimatch':
       specifier: ^5.1.2
       version: 5.1.2
@@ -135,6 +162,9 @@ catalogs:
     '@types/passport-jwt':
       specifier: ^4.0.1
       version: 4.0.1
+    '@types/pg':
+      specifier: ^8.15.5
+      version: 8.15.5
     '@types/react':
       specifier: ^19
       version: 19.1.12
@@ -147,6 +177,9 @@ catalogs:
     '@types/swagger-ui-express':
       specifier: ^4.1.6
       version: 4.1.8
+    '@types/unist':
+      specifier: ^3.0.3
+      version: 3.0.3
     '@typescript-eslint/eslint-plugin':
       specifier: ^8.0.0
       version: 8.43.0
@@ -174,9 +207,15 @@ catalogs:
     concurrently:
       specifier: ^8.2.2
       version: 8.2.2
+    date-fns:
+      specifier: ^4.1.0
+      version: 4.1.0
     dayjs:
       specifier: ^1.11.18
       version: 1.11.18
+    dotenv:
+      specifier: ^17.2.3
+      version: 17.2.3
     eslint:
       specifier: ^9.34.0
       version: 9.35.0
@@ -210,6 +249,9 @@ catalogs:
     lint-staged:
       specifier: ^16.1.5
       version: 16.1.6
+    lodash:
+      specifier: ^4.17.21
+      version: 4.17.21
     lucide-react:
       specifier: 0.542.0
       version: 0.542.0
@@ -231,6 +273,9 @@ catalogs:
     passport-jwt:
       specifier: ^4.0.1
       version: 4.0.1
+    pg:
+      specifier: ^8.16.3
+      version: 8.16.3
     postcss:
       specifier: ^8.5.6
       version: 8.5.6
@@ -258,9 +303,15 @@ catalogs:
     reflect-metadata:
       specifier: ^0.2.2
       version: 0.2.2
+    remark:
+      specifier: ^15.0.1
+      version: 15.0.1
     remark-gfm:
       specifier: ^4.0.1
       version: 4.0.1
+    remark-parse:
+      specifier: ^11.0.0
+      version: 11.0.0
     rxjs:
       specifier: ^7.8.1
       version: 7.8.2
@@ -300,6 +351,15 @@ catalogs:
     typescript-eslint:
       specifier: ^8.4.2
       version: 8.43.0
+    unified:
+      specifier: ^11.0.5
+      version: 11.0.5
+    unist-util-is:
+      specifier: ^6.0.0
+      version: 6.0.0
+    unist-util-visit-parents:
+      specifier: ^6.0.1
+      version: 6.0.1
     zod:
       specifier: ^3.23.8
       version: 3.25.76
@@ -310,10 +370,6 @@ catalogs:
 importers:
 
   .:
-    dependencies:
-      '@playwright/test':
-        specifier: ^1.56.0
-        version: 1.56.0
     devDependencies:
       '@changesets/changelog-github':
         specifier: 'catalog:'
@@ -330,6 +386,9 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.35.0
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.56.0
       '@types/minimatch':
         specifier: 'catalog:'
         version: 5.1.2
@@ -421,7 +480,7 @@ importers:
         specifier: 'catalog:'
         version: 6.15.0(prisma@6.15.0(typescript@5.7.2))(typescript@5.7.2)
       '@types/unist':
-        specifier: ^3.0.3
+        specifier: 'catalog:'
         version: 3.0.3
       bcryptjs:
         specifier: 'catalog:'
@@ -442,10 +501,10 @@ importers:
         specifier: 'catalog:'
         version: 0.2.2
       remark:
-        specifier: ^15.0.1
+        specifier: 'catalog:'
         version: 15.0.1
       remark-parse:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       rxjs:
         specifier: 'catalog:'
@@ -454,13 +513,13 @@ importers:
         specifier: 'catalog:'
         version: 4.6.3(express@4.21.2)
       unified:
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5
       unist-util-is:
-        specifier: ^6.0.0
+        specifier: 'catalog:'
         version: 6.0.0
       unist-util-visit-parents:
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1
       zod:
         specifier: 'catalog:'
@@ -500,7 +559,7 @@ importers:
         specifier: 'catalog:'
         version: 4.0.1
       '@types/pg':
-        specifier: ^8.15.5
+        specifier: 'catalog:'
         version: 8.15.5
       '@types/supertest':
         specifier: 'catalog:'
@@ -515,7 +574,7 @@ importers:
         specifier: 'catalog:'
         version: 0.14.2
       dotenv:
-        specifier: ^17.2.3
+        specifier: 'catalog:'
         version: 17.2.3
       eslint:
         specifier: 'catalog:'
@@ -533,7 +592,7 @@ importers:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@18.18.0)(ts-node@10.9.2(@types/node@18.18.0)(typescript@5.7.2))
       pg:
-        specifier: ^8.16.3
+        specifier: 'catalog:'
         version: 8.16.3
       prettier:
         specifier: 'catalog:'
@@ -560,13 +619,13 @@ importers:
   apps/frontend:
     dependencies:
       '@dnd-kit/core':
-        specifier: ^6.3.1
+        specifier: 'catalog:'
         version: 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/sortable':
-        specifier: ^10.0.0
+        specifier: 'catalog:'
         version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@dnd-kit/utilities':
-        specifier: ^3.2.2
+        specifier: 'catalog:'
         version: 3.2.2(react@18.3.1)
       '@hookform/resolvers':
         specifier: 'catalog:'
@@ -590,7 +649,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.16(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-hover-card':
-        specifier: ^1.1.15
+        specifier: 'catalog:'
         version: 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-label':
         specifier: 'catalog:'
@@ -599,10 +658,10 @@ importers:
         specifier: 'catalog:'
         version: 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-progress':
-        specifier: ^1.1.8
+        specifier: 'catalog:'
         version: 1.1.8(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-scroll-area':
-        specifier: ^1.2.10
+        specifier: 'catalog:'
         version: 1.2.10(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-select':
         specifier: 'catalog:'
@@ -614,7 +673,7 @@ importers:
         specifier: 'catalog:'
         version: 1.2.3(@types/react@19.1.12)(react@18.3.1)
       '@radix-ui/react-tabs':
-        specifier: ^1.1.13
+        specifier: 'catalog:'
         version: 1.1.13(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-tooltip':
         specifier: 'catalog:'
@@ -623,7 +682,7 @@ importers:
         specifier: 'catalog:'
         version: 0.5.16(tailwindcss@4.1.13)
       '@types/lodash':
-        specifier: ^4.17.20
+        specifier: 'catalog:'
         version: 4.17.20
       '@uiw/react-md-editor':
         specifier: 'catalog:'
@@ -635,7 +694,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.1
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       dayjs:
         specifier: 'catalog:'
@@ -644,7 +703,7 @@ importers:
         specifier: 'catalog:'
         version: 1.0.31
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       lucide-react:
         specifier: 'catalog:'
