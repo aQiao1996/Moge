@@ -27,6 +27,81 @@ import type {
 export class SettingsService {
   constructor(private prisma: PrismaService) {}
 
+  private formatReferenceSection(typeLabel: string, names: string[]): string | null {
+    if (names.length === 0) {
+      return null;
+    }
+
+    return `${typeLabel}${names.map((name) => `《${name}》`).join('、')}`;
+  }
+
+  private buildSettingReferencedMessage(references: {
+    projects: string[];
+    outlines: string[];
+    manuscripts: string[];
+  }): string {
+    const sections = [
+      this.formatReferenceSection('项目', references.projects),
+      this.formatReferenceSection('大纲', references.outlines),
+      this.formatReferenceSection('文稿', references.manuscripts),
+    ].filter((section): section is string => Boolean(section));
+
+    return `已被以下内容引用，无法删除：${sections.join('；')}`;
+  }
+
+  private async assertSettingNotReferenced(
+    userId: number,
+    field: 'characters' | 'systems' | 'worlds' | 'misc',
+    settingId: number
+  ): Promise<void> {
+    const value = String(settingId);
+
+    const [relatedProjects, relatedOutlines, relatedManuscripts] = await Promise.all([
+      this.prisma.projects.findMany({
+        where: {
+          userId,
+          [field]: {
+            has: value,
+          },
+        },
+        select: { name: true },
+      }),
+      this.prisma.outline.findMany({
+        where: {
+          userId,
+          [field]: {
+            has: value,
+          },
+        },
+        select: { name: true },
+      }),
+      this.prisma.manuscripts.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+          [field]: {
+            has: value,
+          },
+        },
+        select: { name: true },
+      }),
+    ]);
+
+    const references = {
+      projects: relatedProjects.map((item) => item.name),
+      outlines: relatedOutlines.map((item) => item.name),
+      manuscripts: relatedManuscripts.map((item) => item.name),
+    };
+
+    if (
+      references.projects.length > 0 ||
+      references.outlines.length > 0 ||
+      references.manuscripts.length > 0
+    ) {
+      throw new BadRequestException(this.buildSettingReferencedMessage(references));
+    }
+  }
+
   /**
    * 获取用户的所有角色设定（用于项目关联选择）
    * @param userId 用户ID
@@ -153,23 +228,7 @@ export class SettingsService {
       throw new NotFoundException('角色设定不存在或无权限访问');
     }
 
-    // 检查是否有项目关联该角色
-    const relatedProjects = await this.prisma.projects.findMany({
-      where: {
-        userId,
-        characters: {
-          has: String(id),
-        },
-      },
-      select: { id: true, name: true },
-    });
-
-    if (relatedProjects.length > 0) {
-      const projectNames = relatedProjects.map((p) => p.name).join('、');
-      throw new BadRequestException(
-        `该角色设定已被以下项目关联,无法删除:${projectNames}。请先解除项目关联后再删除。`
-      );
-    }
+    await this.assertSettingNotReferenced(userId, 'characters', id);
 
     // 删除角色设定
     await this.prisma.character_settings.delete({
@@ -290,23 +349,7 @@ export class SettingsService {
       throw new NotFoundException('系统设定不存在或无权限访问');
     }
 
-    // 检查是否有项目关联该系统设定
-    const relatedProjects = await this.prisma.projects.findMany({
-      where: {
-        userId,
-        systems: {
-          has: String(id),
-        },
-      },
-      select: { id: true, name: true },
-    });
-
-    if (relatedProjects.length > 0) {
-      const projectNames = relatedProjects.map((p) => p.name).join('、');
-      throw new BadRequestException(
-        `该系统设定已被以下项目关联,无法删除:${projectNames}。请先解除项目关联后再删除。`
-      );
-    }
+    await this.assertSettingNotReferenced(userId, 'systems', id);
 
     // 删除系统设定
     await this.prisma.system_settings.delete({
@@ -606,23 +649,7 @@ export class SettingsService {
       throw new NotFoundException('世界设定不存在或无权限访问');
     }
 
-    // 检查是否有项目关联该世界设定
-    const relatedProjects = await this.prisma.projects.findMany({
-      where: {
-        userId,
-        worlds: {
-          has: String(id),
-        },
-      },
-      select: { id: true, name: true },
-    });
-
-    if (relatedProjects.length > 0) {
-      const projectNames = relatedProjects.map((p) => p.name).join('、');
-      throw new BadRequestException(
-        `该世界设定已被以下项目关联,无法删除:${projectNames}。请先解除项目关联后再删除。`
-      );
-    }
+    await this.assertSettingNotReferenced(userId, 'worlds', id);
 
     // 删除世界设定
     await this.prisma.world_settings.delete({
@@ -738,23 +765,7 @@ export class SettingsService {
       throw new NotFoundException('辅助设定不存在或无权限访问');
     }
 
-    // 检查是否有项目关联该辅助设定
-    const relatedProjects = await this.prisma.projects.findMany({
-      where: {
-        userId,
-        misc: {
-          has: String(id),
-        },
-      },
-      select: { id: true, name: true },
-    });
-
-    if (relatedProjects.length > 0) {
-      const projectNames = relatedProjects.map((p) => p.name).join('、');
-      throw new BadRequestException(
-        `该辅助设定已被以下项目关联,无法删除:${projectNames}。请先解除项目关联后再删除。`
-      );
-    }
+    await this.assertSettingNotReferenced(userId, 'misc', id);
 
     // 删除辅助设定
     await this.prisma.misc_settings.delete({
