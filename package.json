@@ -37,6 +37,7 @@
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@eslint/js": "catalog:",
+    "@playwright/test": "catalog:",
     "@types/minimatch": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
@@ -63,29 +64,5 @@
       "prettier --write"
     ]
   },
-  "dependencies": {},
-  "devDependencies": {
-    "@playwright/test": "catalog:",
-    "@changesets/changelog-github": "catalog:",
-    "@changesets/cli": "catalog:",
-    "@commitlint/cli": "catalog:",
-    "@commitlint/config-conventional": "catalog:",
-    "@eslint/js": "catalog:",
-    "@types/minimatch": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
-    "concurrently": "catalog:",
-    "eslint": "catalog:",
-    "eslint-config-prettier": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
-    "globals": "catalog:",
-    "husky": "catalog:",
-    "inquirer": "catalog:",
-    "lint-staged": "catalog:",
-    "prettier": "catalog:",
-    "prettier-plugin-tailwindcss": "catalog:",
-    "prisma": "catalog:",
-    "typescript": "catalog:",
-    "typescript-eslint": "catalog:"
-  }
+  "dependencies": {}
 }
