@@ -22,7 +22,9 @@ ENV NODE_ENV=production
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY packages/types/package.json packages/types/package.json
-RUN pnpm install --frozen-lockfile --prod --filter @moge/backend... --ignore-scripts && pnpm store prune
+RUN pnpm install --frozen-lockfile --prod --filter @moge/backend... --ignore-scripts \
+  && pnpm add --global prisma@6.15.0 \
+  && pnpm store prune
 COPY --from=builder /app/packages/types/dist packages/types/dist
 COPY --from=builder /app/apps/backend/dist apps/backend/dist
 COPY --from=builder /app/apps/backend/generated apps/backend/generated

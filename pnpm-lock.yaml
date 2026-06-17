@@ -479,6 +479,12 @@ importers:
       bcryptjs:
         specifier: 'catalog:'
         version: 2.4.3
+      class-transformer:
+        specifier: 'catalog:'
+        version: 0.5.1
+      class-validator:
+        specifier: 'catalog:'
+        version: 0.14.2
       jsonwebtoken:
         specifier: 'catalog:'
         version: 9.0.2
@@ -561,12 +567,6 @@ importers:
       '@types/swagger-ui-express':
         specifier: 'catalog:'
         version: 4.1.8
-      class-transformer:
-        specifier: 'catalog:'
-        version: 0.5.1
-      class-validator:
-        specifier: 'catalog:'
-        version: 0.14.2
       dotenv:
         specifier: 'catalog:'
         version: 17.2.3
