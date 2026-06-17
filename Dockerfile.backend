@@ -1,0 +1,34 @@
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY packages/types/package.json packages/types/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+COPY . .
+RUN pnpm --filter @moge/backend prisma:generate
+RUN pnpm --filter @moge/types build
+RUN pnpm --filter @moge/backend build
+
+FROM base AS runner
+ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY packages/types/package.json packages/types/package.json
+RUN pnpm install --frozen-lockfile --prod --filter @moge/backend... --ignore-scripts && pnpm store prune
+COPY --from=builder /app/packages/types/dist packages/types/dist
+COPY --from=builder /app/apps/backend/dist apps/backend/dist
+COPY --from=builder /app/apps/backend/generated apps/backend/generated
+COPY --from=builder /app/apps/backend/prisma apps/backend/prisma
+COPY --from=builder /app/apps/backend/docker-entrypoint.sh apps/backend/docker-entrypoint.sh
+RUN chmod +x apps/backend/docker-entrypoint.sh
+EXPOSE 8888
+ENTRYPOINT ["/app/apps/backend/docker-entrypoint.sh"]
+CMD ["node", "dist/main"]

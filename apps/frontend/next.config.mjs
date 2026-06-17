@@ -3,6 +3,7 @@ const backendApiOrigin = process.env.NEXT_APP_API_URL ?? 'http://localhost:8888'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   /**
    * 配置开发环境下的代理，解决跨域问题
    * @see https://nextjs.org/docs/api-reference/next.config.js/rewrites

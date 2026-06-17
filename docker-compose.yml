@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: moge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-moge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moge_password}
+      POSTGRES_DB: ${POSTGRES_DB:-moge}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moge} -d ${POSTGRES_DB:-moge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: moge-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 8888
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-moge}:${POSTGRES_PASSWORD:-moge_password}@postgres:5432/${POSTGRES_DB:-moge}?schema=public
+      DATABASE_TYPE: postgresql
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${POSTGRES_USER:-moge}
+      DATABASE_DATABASE: ${POSTGRES_DB:-moge}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AI_PROVIDER: ${AI_PROVIDER:-openai_compatible}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:-}
+      MOONSHOT_MODEL_NAME: ${MOONSHOT_MODEL_NAME:-}
+      MOONSHOT_BASE_URL: ${MOONSHOT_BASE_URL:-}
+      OPENAI_COMPATIBLE_BASE_URL: ${OPENAI_COMPATIBLE_BASE_URL:-}
+      OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY:-}
+      OPENAI_COMPATIBLE_MODEL: ${OPENAI_COMPATIBLE_MODEL:-gpt-5.2}
+    ports:
+      - "${BACKEND_PORT:-8888}:8888"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_APP_API_URL: ${NEXT_APP_API_URL:-http://backend:8888}
+    container_name: moge-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_APP_API_URL: ${NEXT_APP_API_URL:-http://backend:8888}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      GITLAB_CLIENT_ID: ${GITLAB_CLIENT_ID:-}
+      GITLAB_CLIENT_SECRET: ${GITLAB_CLIENT_SECRET:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:

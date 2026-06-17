@@ -1,0 +1,30 @@
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY packages/types/package.json packages/types/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+ARG NEXT_APP_API_URL=http://backend:8888
+ENV NEXT_APP_API_URL=$NEXT_APP_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY . .
+RUN pnpm --filter @moge/types build
+RUN pnpm --filter @moge/frontend build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
+COPY --from=builder /app/apps/frontend/.next/standalone ./
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
+EXPOSE 3000
+CMD ["node", "apps/frontend/server.js"]

@@ -43,7 +43,7 @@ module.exports = {
   parserPreset: {
     parserOpts: {
       // 自定义解析规则，支持带 Emoji 或不带 Emoji 的 type
-      headerPattern: /^(\p{Emoji}\s*\w+|\w+)(?:\(([\w$.\-* ]+)\))?: (.+)$/u,
+      headerPattern: /^(\p{Emoji}\s*\w+|\w+)(?:\(([\w$.\-* ]+)\))?[:：]\s*(.+)$/u,
       headerCorrespondence: ['type', 'scope', 'subject'],
     },
   },
