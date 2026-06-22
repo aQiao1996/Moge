@@ -1,12 +1,23 @@
 import { create } from 'zustand';
-import type { Dict, CreateDictItemValues, UpdateDictItemValues } from '@moge/types';
+import type {
+  Dict,
+  DictItemVersion,
+  DictScope,
+  CreateDictItemValues,
+  UpdateDictItemValues,
+} from '@moge/types';
 import {
   getDictApi,
+  getCommunityDictApi,
   getDictStatisticsApi,
   createDictItemApi,
   updateDictItemApi,
   deleteDictItemApi,
   toggleDictItemApi,
+  getDictItemVersionsApi,
+  shareDictItemApi,
+  archiveDictShareApi,
+  forkDictItemApi,
 } from '@/api/dict.api';
 
 /**
@@ -24,12 +35,20 @@ interface DictState {
   fetchNovelTypes: () => Promise<void>;
   fetchNovelEras: () => Promise<void>;
   fetchNovelTags: () => Promise<void>;
-  fetchDictByType: (type: string) => Promise<Dict[]>;
+  fetchDictByType: (
+    type: string,
+    options?: { projectId?: number; scope?: DictScope }
+  ) => Promise<Dict[]>;
+  fetchCommunityDict: (type?: string) => Promise<Dict[]>;
   fetchStatistics: () => Promise<Record<string, number>>;
   createDictItem: (data: CreateDictItemValues) => Promise<Dict>;
   updateDictItem: (id: number, data: UpdateDictItemValues) => Promise<Dict>;
   deleteDictItem: (id: number) => Promise<void>;
   toggleDictItem: (id: number, isEnabled: boolean) => Promise<Dict>;
+  fetchDictItemVersions: (id: number) => Promise<DictItemVersion[]>;
+  shareDictItem: (id: number) => Promise<Dict>;
+  archiveDictShare: (id: number) => Promise<Dict>;
+  forkDictItem: (id: number) => Promise<Dict>;
 }
 
 /**
@@ -141,15 +160,30 @@ export const useDictStore = create<DictState>((set, get) => ({
    * @param type 字典类型代码
    * @returns 该类型下的字典项数组
    */
-  fetchDictByType: async (type: string) => {
+  fetchDictByType: async (type: string, options = {}) => {
     set({ loading: true, error: null });
     try {
-      const response = await getDictApi(type);
+      const response = await getDictApi(type, options);
       set({ loading: false });
       return response.data;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : `Failed to fetch dict type: ${type}`;
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
+    }
+  },
+
+  fetchCommunityDict: async (type?: string) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await getCommunityDictApi(type);
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch community dict';
       set({ error: errorMessage, loading: false });
       console.error(errorMessage);
       throw error;
@@ -226,6 +260,62 @@ export const useDictStore = create<DictState>((set, get) => ({
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to toggle dict item';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
+    }
+  },
+
+  fetchDictItemVersions: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await getDictItemVersionsApi(id);
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dict versions';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
+    }
+  },
+
+  shareDictItem: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await shareDictItemApi(id);
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to share dict item';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
+    }
+  },
+
+  archiveDictShare: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await archiveDictShareApi(id);
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to archive dict share';
+      set({ error: errorMessage, loading: false });
+      console.error(errorMessage);
+      throw error;
+    }
+  },
+
+  forkDictItem: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await forkDictItemApi(id);
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fork dict item';
       set({ error: errorMessage, loading: false });
       console.error(errorMessage);
       throw error;

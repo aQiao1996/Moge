@@ -1,13 +1,32 @@
 import httpRequest from '@/lib/request';
-import type { Dict, CreateDictItemValues, UpdateDictItemValues } from '@moge/types';
+import type {
+  Dict,
+  DictItemVersion,
+  DictScope,
+  CreateDictItemValues,
+  UpdateDictItemValues,
+} from '@moge/types';
+
+interface GetDictOptions {
+  projectId?: number;
+  scope?: DictScope;
+}
 
 /**
  * 根据类型获取字典数据
  * @param type 字典类型代码
  * @returns 字典项数组
  */
-export const getDictApi = (type: string) => {
-  return httpRequest.get<Dict[]>('/dict', { type });
+export const getDictApi = (type: string, options: GetDictOptions = {}) => {
+  return httpRequest.get<Dict[]>('/dict', {
+    type,
+    ...(options.projectId ? { projectId: options.projectId } : {}),
+    ...(options.scope ? { scope: options.scope } : {}),
+  });
+};
+
+export const getCommunityDictApi = (type?: string) => {
+  return httpRequest.get<Dict[]>('/dict/community', type ? { type } : undefined);
 };
 
 /**
@@ -54,4 +73,20 @@ export const deleteDictItemApi = (id: number) => {
  */
 export const toggleDictItemApi = (id: number, isEnabled: boolean) => {
   return httpRequest.patch<Dict>(`/dict/${id}/toggle`, { isEnabled });
+};
+
+export const getDictItemVersionsApi = (id: number) => {
+  return httpRequest.get<DictItemVersion[]>(`/dict/${id}/versions`);
+};
+
+export const shareDictItemApi = (id: number) => {
+  return httpRequest.post<Dict>(`/dict/${id}/share`);
+};
+
+export const archiveDictShareApi = (id: number) => {
+  return httpRequest.post<Dict>(`/dict/${id}/archive-share`);
+};
+
+export const forkDictItemApi = (id: number) => {
+  return httpRequest.post<Dict>(`/dict/${id}/fork`);
 };

@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, FileText, CheckCircle2, TrendingUp, BookMarked, BarChart } from 'lucide-react';
+import {
+  BookOpen,
+  FileText,
+  CheckCircle2,
+  TrendingUp,
+  BookMarked,
+  BarChart,
+  CalendarDays,
+  Flame,
+} from 'lucide-react';
 import { getUserStats, type UserStats } from '@/api/manuscripts.api';
 import MogePageHeader from '@/app/components/MogePageHeader';
 
@@ -39,6 +48,10 @@ export default function StatsPage() {
     { label: '已发布', value: stats?.publishedManuscripts ?? 0 },
     { label: '已放弃', value: stats?.abandonedManuscripts ?? 0 },
   ];
+  const monthMaxWords = stats?.monthlyStats ? Math.max(0, ...Object.values(stats.monthlyStats)) : 0;
+  const projectMaxWords = stats?.projectContribution.length
+    ? Math.max(...stats.projectContribution.map((item) => item.totalWords))
+    : 0;
 
   if (loading) {
     return (
@@ -142,6 +155,58 @@ export default function StatsPage() {
           </Card>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">近30天字数</CardTitle>
+              <CalendarDays className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber(stats.monthWords)}</div>
+              <p className="text-muted-foreground text-xs">{stats.activeDays} 天有写作记录</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">活跃日均</CardTitle>
+              <TrendingUp className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber(stats.averageDailyWords)}</div>
+              <p className="text-muted-foreground text-xs">按有写作记录的日期计算</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">最佳写作日</CardTitle>
+              <Flame className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber(stats.bestWritingDay.words)}</div>
+              <p className="text-muted-foreground text-xs">
+                {stats.bestWritingDay.date || '暂无记录'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">平均章节字数</CardTitle>
+              <BookMarked className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatNumber(
+                  stats.totalChapters > 0 ? Math.round(stats.totalWords / stats.totalChapters) : 0
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">基于全部章节统计</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* 最近7天趋势 */}
         <Card>
           <CardHeader>
@@ -184,6 +249,82 @@ export default function StatsPage() {
             )}
           </CardContent>
         </Card>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5" />
+                <CardTitle>近30天写作趋势</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(stats.monthlyStats).length > 0 ? (
+                <div className="grid grid-cols-10 gap-2">
+                  {Object.entries(stats.monthlyStats)
+                    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+                    .map(([date, words]) => {
+                      const percentage =
+                        monthMaxWords > 0 ? Math.max((words / monthMaxWords) * 100, 8) : 0;
+                      return (
+                        <div key={date} className="flex flex-col items-center gap-1">
+                          <div className="flex h-20 items-end">
+                            <div
+                              className="bg-primary w-3 rounded-t transition-all duration-300"
+                              style={{ height: `${percentage}%` }}
+                              title={`${date}: ${formatNumber(words)} 字`}
+                            />
+                          </div>
+                          <span className="text-muted-foreground text-[10px]">
+                            {new Date(date).getDate()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground py-8 text-center text-sm">近30天暂无写作记录</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>项目贡献度</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.projectContribution.length > 0 ? (
+                <div className="space-y-4">
+                  {stats.projectContribution.map((item) => {
+                    const percentage =
+                      projectMaxWords > 0 ? (item.totalWords / projectMaxWords) * 100 : 0;
+                    return (
+                      <div key={item.id} className="space-y-2">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="line-clamp-1 font-medium">{item.name}</span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            {formatNumber(item.totalWords)} 字
+                          </span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--moge-input-bg)]">
+                          <div
+                            className="bg-primary h-full transition-all duration-300"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          {item.chapterCount} 章，已发布 {formatNumber(item.publishedWords)} 字
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground py-8 text-center text-sm">暂无项目统计</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* 完成情况 */}
         <div className="grid gap-4 md:grid-cols-2">

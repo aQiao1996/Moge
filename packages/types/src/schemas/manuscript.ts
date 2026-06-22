@@ -160,11 +160,19 @@ export const manuscriptWithStructureSchema = manuscriptSchema.extend({
 export type ManuscriptWithStructure = z.infer<typeof manuscriptWithStructureSchema>;
 
 // 文稿设定
+export const manuscriptSettingItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  background: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
 export const manuscriptSettingsSchema = z.object({
-  characters: z.array(z.string()),
-  systems: z.array(z.string()),
-  worlds: z.array(z.string()),
-  misc: z.array(z.string()),
+  characters: z.array(manuscriptSettingItemSchema),
+  systems: z.array(manuscriptSettingItemSchema),
+  worlds: z.array(manuscriptSettingItemSchema),
+  misc: z.array(manuscriptSettingItemSchema),
 });
 
 export type ManuscriptSettings = z.infer<typeof manuscriptSettingsSchema>;

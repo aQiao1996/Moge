@@ -148,7 +148,13 @@ export class SettingsService {
    */
   async getMiscLibrary(userId: number): Promise<Partial<misc_settings>[]> {
     return this.prisma.misc_settings.findMany({
-      where: { userId },
+      where: {
+        userId,
+        NOT: {
+          name: '__moge_workspace__',
+          type: 'workspace_private',
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

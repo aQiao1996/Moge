@@ -1,10 +1,33 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Prisma } from '../../generated/prisma';
 import {
   buildRecentDateKeySet,
   buildWritingDeltaEvents,
   getDateKeyInTimeZone,
 } from '../common/writing-stats.util';
+
+export interface WorkspaceTodo extends Prisma.JsonObject {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface WorkspaceIdea extends Prisma.JsonObject {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface WorkspaceItems {
+  todos: WorkspaceTodo[];
+  ideas: WorkspaceIdea[];
+}
+
+const WORKSPACE_MISC_NAME = '__moge_workspace__';
+const WORKSPACE_MISC_TYPE = 'workspace_private';
 
 /**
  * 工作台服务
@@ -13,6 +36,90 @@ import {
 @Injectable()
 export class WorkspaceService {
   constructor(private prisma: PrismaService) {}
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  private isWorkspaceTodo(value: unknown): value is WorkspaceTodo {
+    if (!this.isRecord(value)) {
+      return false;
+    }
+
+    return (
+      typeof value.id === 'string' &&
+      typeof value.text === 'string' &&
+      typeof value.done === 'boolean' &&
+      typeof value.createdAt === 'string'
+    );
+  }
+
+  private isWorkspaceIdea(value: unknown): value is WorkspaceIdea {
+    if (!this.isRecord(value)) {
+      return false;
+    }
+
+    return (
+      typeof value.id === 'string' &&
+      typeof value.content === 'string' &&
+      typeof value.createdAt === 'string'
+    );
+  }
+
+  private parseTodos(value: Prisma.JsonValue | null): WorkspaceTodo[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((item) => this.isWorkspaceTodo(item));
+  }
+
+  private parseIdeas(value: Prisma.JsonValue | null): WorkspaceIdea[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((item) => this.isWorkspaceIdea(item));
+  }
+
+  private async getWorkspaceRecord(userId: number) {
+    const existing = await this.prisma.misc_settings.findFirst({
+      where: {
+        userId,
+        name: WORKSPACE_MISC_NAME,
+        type: WORKSPACE_MISC_TYPE,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.misc_settings.create({
+      data: {
+        userId,
+        name: WORKSPACE_MISC_NAME,
+        type: WORKSPACE_MISC_TYPE,
+        description: '工作台待办与灵感便签内部存储',
+        inspirations: [],
+        notes: [],
+        tags: ['workspace-internal'],
+      },
+    });
+  }
+
+  private async saveWorkspaceItems(userId: number, items: WorkspaceItems): Promise<WorkspaceItems> {
+    const record = await this.getWorkspaceRecord(userId);
+    await this.prisma.misc_settings.update({
+      where: { id: record.id },
+      data: {
+        notes: items.todos,
+        inspirations: items.ideas,
+      },
+    });
+
+    return items;
+  }
 
   private getWritingChapterScope(userId: number) {
     return {
@@ -67,6 +174,108 @@ export class WorkspaceService {
     ]);
 
     return buildWritingDeltaEvents(currentContents, versionRecords);
+  }
+
+  /**
+   * 获取工作台待办和灵感
+   * @param userId 用户ID
+   * @returns 工作台待办和灵感列表
+   */
+  async getWorkspaceItems(userId: number): Promise<WorkspaceItems> {
+    const record = await this.getWorkspaceRecord(userId);
+
+    return {
+      todos: this.parseTodos(record.notes),
+      ideas: this.parseIdeas(record.inspirations),
+    };
+  }
+
+  /**
+   * 创建工作台待办
+   * @param userId 用户ID
+   * @param text 待办内容
+   * @returns 创建后的待办
+   */
+  async createTodo(userId: number, text: string): Promise<WorkspaceTodo> {
+    const items = await this.getWorkspaceItems(userId);
+    const todo: WorkspaceTodo = {
+      id: randomUUID(),
+      text: text.trim(),
+      done: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    await this.saveWorkspaceItems(userId, {
+      ...items,
+      todos: [todo, ...items.todos],
+    });
+
+    return todo;
+  }
+
+  /**
+   * 更新工作台待办完成状态
+   * @param userId 用户ID
+   * @param id 待办ID
+   * @param done 是否完成
+   * @returns 更新后的工作台待办列表
+   */
+  async updateTodo(userId: number, id: string, done: boolean): Promise<WorkspaceItems> {
+    const items = await this.getWorkspaceItems(userId);
+    return this.saveWorkspaceItems(userId, {
+      ...items,
+      todos: items.todos.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
+    });
+  }
+
+  /**
+   * 删除工作台待办
+   * @param userId 用户ID
+   * @param id 待办ID
+   * @returns 更新后的工作台待办列表
+   */
+  async deleteTodo(userId: number, id: string): Promise<WorkspaceItems> {
+    const items = await this.getWorkspaceItems(userId);
+    return this.saveWorkspaceItems(userId, {
+      ...items,
+      todos: items.todos.filter((todo) => todo.id !== id),
+    });
+  }
+
+  /**
+   * 创建工作台灵感
+   * @param userId 用户ID
+   * @param content 灵感内容
+   * @returns 创建后的灵感
+   */
+  async createIdea(userId: number, content: string): Promise<WorkspaceIdea> {
+    const items = await this.getWorkspaceItems(userId);
+    const idea: WorkspaceIdea = {
+      id: randomUUID(),
+      content: content.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    await this.saveWorkspaceItems(userId, {
+      ...items,
+      ideas: [idea, ...items.ideas],
+    });
+
+    return idea;
+  }
+
+  /**
+   * 删除工作台灵感
+   * @param userId 用户ID
+   * @param id 灵感ID
+   * @returns 更新后的工作台灵感列表
+   */
+  async deleteIdea(userId: number, id: string): Promise<WorkspaceItems> {
+    const items = await this.getWorkspaceItems(userId);
+    return this.saveWorkspaceItems(userId, {
+      ...items,
+      ideas: items.ideas.filter((idea) => idea.id !== id),
+    });
   }
 
   /**

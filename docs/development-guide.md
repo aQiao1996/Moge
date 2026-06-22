@@ -41,16 +41,16 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 ## 3. 模块完成状态
 
-| 模块       | 状态 | 核心功能                         |
-| ---------- | ---- | -------------------------------- |
-| 用户系统   | ✅   | 注册、登录、OAuth、个人中心      |
-| 设定集     | ✅   | 项目管理、四大设定CRUD、设定库   |
-| 字典管理   | ✅   | 分类管理、字典项CRUD             |
-| 大纲       | ✅   | CRUD、卷章结构、AI生成、设定关联 |
-| 文稿       | ✅   | CRUD、卷章管理、编辑器、AI辅助   |
-| 工作台     | ✅   | 统计卡片、最近项目、快速创建     |
-| 搜索/@引用 | ✅   | 统一搜索、@引用基础功能          |
-| 导出       | ✅   | TXT/Markdown导出                 |
+| 模块       | 状态 | 核心功能                                         |
+| ---------- | ---- | ------------------------------------------------ |
+| 用户系统   | ✅   | 注册、登录、OAuth、个人中心                      |
+| 设定集     | ✅   | 项目管理、四大设定CRUD、设定库                   |
+| 字典管理   | ✅   | 分类管理、字典项CRUD、作用域、社区共享、版本历史 |
+| 大纲       | ✅   | CRUD、卷章结构、AI生成、设定关联                 |
+| 文稿       | ✅   | CRUD、卷章管理、编辑器、AI辅助                   |
+| 工作台     | ✅   | 统计卡片、最近项目、待办、灵感便签               |
+| 搜索/@引用 | ✅   | 统一搜索、@引用预览、反向链接                    |
+| 导出       | ✅   | TXT/Markdown导出                                 |
 
 ---
 
@@ -69,7 +69,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - `POST /manuscripts` - 创建文稿
 - `POST /manuscripts/from-outline/:id` - 从大纲创建文稿 (✅ 复制结构)
 - `POST /manuscripts/chapters/:id/ai/continue` - AI续写 (✅ 注入设定)
-- `POST /manuscripts/chapters/:id/ai/polish` - AI润色
+- `POST /manuscripts/chapters/:id/ai/polish` - AI润色 (✅ 注入设定)
 - `POST /manuscripts/chapters/:id/ai/expand` - AI扩写 (✅ 注入设定)
 - `POST /manuscripts/chapters/:id/publish` - 发布章节
 - `GET /manuscripts/chapters/:id/versions` - 获取版本历史
@@ -77,7 +77,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 ### P2 - 高级功能 (后续迭代)
 
-- EPUB/DOCX导出、定时发布、灵感便签、创作目标
+- EPUB/DOCX导出、定时发布、多人协作权限
 
 ---
 
@@ -88,7 +88,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 设定: projects, character/system/world/misc_settings
 大纲: outline, outline_content, outline_volume, outline_chapter, outline_chapter_content
 文稿: manuscripts, manuscript_volume, manuscript_chapter, manuscript_chapter_content
-字典: dict_categories, dict_items
+字典: dict_categories, dict_items, dict_item_versions
 ```
 
 ---
@@ -103,7 +103,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
   - 搜索和插入
   - 悬浮预览 (`MentionHoverCard.tsx`)
   - 跳转功能 (`MentionMarkdown.tsx`)
-  - 反向链接 (`/search/backlinks` API)
+  - 反向链接 (`/search/backlinks` API + 设定库入口)
 
 ### 文稿模块架构
 
@@ -117,7 +117,13 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - **写作统计**:
   - 总字数、已发布字数统计
   - 章节发布进度追踪
+  - 近30天趋势、活跃天数、项目贡献度分析
   - 最后编辑时间显示 (`WritingStats.tsx`)
+
+### 工作台与字典
+
+- **工作台**: 最近项目/大纲/文稿、今日待办、灵感便签；待办和便签复用内部辅助设定记录做用户级服务端持久化。
+- **字典**: 支持系统/个人/项目级词条、社区共享、复制到个人字典、编辑版本历史，以及分类内 JSON 导入导出。
 
 ---
 

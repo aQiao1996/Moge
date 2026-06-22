@@ -20,6 +20,19 @@ interface SearchListResponse {
   total: number;
 }
 
+export interface BacklinkItem {
+  id: number;
+  type: 'outline_chapter' | 'manuscript_chapter';
+  title: string;
+  parentTitle: string;
+  updatedAt: string;
+}
+
+interface BacklinkListResponse {
+  items: BacklinkItem[];
+  total: number;
+}
+
 /**
  * 统一搜索设定
  * @param q 搜索关键词
@@ -45,4 +58,19 @@ export async function searchSettings(q: string, projectId?: number): Promise<Sea
 export async function getSettingDetail(type: string, id: number) {
   const response = await request.get(`/search/setting?type=${type}&id=${id}`);
   return response.data;
+}
+
+/**
+ * 获取设定反向链接
+ * @param type 设定类型
+ * @param id 设定ID
+ * @returns 引用了该设定的大纲/文稿章节
+ */
+export async function getBacklinks(
+  type: 'character' | 'system' | 'world' | 'misc',
+  id: number
+): Promise<BacklinkItem[]> {
+  const params = new URLSearchParams({ type, id: id.toString() });
+  const { data } = await request.get<BacklinkListResponse>(`/search/backlinks?${params}`);
+  return data.items;
 }

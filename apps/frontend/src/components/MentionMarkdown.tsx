@@ -6,6 +6,7 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import MentionHoverCard from '@/components/MentionHoverCard';
 import { useRouter } from 'next/navigation';
 
@@ -31,24 +32,25 @@ export default function MentionMarkdown({ content, className }: MentionMarkdownP
     }
   };
 
-  // 跳转到设定详情页面
+  // 独立设定库使用分类列表页承载编辑和详情入口，跳转时保留被引用项信息。
   const handleNavigate = (type: string, id: string) => {
     const routeMap: Record<string, string> = {
-      character: '/settings/characters',
-      system: '/settings/systems',
-      world: '/settings/worlds',
-      misc: '/settings/misc',
+      character: '/settings/library/characters',
+      system: '/settings/library/systems',
+      world: '/settings/library/worlds',
+      misc: '/settings/library/misc',
     };
 
     const basePath = routeMap[type];
     if (basePath) {
-      router.push(`${basePath}/${id}`);
+      router.push(`${basePath}?highlight=${id}`);
     }
   };
 
   return (
     <div className={className}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           // 自定义链接渲染
           a: ({ href, children, ...props }) => {

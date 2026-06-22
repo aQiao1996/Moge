@@ -5,17 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Zap, Globe, Folder, Edit } from 'lucide-react';
-import { getManuscriptSettings, updateManuscript } from '../api/client';
+import { getManuscriptSettings, updateManuscript, type ManuscriptSettingItem } from '../api/client';
 import SettingSelectorDialog from '@/app/(main)/settings/components/SettingSelectorDialog';
 import { toast } from 'sonner';
 
-interface Setting {
-  id: number;
-  name: string;
-  background?: string | null;
-  description?: string | null;
-  tags?: string[];
-}
+type Setting = ManuscriptSettingItem;
 
 interface ManuscriptSettingsPanelProps {
   manuscriptId: number;
@@ -43,16 +37,7 @@ export default function ManuscriptSettingsPanel({ manuscriptId }: ManuscriptSett
     try {
       setLoading(true);
       const response = await getManuscriptSettings(manuscriptId);
-      // 后端返回的是设定对象数组，而 ManuscriptSettings 类型定义为字符串数组
-      // 这里使用 unknown 进行中间转换
-      setSettings(
-        response.data as unknown as {
-          characters: Setting[];
-          systems: Setting[];
-          worlds: Setting[];
-          misc: Setting[];
-        }
-      );
+      setSettings(response.data);
     } catch (error) {
       console.error('加载关联设定失败:', error);
     } finally {

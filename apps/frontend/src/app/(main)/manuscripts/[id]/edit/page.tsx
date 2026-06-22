@@ -13,11 +13,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff, History } from 'lucide-react';
 import { toast } from 'sonner';
 import EnhancedMdEditor from '@/app/components/EnhancedMdEditor';
 import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
 import AIAssistPanel from '../../components/AIAssistPanel';
+import ChapterVersionHistory from '@/components/ChapterVersionHistory';
 import {
   getManuscript,
   getChapterContent,
@@ -44,6 +45,7 @@ export default function ManuscriptEditPage() {
   const [wordCount, setWordCount] = useState(0);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isAIPanelOpen, setAIPanelOpen] = useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -403,6 +405,11 @@ export default function ManuscriptEditPage() {
             {isAIPanelOpen ? '隐藏 AI' : 'AI 辅助'}
           </Button>
 
+          <Button variant="outline" onClick={() => setVersionHistoryOpen(true)}>
+            <History className="mr-2 h-4 w-4" />
+            版本历史
+          </Button>
+
           {/* 发布/取消发布按钮 */}
           {currentChapter.status === 'PUBLISHED' ? (
             <Button variant="outline" onClick={() => void handleUnpublish()}>
@@ -454,6 +461,7 @@ export default function ManuscriptEditPage() {
             <div className="w-96 flex-shrink-0">
               <AIAssistPanel
                 chapterId={Number(chapterId)}
+                manuscriptId={Number(id)}
                 content={content}
                 selectedText={selectedText}
                 onContinue={handleAIContinue}
@@ -464,6 +472,16 @@ export default function ManuscriptEditPage() {
           )}
         </div>
       </div>
+
+      <ChapterVersionHistory
+        chapterId={Number(chapterId)}
+        open={versionHistoryOpen}
+        onOpenChange={setVersionHistoryOpen}
+        onVersionRestored={() => {
+          void loadChapterContent();
+          void loadManuscript();
+        }}
+      />
     </div>
   );
 }

@@ -48,15 +48,23 @@ export function buildRecentDateKeySet(
   baseDate = new Date(),
   timeZone = WRITING_STATS_TIME_ZONE
 ): Set<string> {
-  const keys = new Set<string>();
+  return new Set(buildRecentDateKeys(days, baseDate, timeZone));
+}
+
+export function buildRecentDateKeys(
+  days: number,
+  baseDate = new Date(),
+  timeZone = WRITING_STATS_TIME_ZONE
+): string[] {
+  const keys: string[] = [];
 
   for (let offset = 0; offset < days; offset += 1) {
     const date = new Date(baseDate);
     date.setDate(date.getDate() - offset);
-    keys.add(getDateKeyInTimeZone(date, timeZone));
+    keys.push(getDateKeyInTimeZone(date, timeZone));
   }
 
-  return keys;
+  return keys.reverse();
 }
 
 export function buildWritingDeltaEvents(

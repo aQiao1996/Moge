@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   FileText,
@@ -13,18 +15,58 @@ import {
   PenTool,
   ArrowRight,
   LayoutDashboard,
+  CheckCircle2,
+  Lightbulb,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getWorkspaceSummary, type WorkspaceSummary } from '@/api/workspace.api';
+import {
+  createWorkspaceIdea,
+  createWorkspaceTodo,
+  deleteWorkspaceIdea,
+  deleteWorkspaceTodo,
+  getWorkspaceItems,
+  getWorkspaceSummary,
+  updateWorkspaceTodo,
+  type WorkspaceIdea,
+  type WorkspaceSummary,
+  type WorkspaceTodo,
+} from '@/api/workspace.api';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
 import dayjs from '@/lib/dayjs';
 import MogePageHeader from '@/app/components/MogePageHeader';
+import { toast } from 'sonner';
+
+const TODO_STORAGE_KEY = 'moge-workspace-todos';
+const IDEA_STORAGE_KEY = 'moge-workspace-ideas';
+
+function readWorkspaceStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const raw = window.localStorage.getItem(key);
+  if (!raw) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function WorkspacePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
+  const [todos, setTodos] = useState<WorkspaceTodo[]>([]);
+  const [ideas, setIdeas] = useState<WorkspaceIdea[]>([]);
+  const [todoText, setTodoText] = useState('');
+  const [ideaText, setIdeaText] = useState('');
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
   // 加载字典数据
@@ -34,6 +76,7 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     void loadWorkspaceSummary();
+    void loadWorkspaceItems();
   }, []);
 
   const loadWorkspaceSummary = async () => {
@@ -48,12 +91,104 @@ export default function WorkspacePage() {
     }
   };
 
+  const loadWorkspaceItems = async () => {
+    try {
+      const data = await getWorkspaceItems();
+      let nextTodos = data.todos;
+      let nextIdeas = data.ideas;
+
+      const localTodos = readWorkspaceStorage<WorkspaceTodo[]>(TODO_STORAGE_KEY, []);
+      const localIdeas = readWorkspaceStorage<WorkspaceIdea[]>(IDEA_STORAGE_KEY, []);
+
+      if (nextTodos.length === 0 && localTodos.length > 0) {
+        for (const todo of localTodos.slice().reverse()) {
+          const created = await createWorkspaceTodo(todo.text);
+          if (todo.done) {
+            const updated = await updateWorkspaceTodo(created.id, true);
+            nextTodos = updated.todos;
+          } else {
+            nextTodos = [created, ...nextTodos];
+          }
+        }
+        window.localStorage.removeItem(TODO_STORAGE_KEY);
+      }
+
+      if (nextIdeas.length === 0 && localIdeas.length > 0) {
+        for (const idea of localIdeas.slice().reverse()) {
+          const created = await createWorkspaceIdea(idea.content);
+          nextIdeas = [created, ...nextIdeas];
+        }
+        window.localStorage.removeItem(IDEA_STORAGE_KEY);
+      }
+
+      setTodos(nextTodos);
+      setIdeas(nextIdeas);
+    } catch (error) {
+      console.error('加载工作台待办和灵感失败:', error);
+    }
+  };
+
   // 格式化数字
   const formatNumber = (num: number) => {
     if (num >= 10000) {
       return (num / 10000).toFixed(1) + '万';
     }
     return num.toString();
+  };
+
+  const addTodo = async () => {
+    const text = todoText.trim();
+    if (!text) return;
+
+    try {
+      const todo = await createWorkspaceTodo(text);
+      setTodos((items) => [todo, ...items]);
+      setTodoText('');
+      toast.success('待办已添加');
+    } catch (error) {
+      console.error('添加待办失败:', error);
+    }
+  };
+
+  const toggleTodo = async (todo: WorkspaceTodo) => {
+    try {
+      const data = await updateWorkspaceTodo(todo.id, !todo.done);
+      setTodos(data.todos);
+    } catch (error) {
+      console.error('更新待办失败:', error);
+    }
+  };
+
+  const removeTodo = async (id: string) => {
+    try {
+      const data = await deleteWorkspaceTodo(id);
+      setTodos(data.todos);
+    } catch (error) {
+      console.error('删除待办失败:', error);
+    }
+  };
+
+  const addIdea = async () => {
+    const content = ideaText.trim();
+    if (!content) return;
+
+    try {
+      const idea = await createWorkspaceIdea(content);
+      setIdeas((items) => [idea, ...items]);
+      setIdeaText('');
+      toast.success('灵感已记录');
+    } catch (error) {
+      console.error('记录灵感失败:', error);
+    }
+  };
+
+  const removeIdea = async (id: string) => {
+    try {
+      const data = await deleteWorkspaceIdea(id);
+      setIdeas(data.ideas);
+    } catch (error) {
+      console.error('删除灵感失败:', error);
+    }
   };
 
   // 获取状态标签
@@ -187,6 +322,126 @@ export default function WorkspacePage() {
                 {summary?.stats.manuscriptCount || 0}
               </p>
             </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              今日待办
+            </h3>
+            <span className="text-xs text-[var(--moge-text-muted)]">
+              {todos.filter((item) => item.done).length}/{todos.length} 完成
+            </span>
+          </div>
+          <div className="mb-4 flex gap-2">
+            <Input
+              value={todoText}
+              onChange={(event) => setTodoText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  void addTodo();
+                }
+              }}
+              placeholder="添加今日写作目标"
+            />
+            <Button size="icon" onClick={() => void addTodo()} aria-label="添加待办">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {todos.length ? (
+              todos.slice(0, 6).map((todo) => (
+                <div
+                  key={todo.id}
+                  className="flex items-center gap-3 rounded-md border p-3"
+                  style={{ borderColor: 'var(--moge-card-border)' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => void toggleTodo(todo)}
+                    className={`h-4 w-4 rounded-full border ${
+                      todo.done ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                    }`}
+                    aria-label={todo.done ? '标记为未完成' : '标记为已完成'}
+                  />
+                  <span
+                    className={`flex-1 text-sm ${
+                      todo.done
+                        ? 'text-[var(--moge-text-muted)] line-through'
+                        : 'text-[var(--moge-text-main)]'
+                    }`}
+                  >
+                    {todo.text}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void removeTodo(todo.id)}
+                    aria-label="删除待办"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p className="py-8 text-center text-sm text-[var(--moge-text-muted)]">暂无待办</p>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              灵感便签
+            </h3>
+            <span className="text-xs text-[var(--moge-text-muted)]">{ideas.length} 条</span>
+          </div>
+          <div className="mb-4 space-y-2">
+            <Textarea
+              value={ideaText}
+              onChange={(event) => setIdeaText(event.target.value)}
+              placeholder="记录一个剧情、角色或设定想法"
+              className="min-h-20"
+            />
+            <Button onClick={() => void addIdea()} className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
+              记录灵感
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {ideas.length ? (
+              ideas.slice(0, 5).map((idea) => (
+                <div
+                  key={idea.id}
+                  className="rounded-md border p-3"
+                  style={{ borderColor: 'var(--moge-card-border)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    <p className="flex-1 whitespace-pre-wrap text-sm text-[var(--moge-text-main)]">
+                      {idea.content}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => void removeIdea(idea.id)}
+                      aria-label="删除灵感"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-[var(--moge-text-muted)]">
+                    {dayjs(idea.createdAt).fromNow()}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="py-8 text-center text-sm text-[var(--moge-text-muted)]">暂无灵感便签</p>
+            )}
           </div>
         </Card>
       </div>

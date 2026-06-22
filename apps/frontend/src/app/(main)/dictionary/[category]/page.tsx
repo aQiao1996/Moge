@@ -1,10 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { ChangeEvent, useCallback, useRef, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  Search,
+  Edit2,
+  Trash2,
+  Eye,
+  EyeOff,
+  Download,
+  Upload,
+  Share2,
+  ShieldCheck,
+  History,
+  CopyPlus,
+  Globe2,
+  Layers3,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MogeFilter, { MogeFilterState, FilterOption, SortOption } from '@/app/components/MogeFilter';
@@ -15,6 +30,15 @@ import type { CreateDictItemValues, UpdateDictItemValues, Dict } from '@moge/typ
 import { useDictStore } from '@/stores/dictStore';
 import dayjs from '@/lib/dayjs';
 import MogeConfirmPopover from '@/app/components/MogeConfirmPopover';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 /**
  * 字典分类配置
@@ -74,6 +98,38 @@ const sortOptions: SortOption[] = [
   { value: 'label', label: '标签名称' },
 ];
 
+const scopeTabs = [
+  { value: 'ALL', label: '全部' },
+  { value: 'SYSTEM', label: '系统' },
+  { value: 'USER', label: '个人' },
+  { value: 'PROJECT', label: '项目' },
+  { value: 'COMMUNITY', label: '社区' },
+] as const;
+
+type ScopeTab = (typeof scopeTabs)[number]['value'];
+type ItemScope = 'SYSTEM' | 'USER' | 'PROJECT';
+type ItemShareStatus = 'PRIVATE' | 'SHARED' | 'ARCHIVED';
+type VersionItem = {
+  id: number;
+  version: number;
+  label: string;
+  value: string;
+  description?: string | null;
+  createdAt: Date | string;
+};
+
+const scopeLabels: Record<ItemScope, string> = {
+  SYSTEM: '系统',
+  USER: '个人',
+  PROJECT: '项目',
+};
+
+const shareStatusLabels = {
+  PRIVATE: '未分享',
+  SHARED: '已共享',
+  ARCHIVED: '已归档',
+} satisfies Record<ItemShareStatus, string>;
+
 /**
  * 字典分类详情页组件
  *
@@ -87,12 +143,27 @@ const sortOptions: SortOption[] = [
 export default function DictionaryCategoryPage() {
   const params = useParams();
   const categoryKey = params.category as string;
-  const { fetchDictByType, createDictItem, updateDictItem, deleteDictItem, toggleDictItem } =
-    useDictStore();
+  const {
+    fetchDictByType,
+    fetchCommunityDict,
+    createDictItem,
+    updateDictItem,
+    deleteDictItem,
+    toggleDictItem,
+    fetchDictItemVersions,
+    shareDictItem,
+    archiveDictShare,
+    forkDictItem,
+  } = useDictStore();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [dictItems, setDictItems] = useState<Dict[]>([]);
+  const [scopeTab, setScopeTab] = useState<ScopeTab>('ALL');
+  const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [versionItem, setVersionItem] = useState<Dict | null>(null);
+  const [versions, setVersions] = useState<VersionItem[]>([]);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 8;
 
   // 编辑对话框状态
@@ -106,23 +177,28 @@ export default function DictionaryCategoryPage() {
    * 获取字典数据
    * 根据分类类型从后端获取词条列表
    */
+  const loadDictItems = useCallback(async () => {
+    if (!currentCategory) return;
+
+    setLoading(true);
+    try {
+      const data =
+        scopeTab === 'COMMUNITY'
+          ? await fetchCommunityDict(categoryKey)
+          : await fetchDictByType(categoryKey, {
+              scope: scopeTab === 'ALL' ? undefined : scopeTab,
+            });
+      setDictItems(data);
+    } catch (error) {
+      console.error('Failed to fetch dict data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryKey, currentCategory, fetchCommunityDict, fetchDictByType, scopeTab]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!currentCategory) return;
-
-      setLoading(true);
-      try {
-        const data = await fetchDictByType(categoryKey);
-        setDictItems(data);
-      } catch (error) {
-        console.error('Failed to fetch dict data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [currentCategory, fetchDictByType]);
+    void loadDictItems();
+  }, [loadDictItems]);
 
   // 筛选状态
   const [filters, setFilters] = useState<MogeFilterState>({
@@ -178,7 +254,7 @@ export default function DictionaryCategoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.isEnabled, filters.sortBy, filters.sortOrder]);
+  }, [filters.search, filters.isEnabled, filters.sortBy, filters.sortOrder, scopeTab]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -194,9 +270,7 @@ export default function DictionaryCategoryPage() {
     try {
       await createDictItem(values);
       toast.success('词条创建成功');
-      // 刷新列表数据
-      const data = await fetchDictByType(categoryKey);
-      setDictItems(data);
+      await loadDictItems();
     } catch (error) {
       console.error('Create dict item error:', error);
     }
@@ -214,9 +288,7 @@ export default function DictionaryCategoryPage() {
       toast.success('词条更新成功');
       setEditDialogOpen(false);
       setEditingItem(null);
-      // 刷新列表数据
-      const data = await fetchDictByType(categoryKey);
-      setDictItems(data);
+      await loadDictItems();
     } catch (error) {
       console.error('Update dict item error:', error);
     }
@@ -236,16 +308,10 @@ export default function DictionaryCategoryPage() {
    * 删除成功后刷新列表
    */
   const handleDelete = async (item: Dict) => {
-    if (!confirm(`确定要删除词条"${item.label}"吗？`)) {
-      return;
-    }
-
     try {
       await deleteDictItem(item.id);
       toast.success('词条删除成功');
-      // 刷新列表数据
-      const data = await fetchDictByType(categoryKey);
-      setDictItems(data);
+      await loadDictItems();
     } catch (error) {
       console.error('Delete dict item error:', error);
     }
@@ -259,11 +325,138 @@ export default function DictionaryCategoryPage() {
     try {
       await toggleDictItem(item.id, !item.isEnabled);
       toast.success(`词条已${!item.isEnabled ? '启用' : '禁用'}`);
-      // 刷新列表数据
-      const data = await fetchDictByType(categoryKey);
-      setDictItems(data);
+      await loadDictItems();
     } catch (error) {
       console.error('Toggle dict item error:', error);
+    }
+  };
+
+  const handleExport = () => {
+    const payload = {
+      categoryCode: categoryKey,
+      categoryTitle: currentCategory.title,
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      permission: 'personal',
+      items: dictItems.map(({ label, value, description, sortOrder, isEnabled }) => ({
+        label,
+        value,
+        description,
+        sortOrder,
+        isEnabled,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `moge-dict-${categoryKey}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('字典已导出');
+  };
+
+  const handleShare = () => {
+    handleExport();
+    toast.success('已生成可分享字典文件');
+  };
+
+  const handleShareItem = async (item: Dict) => {
+    try {
+      await shareDictItem(item.id);
+      toast.success('词条已共享到社区');
+      await loadDictItems();
+    } catch (error) {
+      console.error('Share dict item error:', error);
+    }
+  };
+
+  const handleArchiveShare = async (item: Dict) => {
+    try {
+      await archiveDictShare(item.id);
+      toast.success('已取消社区共享');
+      await loadDictItems();
+    } catch (error) {
+      console.error('Archive dict share error:', error);
+    }
+  };
+
+  const handleFork = async (item: Dict) => {
+    try {
+      await forkDictItem(item.id);
+      toast.success('已复制到个人字典');
+      if (scopeTab === 'COMMUNITY') {
+        setScopeTab('USER');
+      } else {
+        await loadDictItems();
+      }
+    } catch (error) {
+      console.error('Fork dict item error:', error);
+    }
+  };
+
+  const handleOpenVersions = async (item: Dict) => {
+    setVersionItem(item);
+    setVersionDialogOpen(true);
+    try {
+      const data = await fetchDictItemVersions(item.id);
+      setVersions(data);
+    } catch (error) {
+      console.error('Fetch dict versions error:', error);
+      setVersions([]);
+    }
+  };
+
+  const isImportItem = (value: unknown): value is Omit<CreateDictItemValues, 'categoryCode'> => {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const item = value as Record<string, unknown>;
+    return typeof item.label === 'string' && typeof item.value === 'string';
+  };
+
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as unknown;
+      const itemsSource =
+        parsed && typeof parsed === 'object' && 'items' in parsed
+          ? (parsed as { items?: unknown }).items
+          : parsed;
+
+      if (!Array.isArray(itemsSource)) {
+        throw new Error('导入文件格式不正确');
+      }
+
+      const importItems = itemsSource.filter(isImportItem);
+      if (importItems.length === 0) {
+        throw new Error('未找到可导入词条');
+      }
+
+      let successCount = 0;
+      for (const item of importItems) {
+        await createDictItem({
+          categoryCode: categoryKey,
+          label: item.label,
+          value: item.value,
+          description: item.description,
+          sortOrder: item.sortOrder ?? 0,
+          isEnabled: item.isEnabled ?? true,
+        });
+        successCount += 1;
+      }
+
+      await loadDictItems();
+      toast.success(`成功导入 ${successCount} 个词条`);
+    } catch (error) {
+      console.error('Import dict item error:', error);
     }
   };
 
@@ -272,7 +465,39 @@ export default function DictionaryCategoryPage() {
    * 展示词条的详细信息和操作按钮
    */
 
+  const renderScopeBadges = (item: Dict) => {
+    const scope: ItemScope = item.scope ?? 'SYSTEM';
+    const shareStatus = item.shareStatus as ItemShareStatus | undefined;
+    return (
+      <>
+        <Badge variant="outline" className="gap-1 text-xs">
+          {scope === 'SYSTEM' ? (
+            <ShieldCheck className="h-3 w-3" />
+          ) : scope === 'PROJECT' ? (
+            <Layers3 className="h-3 w-3" />
+          ) : (
+            <Globe2 className="h-3 w-3" />
+          )}
+          {scopeLabels[scope]}
+        </Badge>
+        <Badge variant="outline" className="text-xs">
+          v{item.version ?? 1}
+        </Badge>
+        {shareStatus && shareStatus !== 'PRIVATE' && (
+          <Badge variant={shareStatus === 'SHARED' ? 'default' : 'secondary'} className="text-xs">
+            {shareStatusLabels[shareStatus]}
+          </Badge>
+        )}
+      </>
+    );
+  };
+
   const renderItemCard = (item: Dict) => {
+    const isCommunityView = scopeTab === 'COMMUNITY';
+    const canEdit = item.scope !== 'SYSTEM' && !isCommunityView;
+    const canShare = item.scope === 'USER' && !isCommunityView;
+    const canFork = isCommunityView || item.scope === 'SYSTEM';
+
     return (
       <Card
         key={item.id}
@@ -286,6 +511,7 @@ export default function DictionaryCategoryPage() {
               <Badge variant={item.isEnabled ? 'default' : 'secondary'} className="text-xs">
                 {item.isEnabled ? '启用' : '禁用'}
               </Badge>
+              {renderScopeBadges(item)}
               <code className="rounded border bg-[var(--moge-bg)] px-2 py-1 text-xs text-[var(--moge-text-muted)]">
                 {item.value}
               </code>
@@ -299,31 +525,74 @@ export default function DictionaryCategoryPage() {
           </div>
 
           <div className="ml-4 flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => void handleEdit(item)}>
-              <Edit2 className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              title="版本历史"
+              onClick={() => void handleOpenVersions(item)}
+            >
+              <History className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => void handleToggle(item)}>
-              {item.isEnabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-            <MogeConfirmPopover
-              trigger={
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  title="删除"
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              }
-              title="确认删除"
-              description={`此操作无法撤销，确定要删除词条「${item.label}」吗？`}
-              confirmText="确认删除"
-              cancelText="取消"
-              loadingText="删除中..."
-              confirmVariant="destructive"
-              onConfirm={() => handleDelete(item)}
-            />
+            {canFork && (
+              <Button
+                variant="ghost"
+                size="sm"
+                title="复制到个人字典"
+                onClick={() => void handleFork(item)}
+              >
+                <CopyPlus className="h-4 w-4" />
+              </Button>
+            )}
+            {canShare && (
+              <Button
+                variant="ghost"
+                size="sm"
+                title={item.shareStatus === 'SHARED' ? '取消共享' : '共享到社区'}
+                onClick={() =>
+                  void (item.shareStatus === 'SHARED'
+                    ? handleArchiveShare(item)
+                    : handleShareItem(item))
+                }
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
+            {canEdit && (
+              <Button variant="ghost" size="sm" title="编辑" onClick={() => void handleEdit(item)}>
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            )}
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                title="启用/禁用"
+                onClick={() => void handleToggle(item)}
+              >
+                {item.isEnabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            )}
+            {canEdit && (
+              <MogeConfirmPopover
+                trigger={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    title="删除"
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                }
+                title="确认删除"
+                description={`此操作无法撤销，确定要删除词条「${item.label}」吗？`}
+                confirmText="确认删除"
+                cancelText="取消"
+                loadingText="删除中..."
+                confirmVariant="destructive"
+                onConfirm={() => handleDelete(item)}
+              />
+            )}
           </div>
         </div>
       </Card>
@@ -364,10 +633,39 @@ export default function DictionaryCategoryPage() {
             {currentCategory.title}
           </h1>
           <p className="mt-1 text-[var(--moge-text-sub)]">{currentCategory.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Badge variant="outline" className="gap-1">
+              <ShieldCheck className="h-3 w-3" />
+              系统/个人/项目权限
+            </Badge>
+            <Badge variant="outline" className="gap-1">
+              <History className="h-3 w-3" />
+              版本历史
+            </Badge>
+            <Badge variant="outline">社区共享</Badge>
+          </div>
         </div>
 
-        {/* 创建词条按钮 */}
-        <div>
+        <div className="flex items-center gap-2">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(event) => void handleImport(event)}
+          />
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
+            导出
+          </Button>
+          <Button variant="outline" onClick={() => importInputRef.current?.click()}>
+            <Upload className="mr-2 h-4 w-4" />
+            导入
+          </Button>
+          <Button variant="outline" onClick={handleShare}>
+            <Share2 className="mr-2 h-4 w-4" />
+            分享
+          </Button>
           <DictItemDialog
             mode="create"
             categoryCode={categoryKey}
@@ -379,6 +677,15 @@ export default function DictionaryCategoryPage() {
 
       {/* 筛选组件 */}
       <div className="mb-6">
+        <Tabs value={scopeTab} onValueChange={(value) => setScopeTab(value as ScopeTab)}>
+          <TabsList className="mb-4">
+            {scopeTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <MogeFilter
           filters={filters}
           onFiltersChange={setFilters}
@@ -406,7 +713,9 @@ export default function DictionaryCategoryPage() {
             emptyTitle={
               hasActiveFilters
                 ? `没有找到符合条件的${currentCategory.title}`
-                : `还没有${currentCategory.title}`
+                : scopeTab === 'COMMUNITY'
+                  ? `社区暂无${currentCategory.title}`
+                  : `还没有${currentCategory.title}`
             }
             emptyDescription={
               hasActiveFilters ? undefined : `创建您的第一个${currentCategory.title}词条`
@@ -434,6 +743,8 @@ export default function DictionaryCategoryPage() {
                 sortOrder: editingItem.sortOrder,
                 isEnabled: editingItem.isEnabled,
                 description: editingItem.description || '',
+                scope: (editingItem.scope ?? 'USER') as ItemScope,
+                projectId: editingItem.projectId ?? undefined,
                 createdAt: dayjs(editingItem.createdAt).toISOString(),
                 updatedAt: dayjs(editingItem.updatedAt).toISOString(),
               }
@@ -443,6 +754,49 @@ export default function DictionaryCategoryPage() {
         onOpenChange={setEditDialogOpen}
         onSubmit={handleEditItem}
       />
+
+      <Dialog open={versionDialogOpen} onOpenChange={setVersionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {versionItem ? `${versionItem.label} 的版本历史` : '版本历史'}
+            </DialogTitle>
+            <DialogDescription>每次编辑会保存旧版本快照，便于回看词条演变。</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[420px] overflow-y-auto">
+            {versions.length === 0 ? (
+              <p className="py-8 text-center text-sm text-[var(--moge-text-muted)]">暂无历史版本</p>
+            ) : (
+              <div className="space-y-4">
+                {versions.map((version) => (
+                  <div key={version.id} className="rounded-md border p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">v{version.version}</Badge>
+                        <span className="font-medium text-[var(--moge-text-main)]">
+                          {version.label}
+                        </span>
+                        <code className="rounded bg-[var(--moge-bg)] px-2 py-1 text-xs">
+                          {version.value}
+                        </code>
+                      </div>
+                      <span className="text-xs text-[var(--moge-text-muted)]">
+                        {dayjs(version.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </span>
+                    </div>
+                    {version.description && (
+                      <>
+                        <Separator className="my-3" />
+                        <p className="text-sm text-[var(--moge-text-sub)]">{version.description}</p>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -48,6 +48,8 @@ model users {
   worldSettings     world_settings[]
   /// 所属的所有辅助设定
   miscSettings      misc_settings[]
+  /// 所属的所有个人/项目字典项
+  dictItems         dict_items[]
   /// 所属的所有文稿
   manuscripts       manuscripts[]
 }
@@ -107,14 +109,73 @@ model dict_items {
   sortOrder    Int             @default(0) @map("sort_order")
   /// 是否启用
   isEnabled    Boolean         @default(true) @map("is_enabled")
+  /// 词条作用域：系统、用户、项目
+  scope        DictScope       @default(SYSTEM)
+  /// 所属用户 ID，系统词条为空
+  userId       Int?            @map("user_id")
+  /// 所属项目 ID，仅项目词条有值
+  projectId    Int?            @map("project_id")
+  /// 共享状态
+  shareStatus  DictShareStatus @default(PRIVATE) @map("share_status")
+  /// 词条版本号
+  version      Int             @default(1)
+  /// 来源词条 ID，用于社区复制
+  sourceItemId Int?            @map("source_item_id")
   /// 创建时间
   createdAt    DateTime        @default(now()) @map("created_at")
   /// 更新时间
   updatedAt    DateTime        @updatedAt @map("updated_at")
   /// 所属分类
   category     dict_categories @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
+  /// 所属用户
+  user         users?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 所属项目
+  project      projects?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 版本历史
+  versions     dict_item_versions[]
 
-  @@unique([categoryCode, value])
+  @@index([categoryCode, scope, userId, projectId])
+  @@index([shareStatus])
+}
+
+/// 字典词条作用域
+enum DictScope {
+  SYSTEM
+  USER
+  PROJECT
+}
+
+/// 字典词条共享状态
+enum DictShareStatus {
+  PRIVATE
+  SHARED
+  ARCHIVED
+}
+
+/// 字典词条版本历史表
+model dict_item_versions {
+  id          Int        @id @default(autoincrement())
+  /// 所属字典项 ID
+  dictItemId  Int        @map("dict_item_id")
+  /// 快照版本号
+  version     Int
+  /// 快照显示标签
+  label       String
+  /// 快照存储值
+  value       String
+  /// 快照描述
+  description String?
+  /// 快照排序
+  sortOrder   Int        @map("sort_order")
+  /// 快照启用状态
+  isEnabled   Boolean    @map("is_enabled")
+  /// 版本创建时间
+  createdAt   DateTime   @default(now()) @map("created_at")
+  /// 所属字典项
+  dictItem    dict_items @relation(fields: [dictItemId], references: [id], onDelete: Cascade)
+
+  @@unique([dictItemId, version])
+  @@index([dictItemId, version])
 }
 
 // * ==================== 小说大纲 ====================
@@ -326,6 +387,8 @@ model projects {
   updatedAt   DateTime @updatedAt @map("updated_at")
   /// 所属用户
   user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 项目级字典项
+  dictItems   dict_items[]
 
   @@index([userId])
   @@index([createdAt])

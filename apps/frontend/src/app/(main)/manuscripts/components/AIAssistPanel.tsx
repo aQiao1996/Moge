@@ -9,20 +9,30 @@
  */
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Wand2, Sparkles, Expand, Loader2 } from 'lucide-react';
+import { Wand2, Sparkles, Expand, Loader2, Database } from 'lucide-react';
 import { toast } from 'sonner';
-import { aiContinueChapter, aiPolishText, aiExpandText } from '../api/client';
+import {
+  aiContinueChapter,
+  aiPolishText,
+  aiExpandText,
+  getManuscriptSettings,
+  type ManuscriptSettingsDetail,
+} from '../api/client';
 
 export interface AIAssistPanelProps {
   /**
    * 当前章节 ID
    */
   chapterId: number;
+  /**
+   * 当前文稿 ID
+   */
+  manuscriptId: number;
   /**
    * 当前章节内容
    */
@@ -47,6 +57,7 @@ export interface AIAssistPanelProps {
 
 export default function AIAssistPanel({
   chapterId,
+  manuscriptId,
   content,
   selectedText,
   onContinue,
@@ -56,8 +67,35 @@ export default function AIAssistPanel({
   const [loading, setLoading] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [generatedText, setGeneratedText] = useState('');
+  const [settings, setSettings] = useState<ManuscriptSettingsDetail | null>(null);
   const [activeTab, setActiveTab] = useState<'continue' | 'polish' | 'expand'>('continue');
   const promptInputId = useId();
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await getManuscriptSettings(manuscriptId);
+        setSettings(response.data);
+      } catch (error) {
+        console.error('加载 AI 上下文失败:', error);
+      }
+    };
+
+    void loadSettings();
+  }, [manuscriptId]);
+
+  const contextSummary = useMemo(() => {
+    if (!settings) {
+      return null;
+    }
+
+    return [
+      { label: '角色', count: settings.characters.length },
+      { label: '系统', count: settings.systems.length },
+      { label: '世界', count: settings.worlds.length },
+      { label: '辅助', count: settings.misc.length },
+    ];
+  }, [settings]);
 
   /**
    * 处理 AI 续写
@@ -180,6 +218,22 @@ export default function AIAssistPanel({
         <h3 className="text-lg font-semibold text-[var(--moge-text-main)]">AI 辅助</h3>
         <p className="text-sm text-[var(--moge-text-muted)]">使用 AI 辅助创作更高效</p>
       </div>
+
+      {contextSummary && (
+        <div className="mb-4 rounded-md border border-[var(--moge-card-border)] p-3">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[var(--moge-text-main)]">
+            <Database className="h-4 w-4" />
+            当前设定上下文
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {contextSummary.map((item) => (
+              <Badge key={item.label} variant="secondary" className="text-xs">
+                {item.label} {item.count}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 功能 Tab */}
       <div className="mb-4 flex gap-2">

@@ -227,6 +227,8 @@ export default function DictItemDialog({
         sortOrder: 0,
         isEnabled: true,
         description: '',
+        scope: 'USER',
+        projectId: undefined,
       }}
       onSubmit={handleSubmit}
       fields={fields as FormFieldConfig<CreateDictItemValues | UpdateDictItemValues>[]}

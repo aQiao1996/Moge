@@ -21,7 +21,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { Prisma } from '../../generated/prisma';
 import {
-  buildRecentDateKeySet,
+  buildRecentDateKeys,
   buildWritingDeltaEvents,
   countWrittenWords,
   getDateKeyInTimeZone,
@@ -1127,11 +1127,18 @@ export class ManuscriptsService {
     misc: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
   }): string {
     const parts: string[] = [];
+    const getOptionalString = (value: unknown): string | undefined => {
+      return typeof value === 'string' && value.trim() ? value : undefined;
+    };
 
     if (settings.characters.length > 0) {
       parts.push('## 角色设定');
       settings.characters.forEach((char) => {
-        parts.push(`- ${char.name}: ${char.background || '暂无背景描述'}`);
+        const summary =
+          getOptionalString(char.background) ??
+          getOptionalString(char.personality) ??
+          '暂无背景描述';
+        parts.push(`- ${char.name}: ${summary}`);
       });
     }
 
@@ -1255,6 +1262,9 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     }
 
     // 构建 AI 提示词
+    const settings = await this.getManuscriptSettings(manuscript.id, userId);
+    const settingsContext = this.buildSettingsContext(settings);
+
     const systemPrompt = `你是一位专业的文字编辑。你的任务是对提供的文本进行润色，提升文字表达质量。
 
 ## 润色要求：
@@ -1262,7 +1272,11 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 2. 修正语法错误和错别字
 3. 增强场景描写的画面感
 4. 保持原文的核心意思和情节不变
-5. 保持原文的文风特点`;
+5. 保持原文的文风特点
+6. 与已有角色、世界观和设定保持一致
+
+## 相关设定：
+${settingsContext}`;
 
     const userPrompt = `## 待润色文本：
 ${text}
@@ -1603,20 +1617,46 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       }
     }
 
-    const recentDateKeys = buildRecentDateKeySet(7);
+    const recentDateList = buildRecentDateKeys(7);
+    const monthlyDateList = buildRecentDateKeys(30);
+    const recentDateKeys = new Set(recentDateList);
+    const monthlyDateKeys = new Set(monthlyDateList);
     const writingEvents = await this.getWritingEvents(userId);
 
     // 按天统计字数
-    const dailyStats: Record<string, number> = {};
+    const dailyStats = Object.fromEntries(recentDateList.map((date) => [date, 0]));
+    const monthlyStats = Object.fromEntries(monthlyDateList.map((date) => [date, 0]));
     for (const event of writingEvents) {
       const dateKey = getDateKeyInTimeZone(event.occurredAt);
 
-      if (!recentDateKeys.has(dateKey)) {
-        continue;
+      if (recentDateKeys.has(dateKey)) {
+        dailyStats[dateKey] = (dailyStats[dateKey] || 0) + event.words;
       }
 
-      dailyStats[dateKey] = (dailyStats[dateKey] || 0) + event.words;
+      if (monthlyDateKeys.has(dateKey)) {
+        monthlyStats[dateKey] = (monthlyStats[dateKey] || 0) + event.words;
+      }
     }
+
+    const projectContribution = manuscripts
+      .map((manuscript) => ({
+        id: manuscript.id,
+        name: manuscript.name,
+        totalWords: manuscript.totalWords || 0,
+        publishedWords: manuscript.publishedWords || 0,
+        chapterCount:
+          (manuscript.chapters?.length || 0) +
+          (manuscript.volumes?.reduce((sum, vol) => sum + (vol.chapters?.length || 0), 0) || 0),
+      }))
+      .sort((left, right) => right.totalWords - left.totalWords)
+      .slice(0, 8);
+
+    const activeDays = Object.values(monthlyStats).filter((words) => words > 0).length;
+    const monthWords = Object.values(monthlyStats).reduce((sum, words) => sum + words, 0);
+    const averageDailyWords = activeDays > 0 ? Math.round(monthWords / activeDays) : 0;
+    const bestWritingDay = Object.entries(monthlyStats)
+      .sort((left, right) => right[1] - left[1])
+      .map(([date, words]) => ({ date, words }))[0] ?? { date: '', words: 0 };
 
     return {
       totalWords,
@@ -1630,6 +1670,12 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
       publishedManuscripts,
       abandonedManuscripts,
       dailyStats,
+      monthlyStats,
+      projectContribution,
+      activeDays,
+      monthWords,
+      averageDailyWords,
+      bestWritingDay,
     };
   }
 

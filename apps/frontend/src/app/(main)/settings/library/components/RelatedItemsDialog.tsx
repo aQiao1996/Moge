@@ -10,10 +10,11 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { BookText, FileText, Folder, Link2 } from 'lucide-react';
+import { BookOpenText, BookText, FileText, Folder, Link2 } from 'lucide-react';
 import { getProjects, type Project } from '@/api/projects.api';
 import { getOutlinesApi } from '@/api/outline.api';
 import { getManuscripts } from '@/app/(main)/manuscripts/api/client';
+import { getBacklinks, type BacklinkItem } from '@/api/search.api';
 import type { Outline } from '@moge/types';
 import type { Manuscript } from '@moge/types';
 
@@ -46,6 +47,7 @@ export default function RelatedItemsDialog({
   category,
 }: RelatedItemsDialogProps) {
   const [relatedItems, setRelatedItems] = useState<RelatedItem[]>([]);
+  const [backlinks, setBacklinks] = useState<BacklinkItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 加载关联的项目、大纲和文稿
@@ -57,9 +59,21 @@ export default function RelatedItemsDialog({
       try {
         const items: RelatedItem[] = [];
         const settingIdStr = String(settingId);
+        const backlinkTypeMap = {
+          characters: 'character',
+          systems: 'system',
+          worlds: 'world',
+          misc: 'misc',
+        } as const;
+
+        const [projects, outlinesRes, manuscriptsRes, backlinkItems] = await Promise.all([
+          getProjects(),
+          getOutlinesApi({ pageNum: 1, pageSize: 1000 }),
+          getManuscripts(),
+          getBacklinks(backlinkTypeMap[category], settingId),
+        ]);
 
         // 获取所有项目
-        const projects = await getProjects();
         const relatedProjects = projects.filter((project: Project) =>
           project[category]?.includes(settingIdStr)
         );
@@ -75,7 +89,6 @@ export default function RelatedItemsDialog({
         );
 
         // 获取所有大纲
-        const outlinesRes = await getOutlinesApi({ pageNum: 1, pageSize: 1000 });
         const relatedOutlines = outlinesRes.list.filter((outline: Outline) =>
           outline[category]?.includes(settingIdStr)
         );
@@ -91,7 +104,6 @@ export default function RelatedItemsDialog({
         );
 
         // 获取所有文稿
-        const manuscriptsRes = await getManuscripts();
         const relatedManuscripts = manuscriptsRes.data.filter((manuscript: Manuscript) =>
           manuscript[category]?.includes(settingIdStr)
         );
@@ -107,6 +119,7 @@ export default function RelatedItemsDialog({
         );
 
         setRelatedItems(items);
+        setBacklinks(backlinkItems);
       } catch (error) {
         console.error('加载关联项目失败:', error);
       } finally {
@@ -143,62 +156,115 @@ export default function RelatedItemsDialog({
         <div className="max-h-[500px] space-y-3 overflow-y-auto">
           {loading ? (
             <div className="py-12 text-center text-[var(--moge-text-sub)]">加载中...</div>
-          ) : relatedItems.length === 0 ? (
+          ) : relatedItems.length === 0 && backlinks.length === 0 ? (
             <div className="py-12 text-center">
               <Link2 className="mx-auto h-12 w-12 text-[var(--moge-text-muted)]" />
-              <p className="mt-4 text-[var(--moge-text-sub)]">暂无关联项目</p>
+              <p className="mt-4 text-[var(--moge-text-sub)]">暂无关联内容</p>
               <p className="mt-2 text-sm text-[var(--moge-text-muted)]">
-                该设定尚未被任何项目、大纲或文稿使用
+                该设定尚未被项目结构或正文 @ 引用使用
               </p>
             </div>
           ) : (
-            relatedItems.map((item) => {
-              const typeInfo = getTypeInfo(item.type);
-              const Icon = typeInfo.icon;
+            <>
+              {relatedItems.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-[var(--moge-text-main)]">结构关联</div>
+                  {relatedItems.map((item) => {
+                    const typeInfo = getTypeInfo(item.type);
+                    const Icon = typeInfo.icon;
 
-              return (
-                <Card
-                  key={`${item.type}-${item.id}`}
-                  className="border p-4"
-                  style={{
-                    backgroundColor: 'var(--moge-card-bg)',
-                    borderColor: 'var(--moge-card-border)',
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <Icon className={`mt-1 h-5 w-5 ${typeInfo.color}`} />
-                    <div className="flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <h4 className="font-medium text-[var(--moge-text-main)]">{item.name}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {typeInfo.label}
-                        </Badge>
-                      </div>
-                      {item.description && (
-                        <p className="mb-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
-                          {item.description}
-                        </p>
-                      )}
-                      {item.tags && item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {item.tags.map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
+                    return (
+                      <Card
+                        key={`${item.type}-${item.id}`}
+                        className="border p-4"
+                        style={{
+                          backgroundColor: 'var(--moge-card-bg)',
+                          borderColor: 'var(--moge-card-border)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon className={`mt-1 h-5 w-5 ${typeInfo.color}`} />
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <h4 className="font-medium text-[var(--moge-text-main)]">
+                                {item.name}
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {typeInfo.label}
+                              </Badge>
+                            </div>
+                            {item.description && (
+                              <p className="mb-2 line-clamp-2 text-sm text-[var(--moge-text-sub)]">
+                                {item.description}
+                              </p>
+                            )}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {item.tags.map((tag, index) => (
+                                  <Badge key={index} variant="secondary" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {backlinks.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-[var(--moge-text-main)]">正文引用</div>
+                  {backlinks.map((item) => {
+                    const isManuscript = item.type === 'manuscript_chapter';
+                    const Icon = isManuscript ? FileText : BookOpenText;
+                    const typeLabel = isManuscript ? '文稿章节' : '大纲章节';
+
+                    return (
+                      <Card
+                        key={`${item.type}-${item.id}`}
+                        className="border p-4"
+                        style={{
+                          backgroundColor: 'var(--moge-card-bg)',
+                          borderColor: 'var(--moge-card-border)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon
+                            className={`mt-1 h-5 w-5 ${isManuscript ? 'text-purple-500' : 'text-green-500'}`}
+                          />
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <h4 className="font-medium text-[var(--moge-text-main)]">
+                                {item.title}
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {typeLabel}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-[var(--moge-text-sub)]">
+                              所属：{item.parentTitle}
+                            </p>
+                            <p className="mt-1 text-xs text-[var(--moge-text-muted)]">
+                              更新于 {new Date(item.updatedAt).toLocaleString('zh-CN')}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {!loading && relatedItems.length > 0 && (
+        {!loading && relatedItems.length + backlinks.length > 0 && (
           <div className="border-t pt-3 text-center text-sm text-[var(--moge-text-muted)]">
-            共找到 {relatedItems.length} 个关联项
+            共找到 {relatedItems.length + backlinks.length} 个关联项
           </div>
         )}
       </DialogContent>

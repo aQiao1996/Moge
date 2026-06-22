@@ -11,8 +11,22 @@ import type {
   CreateChapterValues,
   UpdateChapterValues,
   SaveChapterContentValues,
-  ManuscriptSettings,
 } from '@moge/types';
+
+export interface ManuscriptSettingItem {
+  id: number;
+  name: string;
+  background?: string | null;
+  description?: string | null;
+  tags?: string[];
+}
+
+export interface ManuscriptSettingsDetail {
+  characters: ManuscriptSettingItem[];
+  systems: ManuscriptSettingItem[];
+  worlds: ManuscriptSettingItem[];
+  misc: ManuscriptSettingItem[];
+}
 
 // ==================== Manuscript APIs ====================
 
@@ -62,7 +76,7 @@ export async function deleteManuscript(id: number) {
  * 获取文稿设定
  */
 export async function getManuscriptSettings(id: number) {
-  return get<ManuscriptSettings>(`/manuscripts/${id}/settings`);
+  return get<ManuscriptSettingsDetail>(`/manuscripts/${id}/settings`);
 }
 
 // ==================== Volume APIs ====================
@@ -210,5 +224,4 @@ export type {
   CreateChapterValues,
   UpdateChapterValues,
   SaveChapterContentValues,
-  ManuscriptSettings,
 };

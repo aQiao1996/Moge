@@ -24,6 +24,21 @@ export interface UserStats {
   publishedManuscripts: number;
   abandonedManuscripts: number;
   dailyStats: Record<string, number>;
+  monthlyStats: Record<string, number>;
+  projectContribution: Array<{
+    id: number;
+    name: string;
+    totalWords: number;
+    publishedWords: number;
+    chapterCount: number;
+  }>;
+  activeDays: number;
+  monthWords: number;
+  averageDailyWords: number;
+  bestWritingDay: {
+    date: string;
+    words: number;
+  };
 }
 
 /**

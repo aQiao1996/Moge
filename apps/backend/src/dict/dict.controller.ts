@@ -9,10 +9,25 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { DictService } from './dict.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
-import type { dict_items, dict_categories } from '../../generated/prisma';
+import type { dict_items, dict_categories, dict_item_versions } from '../../generated/prisma';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import {
+  createDictItemRequestSchema,
+  dictCommunityQuerySchema,
+  dictListQuerySchema,
+  toggleDictItemRequestSchema,
+  updateDictItemRequestSchema,
+  type CreateDictItemRequest,
+  type DictCommunityQueryInput,
+  type DictListQueryInput,
+  type ToggleDictItemRequest,
+  type UpdateDictItemRequest,
+} from './dict.schemas';
 
 // 字典分类DTO接口
 interface CreateDictCategoryDto {
@@ -28,26 +43,10 @@ interface UpdateDictCategoryDto {
 }
 
 // 创建和更新的DTO接口
-interface CreateDictItemDto {
-  categoryCode: string;
-  label: string;
-  value: string;
-  sortOrder?: number;
-  isEnabled?: boolean;
-  description?: string;
-}
-
-interface UpdateDictItemDto {
-  categoryCode?: string;
-  label?: string;
-  value?: string;
-  sortOrder?: number;
-  isEnabled?: boolean;
-  description?: string;
-}
-
-interface ToggleDictItemDto {
-  isEnabled: boolean;
+interface AuthRequest {
+  user?: {
+    id: number;
+  };
 }
 
 /**
@@ -58,6 +57,15 @@ interface ToggleDictItemDto {
 @Controller('dict')
 export class DictController {
   constructor(private readonly dictService: DictService) {}
+
+  private getUserId(req: AuthRequest): number {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('未登录');
+    }
+
+    return userId;
+  }
 
   // ==================== 字典分类接口 ====================
 
@@ -125,8 +133,10 @@ export class DictController {
   @Get('statistics')
   @ApiOperation({ summary: '获取字典统计数据' })
   @ApiResponse({ status: 200, description: '成功返回统计数据', type: [Object] })
-  async getStatistics(): Promise<{ categoryCode: string; count: number }[]> {
-    return this.dictService.getStatistics();
+  async getStatistics(
+    @Request() req: AuthRequest
+  ): Promise<{ categoryCode: string; count: number }[]> {
+    return this.dictService.getStatistics(this.getUserId(req));
   }
 
   // ==================== 字典项接口 ====================
@@ -139,9 +149,27 @@ export class DictController {
   @Get()
   @ApiOperation({ summary: '根据类型查询字典数据', description: '例如: type=novel_type' })
   @ApiQuery({ name: 'type', required: true, description: '字典类型' })
+  @ApiQuery({ name: 'projectId', required: false, description: '项目ID' })
+  @ApiQuery({ name: 'scope', required: false, description: '作用域：SYSTEM/USER/PROJECT' })
   @ApiResponse({ status: 200, description: '成功返回字典数据数组', type: [Object] })
-  async findByType(@Query('type') type: string): Promise<dict_items[]> {
-    return this.dictService.findByType(type);
+  async findByType(
+    @Request() req: AuthRequest,
+    @Query(new ZodValidationPipe(dictListQuerySchema)) query: DictListQueryInput
+  ): Promise<dict_items[]> {
+    return this.dictService.findByType(query.type, this.getUserId(req), {
+      projectId: query.projectId,
+      scope: query.scope,
+    });
+  }
+
+  @Get('community')
+  @ApiOperation({ summary: '获取社区共享词条' })
+  @ApiQuery({ name: 'type', required: false, description: '字典类型' })
+  @ApiResponse({ status: 200, description: '成功返回社区共享词条', type: [Object] })
+  async findCommunity(
+    @Query(new ZodValidationPipe(dictCommunityQuerySchema)) query: DictCommunityQueryInput
+  ): Promise<dict_items[]> {
+    return this.dictService.findCommunity(query.type);
   }
 
   /**
@@ -153,8 +181,11 @@ export class DictController {
   @ApiOperation({ summary: '创建字典项' })
   @ApiBody({ description: '字典项数据' })
   @ApiResponse({ status: 201, description: '创建成功', type: Object })
-  async create(@Body() data: CreateDictItemDto): Promise<dict_items> {
-    return this.dictService.create(data);
+  async create(
+    @Request() req: AuthRequest,
+    @Body(new ZodValidationPipe(createDictItemRequestSchema)) data: CreateDictItemRequest
+  ): Promise<dict_items> {
+    return this.dictService.create(this.getUserId(req), data);
   }
 
   /**
@@ -170,9 +201,10 @@ export class DictController {
   @ApiResponse({ status: 200, description: '更新成功', type: Object })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: UpdateDictItemDto
+    @Request() req: AuthRequest,
+    @Body(new ZodValidationPipe(updateDictItemRequestSchema)) data: UpdateDictItemRequest
   ): Promise<dict_items> {
-    return this.dictService.update(id, data);
+    return this.dictService.update(this.getUserId(req), id, data);
   }
 
   /**
@@ -183,8 +215,8 @@ export class DictController {
   @ApiOperation({ summary: '删除字典项' })
   @ApiParam({ name: 'id', description: '字典项ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.dictService.delete(id);
+  async delete(@Param('id', ParseIntPipe) id: number, @Request() req: AuthRequest): Promise<void> {
+    return this.dictService.delete(this.getUserId(req), id);
   }
 
   /**
@@ -200,8 +232,53 @@ export class DictController {
   @ApiResponse({ status: 200, description: '切换成功', type: Object })
   async toggle(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: ToggleDictItemDto
+    @Request() req: AuthRequest,
+    @Body(new ZodValidationPipe(toggleDictItemRequestSchema)) data: ToggleDictItemRequest
   ): Promise<dict_items> {
-    return this.dictService.toggle(id, data.isEnabled);
+    return this.dictService.toggle(this.getUserId(req), id, data.isEnabled);
+  }
+
+  @Get(':id/versions')
+  @ApiOperation({ summary: '获取字典词条版本历史' })
+  @ApiParam({ name: 'id', description: '字典项ID' })
+  @ApiResponse({ status: 200, description: '版本历史', type: [Object] })
+  async findVersions(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest
+  ): Promise<dict_item_versions[]> {
+    return this.dictService.findVersions(this.getUserId(req), id);
+  }
+
+  @Post(':id/share')
+  @ApiOperation({ summary: '分享个人词条到社区' })
+  @ApiParam({ name: 'id', description: '字典项ID' })
+  @ApiResponse({ status: 200, description: '分享成功', type: Object })
+  async share(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest
+  ): Promise<dict_items> {
+    return this.dictService.share(this.getUserId(req), id);
+  }
+
+  @Post(':id/archive-share')
+  @ApiOperation({ summary: '取消社区分享' })
+  @ApiParam({ name: 'id', description: '字典项ID' })
+  @ApiResponse({ status: 200, description: '取消分享成功', type: Object })
+  async archiveShare(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest
+  ): Promise<dict_items> {
+    return this.dictService.archiveShare(this.getUserId(req), id);
+  }
+
+  @Post(':id/fork')
+  @ApiOperation({ summary: '复制系统或社区词条到个人字典' })
+  @ApiParam({ name: 'id', description: '字典项ID' })
+  @ApiResponse({ status: 201, description: '复制成功', type: Object })
+  async fork(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest
+  ): Promise<dict_items> {
+    return this.dictService.fork(this.getUserId(req), id);
   }
 }

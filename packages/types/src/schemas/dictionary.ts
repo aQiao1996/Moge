@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const dictScopeSchema = z.enum(['SYSTEM', 'USER', 'PROJECT']);
+export const dictShareStatusSchema = z.enum(['PRIVATE', 'SHARED', 'ARCHIVED']);
+
 // 字典分类定义
 export const dictCategorySchema = z.object({
   id: z.number(),
@@ -19,8 +22,26 @@ export const dictItemSchema = z.object({
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
   description: z.string().optional(),
+  scope: dictScopeSchema.default('SYSTEM'),
+  userId: z.number().nullable().optional(),
+  projectId: z.number().nullable().optional(),
+  shareStatus: dictShareStatusSchema.default('PRIVATE'),
+  version: z.number().default(1),
+  sourceItemId: z.number().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+
+export const dictItemVersionSchema = z.object({
+  id: z.number(),
+  dictItemId: z.number(),
+  version: z.number(),
+  label: z.string(),
+  value: z.string(),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number(),
+  isEnabled: z.boolean(),
+  createdAt: z.string(),
 });
 
 // 创建字典分类的schema
@@ -41,6 +62,8 @@ export const createDictItemSchema = z.object({
   sortOrder: z.number().default(0),
   isEnabled: z.boolean().default(true),
   description: z.string().optional(),
+  scope: dictScopeSchema.default('USER'),
+  projectId: z.number().nullable().optional(),
 });
 
 // 更新字典项的schema
