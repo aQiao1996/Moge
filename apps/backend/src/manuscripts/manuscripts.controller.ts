@@ -57,6 +57,24 @@ export class ManuscriptsController {
   }
 
   /**
+   * 批量更新卷排序
+   */
+  @Put('volumes/reorder')
+  async reorderVolumes(@Request() req: AuthenticatedRequest, @Body() dto: ReorderVolumesDto) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.reorderVolumes(dto.volumeIds, userId);
+  }
+
+  /**
+   * 批量更新章节排序
+   */
+  @Put('chapters/reorder')
+  async reorderChapters(@Request() req: AuthenticatedRequest, @Body() dto: ReorderChaptersDto) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.reorderChapters(dto.chapterIds, userId);
+  }
+
+  /**
    * 获取所有文稿
    */
   @Get()
@@ -303,24 +321,6 @@ export class ManuscriptsController {
       dto.customPrompt
     );
     return { text: result };
-  }
-
-  /**
-   * 批量更新卷排序
-   */
-  @Put('volumes/reorder')
-  async reorderVolumes(@Request() req: AuthenticatedRequest, @Body() dto: ReorderVolumesDto) {
-    const userId = Number(req.user.id);
-    return this.manuscriptsService.reorderVolumes(dto.volumeIds, userId);
-  }
-
-  /**
-   * 批量更新章节排序
-   */
-  @Put('chapters/reorder')
-  async reorderChapters(@Request() req: AuthenticatedRequest, @Body() dto: ReorderChaptersDto) {
-    const userId = Number(req.user.id);
-    return this.manuscriptsService.reorderChapters(dto.chapterIds, userId);
   }
 
   /**

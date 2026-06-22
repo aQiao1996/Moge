@@ -2,10 +2,31 @@ import { BadRequestException } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import type { PrismaService } from '../prisma/prisma.service';
 
+interface MockPrismaService extends PrismaService {
+  character_settings: PrismaService['character_settings'] & {
+    delete: jest.Mock;
+  };
+  world_settings: PrismaService['world_settings'] & {
+    delete: jest.Mock;
+  };
+  misc_settings: PrismaService['misc_settings'] & {
+    delete: jest.Mock;
+  };
+  projects: PrismaService['projects'] & {
+    findMany: jest.Mock;
+  };
+  outline: PrismaService['outline'] & {
+    findMany: jest.Mock;
+  };
+  manuscripts: PrismaService['manuscripts'] & {
+    findMany: jest.Mock;
+  };
+}
+
 describe('SettingsService', () => {
   const userId = 100;
 
-  function createBasePrisma() {
+  function createBasePrisma(): MockPrismaService {
     return {
       character_settings: {
         findFirst: jest.fn().mockResolvedValue({ id: 7, userId, name: '叶凡' }),
@@ -32,17 +53,15 @@ describe('SettingsService', () => {
       manuscripts: {
         findMany: jest.fn().mockResolvedValue([]),
       },
-    } as unknown as PrismaService;
+    } as unknown as MockPrismaService;
   }
 
   it('blocks deleting a character when referenced by project, outline and manuscript with grouped message', async () => {
     const prisma = createBasePrisma();
-    const projectFindMany = prisma.projects.findMany.bind(prisma.projects) as jest.Mock;
-    const outlineFindMany = prisma.outline.findMany.bind(prisma.outline) as jest.Mock;
-    const manuscriptFindMany = prisma.manuscripts.findMany.bind(prisma.manuscripts) as jest.Mock;
-    const deleteMock = prisma.character_settings.delete.bind(
-      prisma.character_settings
-    ) as jest.Mock;
+    const projectFindMany = prisma.projects.findMany;
+    const outlineFindMany = prisma.outline.findMany;
+    const manuscriptFindMany = prisma.manuscripts.findMany;
+    const deleteMock = prisma.character_settings.delete;
 
     projectFindMany.mockResolvedValue([{ name: '仙路项目' }]);
     outlineFindMany.mockResolvedValue([{ name: '飞升大纲' }]);
@@ -59,8 +78,8 @@ describe('SettingsService', () => {
 
   it('blocks deleting a world when referenced only by outlines', async () => {
     const prisma = createBasePrisma();
-    const outlineFindMany = prisma.outline.findMany.bind(prisma.outline) as jest.Mock;
-    const deleteMock = prisma.world_settings.delete.bind(prisma.world_settings) as jest.Mock;
+    const outlineFindMany = prisma.outline.findMany;
+    const deleteMock = prisma.world_settings.delete;
 
     outlineFindMany.mockResolvedValue([{ name: '诸界大纲' }, { name: '边荒大纲' }]);
 
@@ -74,7 +93,7 @@ describe('SettingsService', () => {
 
   it('deletes a misc setting when no project, outline or manuscript references remain', async () => {
     const prisma = createBasePrisma();
-    const deleteMock = prisma.misc_settings.delete.bind(prisma.misc_settings) as jest.Mock;
+    const deleteMock = prisma.misc_settings.delete;
 
     const service = new SettingsService(prisma);
 
