@@ -1,4 +1,4 @@
-import { createProjectSchema } from '@moge/types';
+import { createProjectSchema, updateProjectAiConfigSchema } from '@moge/types';
 import { z } from 'zod';
 
 const relationIdSchema = z
@@ -45,9 +45,12 @@ export const updateProjectMiscSchema = z
   })
   .strict();
 
+export const updateProjectAiConfigRequestSchema = updateProjectAiConfigSchema;
+
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>;
 export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>;
 export type UpdateProjectCharactersInput = z.infer<typeof updateProjectCharactersSchema>;
 export type UpdateProjectSystemsInput = z.infer<typeof updateProjectSystemsSchema>;
 export type UpdateProjectWorldsInput = z.infer<typeof updateProjectWorldsSchema>;
 export type UpdateProjectMiscInput = z.infer<typeof updateProjectMiscSchema>;
+export type UpdateProjectAiConfigInput = z.infer<typeof updateProjectAiConfigRequestSchema>;

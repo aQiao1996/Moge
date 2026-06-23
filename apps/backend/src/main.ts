@@ -7,6 +7,30 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { ResponseInterceptor } from './common/response.interceptor';
 
+function getAllowedOrigins(): string[] | boolean {
+  const configuredOrigins = process.env.ALLOWED_ORIGINS;
+  if (!configuredOrigins) {
+    return process.env.NODE_ENV === 'production' ? [] : true;
+  }
+
+  return configuredOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
+function shouldEnableSwagger(): boolean {
+  return parseBooleanFlag(process.env.SWAGGER_ENABLED, process.env.NODE_ENV !== 'production');
+}
+
 async function bootstrap() {
   // * 环境日志
   // const logger = new Logger("main.ts");
@@ -14,9 +38,18 @@ async function bootstrap() {
 
   // * 使用 express 作为默认框架
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true, // cors 处理跨域 或者直接 app.enableCors();
+    cors: {
+      origin: getAllowedOrigins(),
+      credentials: true,
+    },
     // logger: ["error", "warn"], // 启用日志 禁用为false 数组中的值可以是 'log'、'fatal'、'error'、'warn'、'debug' 和 'verbose' 的任意组合
   });
+  app.disable('x-powered-by');
+  app.enableShutdownHooks();
+
+  if (parseBooleanFlag(process.env.TRUST_PROXY, process.env.NODE_ENV === 'production')) {
+    app.set('trust proxy', 1);
+  }
 
   // 可以直接访问文件 如：http://localhost:3000/public/uploads/36T4NJ0P3UQCIU3GFRMARZ.jpeg
   // * 配置 public 文件夹为静态目录，以达到可直接访问下面文件的目的
@@ -44,51 +77,53 @@ async function bootstrap() {
   // * 注册全局守卫 执行在 拦截器 之前 执行在 中间件 之后
   // app.useGlobalGuards(new AuthGuard());
 
-  // * 配置 Swagger 文档
-  const config = new DocumentBuilder()
-    .setTitle('MOGE API')
-    .setDescription('MOGE 项目的 REST API 文档')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: '输入 JWT token',
-        in: 'header',
-      },
-      'JWT-auth'
-    )
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true, // 持久化授权信息
-      docExpansion: 'none', // 默认折叠所有端点
-      filter: true, // 启用过滤器
-      showRequestDuration: true, // 显示请求持续时间
-      tryItOutEnabled: true, // 默认启用 "Try it out"
-      requestSnippetsEnabled: true, // 启用请求代码片段
-      requestSnippets: {
-        generators: {
-          curl_bash: { title: 'cURL (bash)', syntax: 'bash' },
-          curl_powershell: { title: 'cURL (PowerShell)', syntax: 'powershell' },
-          curl_cmd: { title: 'cURL (CMD)', syntax: 'bash' },
+  if (shouldEnableSwagger()) {
+    // * 配置 Swagger 文档
+    const config = new DocumentBuilder()
+      .setTitle('MOGE API')
+      .setDescription('MOGE 项目的 REST API 文档')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: '输入 JWT token',
+          in: 'header',
         },
-        defaultExpanded: false,
-        languages: null,
+        'JWT-auth'
+      )
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true, // 持久化授权信息
+        docExpansion: 'none', // 默认折叠所有端点
+        filter: true, // 启用过滤器
+        showRequestDuration: true, // 显示请求持续时间
+        tryItOutEnabled: true, // 默认启用 "Try it out"
+        requestSnippetsEnabled: true, // 启用请求代码片段
+        requestSnippets: {
+          generators: {
+            curl_bash: { title: 'cURL (bash)', syntax: 'bash' },
+            curl_powershell: { title: 'cURL (PowerShell)', syntax: 'powershell' },
+            curl_cmd: { title: 'cURL (CMD)', syntax: 'bash' },
+          },
+          defaultExpanded: false,
+          languages: null,
+        },
       },
-    },
-    customSiteTitle: 'MOGE API 文档',
-    customCss: `
+      customSiteTitle: 'MOGE API 文档',
+      customCss: `
       .swagger-ui .topbar { background-color: #1976d2; }
       .swagger-ui .topbar .link { color: white; }
       .swagger-ui .scheme-container { background-color: #1976d2; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
       .swagger-ui .scheme-container .schemes { color: white; }
     `,
-  });
+    });
+  }
 
   await app.listen(process.env.PORT || 8888, () => {
     console.log(`🚀 ~ main.ts ~ 启动成功,端口号: ${process.env.PORT || 8888}`);

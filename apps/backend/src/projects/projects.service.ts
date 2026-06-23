@@ -1,7 +1,45 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { projects } from '../../generated/prisma';
-import type { CreateProjectRequest, UpdateProjectRequest } from './projects.schemas';
+import type { Prisma, project_ai_configs, projects } from '../../generated/prisma';
+import {
+  AiContextLengthStrategy,
+  AiResultApplyStrategy,
+  Prisma as PrismaNamespace,
+} from '../../generated/prisma';
+import type {
+  CreateProjectRequest,
+  UpdateProjectAiConfigInput,
+  UpdateProjectRequest,
+} from './projects.schemas';
+
+type ProjectAiConfigResponse = Omit<project_ai_configs, 'temperature'> & {
+  temperature: string;
+};
+
+const DEFAULT_AI_CONFIG = {
+  provider: 'openai_compatible',
+  model: 'gpt-5.2',
+  temperature: new PrismaNamespace.Decimal('0.60'),
+  maxTokens: 2000,
+  defaultContinuePresetId: null,
+  defaultPolishPresetId: null,
+  defaultExpandPresetId: null,
+  defaultOutlinePresetId: null,
+  enableCharacterContext: true,
+  enableSystemContext: true,
+  enableWorldContext: true,
+  enableMiscContext: true,
+  enableChapterSummaryContext: false,
+  enableProjectMemoryContext: false,
+  contextLengthStrategy: AiContextLengthStrategy.BALANCED,
+  resultApplyStrategy: AiResultApplyStrategy.CANDIDATE,
+  asyncTaskThreshold: 3000,
+} satisfies Omit<Prisma.project_ai_configsUncheckedCreateInput, 'projectId'>;
+
+type ProjectAiConfigWritableData = Omit<
+  Prisma.project_ai_configsUncheckedCreateInput,
+  'id' | 'projectId' | 'createdAt' | 'updatedAt'
+>;
 
 /**
  * 项目服务
@@ -10,6 +48,57 @@ import type { CreateProjectRequest, UpdateProjectRequest } from './projects.sche
 @Injectable()
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
+
+  private serializeProjectAiConfig(
+    config: Omit<project_ai_configs, 'id' | 'createdAt' | 'updatedAt'> &
+      Partial<Pick<project_ai_configs, 'id' | 'createdAt' | 'updatedAt'>>
+  ): ProjectAiConfigResponse {
+    return {
+      id: config.id ?? 0,
+      projectId: config.projectId,
+      provider: config.provider,
+      model: config.model,
+      temperature: config.temperature.toFixed(2),
+      maxTokens: config.maxTokens,
+      defaultContinuePresetId: config.defaultContinuePresetId,
+      defaultPolishPresetId: config.defaultPolishPresetId,
+      defaultExpandPresetId: config.defaultExpandPresetId,
+      defaultOutlinePresetId: config.defaultOutlinePresetId,
+      enableCharacterContext: config.enableCharacterContext,
+      enableSystemContext: config.enableSystemContext,
+      enableWorldContext: config.enableWorldContext,
+      enableMiscContext: config.enableMiscContext,
+      enableChapterSummaryContext: config.enableChapterSummaryContext,
+      enableProjectMemoryContext: config.enableProjectMemoryContext,
+      contextLengthStrategy: config.contextLengthStrategy,
+      resultApplyStrategy: config.resultApplyStrategy,
+      asyncTaskThreshold: config.asyncTaskThreshold,
+      createdAt: config.createdAt ?? new Date(0),
+      updatedAt: config.updatedAt ?? new Date(0),
+    };
+  }
+
+  private async assertProjectOwned(userId: number, id: number): Promise<void> {
+    const project = await this.prisma.projects.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('项目不存在或无权限访问');
+    }
+  }
+
+  private buildProjectAiConfigData(data: UpdateProjectAiConfigInput): ProjectAiConfigWritableData {
+    return {
+      ...DEFAULT_AI_CONFIG,
+      ...data,
+      temperature:
+        data.temperature === undefined
+          ? DEFAULT_AI_CONFIG.temperature
+          : new PrismaNamespace.Decimal(data.temperature.toFixed(2)),
+    };
+  }
 
   private normalizeStoredSettingIds(ids?: string[]): string[] | undefined {
     if (ids === undefined) {
@@ -166,6 +255,105 @@ export class ProjectsService {
     }
 
     return project;
+  }
+
+  /**
+   * 获取项目级 AI 配置；未保存时返回系统默认配置。
+   * @param userId 用户ID
+   * @param id 项目ID
+   * @returns 项目级 AI 配置
+   */
+  async getProjectAiConfig(userId: number, id: number): Promise<ProjectAiConfigResponse> {
+    await this.assertProjectOwned(userId, id);
+
+    const config = await this.prisma.project_ai_configs.findUnique({
+      where: { projectId: id },
+    });
+
+    if (config) {
+      return this.serializeProjectAiConfig(config);
+    }
+
+    return this.serializeProjectAiConfig({
+      ...DEFAULT_AI_CONFIG,
+      projectId: id,
+    });
+  }
+
+  /**
+   * 更新项目级 AI 配置；不存在时创建。
+   * @param userId 用户ID
+   * @param id 项目ID
+   * @param data AI 配置更新数据
+   * @returns 更新后的项目级 AI 配置
+   */
+  async upsertProjectAiConfig(
+    userId: number,
+    id: number,
+    data: UpdateProjectAiConfigInput
+  ): Promise<ProjectAiConfigResponse> {
+    await this.assertProjectOwned(userId, id);
+
+    const createData: Prisma.project_ai_configsUncheckedCreateInput = {
+      ...this.buildProjectAiConfigData(data),
+      projectId: id,
+    };
+
+    const updateData: Prisma.project_ai_configsUncheckedUpdateInput = {
+      ...(data.provider !== undefined ? { provider: data.provider } : {}),
+      ...(data.model !== undefined ? { model: data.model } : {}),
+      ...(data.temperature !== undefined
+        ? { temperature: new PrismaNamespace.Decimal(data.temperature.toFixed(2)) }
+        : {}),
+      ...(data.maxTokens !== undefined ? { maxTokens: data.maxTokens } : {}),
+      ...(data.defaultContinuePresetId !== undefined
+        ? { defaultContinuePresetId: data.defaultContinuePresetId }
+        : {}),
+      ...(data.defaultPolishPresetId !== undefined
+        ? { defaultPolishPresetId: data.defaultPolishPresetId }
+        : {}),
+      ...(data.defaultExpandPresetId !== undefined
+        ? { defaultExpandPresetId: data.defaultExpandPresetId }
+        : {}),
+      ...(data.defaultOutlinePresetId !== undefined
+        ? { defaultOutlinePresetId: data.defaultOutlinePresetId }
+        : {}),
+      ...(data.enableCharacterContext !== undefined
+        ? { enableCharacterContext: data.enableCharacterContext }
+        : {}),
+      ...(data.enableSystemContext !== undefined
+        ? { enableSystemContext: data.enableSystemContext }
+        : {}),
+      ...(data.enableWorldContext !== undefined
+        ? { enableWorldContext: data.enableWorldContext }
+        : {}),
+      ...(data.enableMiscContext !== undefined
+        ? { enableMiscContext: data.enableMiscContext }
+        : {}),
+      ...(data.enableChapterSummaryContext !== undefined
+        ? { enableChapterSummaryContext: data.enableChapterSummaryContext }
+        : {}),
+      ...(data.enableProjectMemoryContext !== undefined
+        ? { enableProjectMemoryContext: data.enableProjectMemoryContext }
+        : {}),
+      ...(data.contextLengthStrategy !== undefined
+        ? { contextLengthStrategy: data.contextLengthStrategy }
+        : {}),
+      ...(data.resultApplyStrategy !== undefined
+        ? { resultApplyStrategy: data.resultApplyStrategy }
+        : {}),
+      ...(data.asyncTaskThreshold !== undefined
+        ? { asyncTaskThreshold: data.asyncTaskThreshold }
+        : {}),
+    };
+
+    const config = await this.prisma.project_ai_configs.upsert({
+      where: { projectId: id },
+      create: createData,
+      update: updateData,
+    });
+
+    return this.serializeProjectAiConfig(config);
   }
 
   /**

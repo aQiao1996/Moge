@@ -23,6 +23,7 @@ pnpm run dev              # 启动所有服务
 pnpm run lint             # 全量代码检查
 pnpm run lint:changed     # 当前改动快速检查
 pnpm run typecheck        # 类型检查
+pnpm run test:e2e         # 后端 HTTP 级基础 E2E
 pnpm --filter @moge/backend prisma studio  # 数据库可视化
 ```
 
@@ -74,10 +75,14 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - `POST /manuscripts/chapters/:id/publish` - 发布章节
 - `GET /manuscripts/chapters/:id/versions` - 获取版本历史
 - `POST /manuscripts/chapters/:id/versions/:version/restore` - 恢复版本
+- `GET /projects/:id/ai-config` - 获取项目级 AI 配置
+- `PUT /projects/:id/ai-config` - 更新项目级 AI 配置
 
-### P2 - 高级功能 (后续迭代)
+### P2 - 高级功能 (需单独确认)
 
-- EPUB/DOCX导出、定时发布、多人协作权限
+- EPUB/DOCX导出：需要引入文档/电子书生成依赖并补充格式验收用例。
+- 定时发布：需要新增调度策略和迁移。
+- 多人协作权限：需要新增成员/角色/资源权限模型和迁移。
 
 ---
 
@@ -124,6 +129,17 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 
 - **工作台**: 最近项目/大纲/文稿、今日待办、灵感便签；待办和便签复用内部辅助设定记录做用户级服务端持久化。
 - **字典**: 支持系统/个人/项目级词条、社区共享、复制到个人字典、编辑版本历史，以及分类内 JSON 导入导出。
+- **AI 配置**: 已提供项目级 AI 配置表与后端读写接口，支持模型、上下文来源、上下文长度策略、结果应用策略和后台任务阈值配置。
+
+### 部署与安全
+
+- **CORS**: 后端通过 `ALLOWED_ORIGINS` 控制允许来源，生产环境默认不放开全部来源。
+- **限流**: 后端提供基础进程内限流，使用 `RATE_LIMIT_WINDOW_MS` 和 `RATE_LIMIT_MAX` 配置。
+- **安全响应头**: 后端统一设置 `nosniff`、`DENY`、`no-referrer` 等基础响应头，并移除 `X-Powered-By`。
+- **Swagger**: 生产 Docker 配置默认 `SWAGGER_ENABLED=false`；仅建议在受信网络内临时开启。
+- **反向代理**: Docker 配置默认 `TRUST_PROXY=true`，用于代理部署时识别真实客户端 IP。
+- **数据库**: Docker Compose 默认数据库连接为 `postgresql://moge:moge_password@localhost:5432/moge?schema=public`，本地后端环境参考 `apps/backend/.env.example`。
+- **E2E**: `pnpm run test:e2e` 覆盖公开健康检查和 JWT 保护路由。
 
 ---
 

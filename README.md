@@ -11,6 +11,45 @@ pnpm -v # >=10.5.0
 pnpm install
 ```
 
+### 本地数据库与环境
+
+Docker Compose 默认使用以下 PostgreSQL 连接：
+
+```bash
+postgresql://moge:moge_password@localhost:5432/moge?schema=public
+```
+
+后端本地环境可参考 `apps/backend/.env.example`，复制为
+`apps/backend/.env.development.local` 后再填入真实密钥。不要提交真实 `.env` 文件。
+
+常用验证命令：
+
+```bash
+pnpm run lint
+pnpm run typecheck
+pnpm run test
+pnpm run test:e2e
+pnpm run build
+```
+
+Docker 部署前可先检查配置：
+
+```bash
+docker compose --env-file docker.env.example config
+```
+
+生产环境默认关闭 Swagger 文档；如需临时查看 API 文档，可在受信网络内设置
+`SWAGGER_ENABLED=true`。部署在反向代理后时默认启用 `TRUST_PROXY=true`，便于后端正确识别客户端 IP。
+
+后端已提供项目级 AI 配置接口：
+
+```bash
+GET /projects/:id/ai-config
+PUT /projects/:id/ai-config
+```
+
+该配置用于保存项目默认模型、上下文来源策略和 AI 结果应用策略。
+
 ### 添加/管理依赖
 
 推荐使用以下一步到位的命令来为子包添加依赖，它会自动更新 `pnpm-workspace.yaml` 中的 `catalog`。

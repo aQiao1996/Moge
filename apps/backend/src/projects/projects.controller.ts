@@ -38,12 +38,16 @@ import {
   type UpdateProjectWorldsInput,
   updateProjectMiscSchema,
   type UpdateProjectMiscInput,
+  updateProjectAiConfigRequestSchema,
+  type UpdateProjectAiConfigInput,
 } from './projects.schemas';
 
 // 扩展Request类型以包含用户信息
 interface AuthenticatedRequest extends Request {
   user: User;
 }
+
+export type ProjectsAuthenticatedRequest = AuthenticatedRequest;
 
 /**
  * 项目管理控制器
@@ -112,6 +116,44 @@ export class ProjectsController {
   @ApiResponse({ status: 404, description: '项目不存在或无权限访问' })
   async getProjectById(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
     return this.projectsService.getProjectById(Number(req.user.id), id);
+  }
+
+  /**
+   * 获取项目级 AI 配置
+   */
+  @Get(':id/ai-config')
+  @ApiOperation({
+    summary: '获取项目级 AI 配置',
+    description: '获取当前项目的 AI 模型、上下文和结果应用策略配置',
+  })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  @ApiResponse({ status: 200, description: '项目级 AI 配置' })
+  @ApiResponse({ status: 404, description: '项目不存在或无权限访问' })
+  async getProjectAiConfig(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number
+  ) {
+    return this.projectsService.getProjectAiConfig(Number(req.user.id), id);
+  }
+
+  /**
+   * 更新项目级 AI 配置
+   */
+  @Put(':id/ai-config')
+  @ApiOperation({
+    summary: '更新项目级 AI 配置',
+    description: '更新当前项目的 AI 模型、上下文和结果应用策略配置',
+  })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  @ApiResponse({ status: 200, description: '项目级 AI 配置更新成功' })
+  @ApiResponse({ status: 404, description: '项目不存在或无权限访问' })
+  async updateProjectAiConfig(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(updateProjectAiConfigRequestSchema))
+    data: UpdateProjectAiConfigInput
+  ) {
+    return this.projectsService.upsertProjectAiConfig(Number(req.user.id), id, data);
   }
 
   /**

@@ -9,6 +9,7 @@
     "lint:fix": "eslint --config eslint.config.mjs --fix --cache \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "pnpm -r run type-check",
     "test": "pnpm -r run test",
+    "test:e2e": "pnpm --filter @moge/backend test:e2e",
     "dev": "node scripts/dev-selector.js",
     "dev:shared": "pnpm -r --filter='./packages/**' dev",
     "dev:apps": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",

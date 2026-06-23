@@ -21,12 +21,15 @@ selenium-debug.log
 *.sln
 *.local
 .env.*
+!.env.example
+!**/.env.example
 .env.local
 .env.*.local
 **/.env.local
 **/.env.*.local
 
 tsconfig.tsbuildinfo
+**/*.tsbuildinfo
 # 包依赖分析 Rollup Visualizer
 stats.html
 
@@ -35,4 +38,3 @@ docs/.vitepress/cache
 .history/
 .claude/
 .gemini/
-AGENTS.md

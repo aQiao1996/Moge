@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -14,6 +14,8 @@ import { WorkspaceModule } from './workspace/workspace.module';
 import { ExportModule } from './export/export.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RateLimitMiddleware } from './common/rate-limit.middleware';
+import { SecurityHeadersMiddleware } from './common/security-headers.middleware';
 
 @Module({
   imports: [
@@ -45,4 +47,8 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SecurityHeadersMiddleware, RateLimitMiddleware).forRoutes('*');
+  }
+}

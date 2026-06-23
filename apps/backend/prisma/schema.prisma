@@ -389,9 +389,73 @@ model projects {
   user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// 项目级字典项
   dictItems   dict_items[]
+  /// 项目级 AI 配置
+  aiConfig    project_ai_configs?
 
   @@index([userId])
   @@index([createdAt])
+}
+
+/// 项目级 AI 上下文长度策略
+enum AiContextLengthStrategy {
+  COMPACT
+  BALANCED
+  EXPANDED
+}
+
+/// AI 生成结果应用策略
+enum AiResultApplyStrategy {
+  CANDIDATE
+  DIRECT_INSERT
+}
+
+/// 项目级 AI 配置表
+model project_ai_configs {
+  id                          Int                     @id @default(autoincrement())
+  /// 所属项目 ID
+  projectId                   Int                     @unique @map("project_id")
+  /// AI 供应商
+  provider                    String
+  /// 模型名称
+  model                       String
+  /// 温度参数
+  temperature                 Decimal                 @default(0.60) @db.Decimal(3, 2)
+  /// 最大输出 token
+  maxTokens                   Int                     @default(2000) @map("max_tokens")
+  /// 默认续写预设 ID
+  defaultContinuePresetId     Int?                    @map("default_continue_preset_id")
+  /// 默认润色预设 ID
+  defaultPolishPresetId       Int?                    @map("default_polish_preset_id")
+  /// 默认扩写预设 ID
+  defaultExpandPresetId       Int?                    @map("default_expand_preset_id")
+  /// 默认大纲预设 ID
+  defaultOutlinePresetId      Int?                    @map("default_outline_preset_id")
+  /// 是否引用角色设定
+  enableCharacterContext      Boolean                 @default(true) @map("enable_character_context")
+  /// 是否引用系统设定
+  enableSystemContext         Boolean                 @default(true) @map("enable_system_context")
+  /// 是否引用世界设定
+  enableWorldContext          Boolean                 @default(true) @map("enable_world_context")
+  /// 是否引用辅助设定
+  enableMiscContext           Boolean                 @default(true) @map("enable_misc_context")
+  /// 是否引用章节摘要
+  enableChapterSummaryContext Boolean                 @default(false) @map("enable_chapter_summary_context")
+  /// 是否引用项目记忆
+  enableProjectMemoryContext  Boolean                 @default(false) @map("enable_project_memory_context")
+  /// 上下文长度策略
+  contextLengthStrategy       AiContextLengthStrategy @default(BALANCED) @map("context_length_strategy")
+  /// AI 结果应用策略
+  resultApplyStrategy         AiResultApplyStrategy   @default(CANDIDATE) @map("result_apply_strategy")
+  /// 超过该预估 token 数后走后台任务
+  asyncTaskThreshold          Int                     @default(3000) @map("async_task_threshold")
+  /// 创建时间
+  createdAt                   DateTime                @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt                   DateTime                @updatedAt @map("updated_at")
+  /// 所属项目
+  project                     projects                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([provider, model])
 }
 
 /// 角色设定表
