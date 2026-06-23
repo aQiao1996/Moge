@@ -174,4 +174,49 @@ describe('ExportService', () => {
       result.content.indexOf('第二卷 第一卷')
     );
   });
+
+  it('builds epub and docx file payloads for manuscript exports', async () => {
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 10,
+          name: '多格式文稿',
+          outlineId: null,
+          createdAt: new Date('2025-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2025-01-02T00:00:00.000Z'),
+          lastEditedAt: null,
+          totalWords: 800,
+        }),
+      },
+      outline: {
+        findUnique: jest.fn(),
+      },
+      manuscript_chapter: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            title: '序章',
+            content: {
+              content: '# 开篇\n\n正文内容',
+            },
+          },
+        ]),
+      },
+      manuscript_volume: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    } as unknown as PrismaService;
+    const service = new ExportService(prisma);
+
+    const epub = await service.exportManuscriptToEpubFile(10, 100);
+    const docx = await service.exportManuscriptToDocxFile(10, 100);
+
+    expect(epub.filename).toMatch(/\.epub$/);
+    expect(epub.contentType).toBe('application/epub+zip');
+    expect(epub.content.length).toBeGreaterThan(100);
+    expect(docx.filename).toMatch(/\.docx$/);
+    expect(docx.contentType).toBe(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+    expect(docx.content.length).toBeGreaterThan(100);
+  });
 });

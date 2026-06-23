@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsInt, IsEnum, Min } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsInt, IsEnum, Min, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ManuscriptStatus } from '../../generated/prisma';
 
@@ -249,4 +249,12 @@ export class BatchPublishChaptersDto {
   @IsInt({ each: true })
   @Type(() => Number)
   chapterIds: number[];
+}
+
+/**
+ * 定时发布章节 DTO
+ */
+export class ScheduleChapterPublishDto {
+  @IsDateString()
+  scheduledAt: string;
 }

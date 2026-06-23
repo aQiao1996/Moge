@@ -40,6 +40,10 @@ import {
   type UpdateProjectMiscInput,
   updateProjectAiConfigRequestSchema,
   type UpdateProjectAiConfigInput,
+  addProjectMemberRequestSchema,
+  type AddProjectMemberInput,
+  updateProjectMemberRequestSchema,
+  type UpdateProjectMemberInput,
 } from './projects.schemas';
 
 // 扩展Request类型以包含用户信息
@@ -154,6 +158,62 @@ export class ProjectsController {
     data: UpdateProjectAiConfigInput
   ) {
     return this.projectsService.upsertProjectAiConfig(Number(req.user.id), id, data);
+  }
+
+  /**
+   * 获取项目协作成员
+   */
+  @Get(':id/members')
+  @ApiOperation({ summary: '获取项目协作成员' })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  async getProjectMembers(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.projectsService.getProjectMembers(Number(req.user.id), id);
+  }
+
+  /**
+   * 添加或更新项目协作成员
+   */
+  @Post(':id/members')
+  @ApiOperation({ summary: '添加或更新项目协作成员' })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  async addProjectMember(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(addProjectMemberRequestSchema)) data: AddProjectMemberInput
+  ) {
+    return this.projectsService.addProjectMember(Number(req.user.id), id, data);
+  }
+
+  /**
+   * 更新项目协作成员角色
+   */
+  @Put(':id/members/:userId')
+  @ApiOperation({ summary: '更新项目协作成员角色' })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  @ApiParam({ name: 'userId', description: '成员用户ID' })
+  async updateProjectMember(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) memberUserId: number,
+    @Body(new ZodValidationPipe(updateProjectMemberRequestSchema)) data: UpdateProjectMemberInput
+  ) {
+    return this.projectsService.updateProjectMember(Number(req.user.id), id, memberUserId, data);
+  }
+
+  /**
+   * 移除项目协作成员
+   */
+  @Delete(':id/members/:userId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '移除项目协作成员' })
+  @ApiParam({ name: 'id', description: '项目ID' })
+  @ApiParam({ name: 'userId', description: '成员用户ID' })
+  async removeProjectMember(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) memberUserId: number
+  ) {
+    return this.projectsService.removeProjectMember(Number(req.user.id), id, memberUserId);
   }
 
   /**

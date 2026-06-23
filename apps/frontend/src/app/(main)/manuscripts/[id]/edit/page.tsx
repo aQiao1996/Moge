@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff, History } from 'lucide-react';
 import { toast } from 'sonner';
 import EnhancedMdEditor from '@/app/components/EnhancedMdEditor';
@@ -24,8 +25,11 @@ import {
   getChapterContent,
   saveChapterContent,
   publishChapter,
+  scheduleChapterPublish,
+  cancelChapterSchedule,
   unpublishChapter,
   type Manuscript,
+  type ManuscriptChapter,
 } from '../../api/client';
 import dayjs from '@/lib/dayjs';
 
@@ -48,6 +52,7 @@ export default function ManuscriptEditPage() {
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
 
   // 自动保存定时器
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -287,6 +292,39 @@ export default function ManuscriptEditPage() {
   };
 
   /**
+   * 处理定时发布章节
+   */
+  const handleSchedulePublish = async () => {
+    if (!chapterId || !scheduledAt) return;
+
+    try {
+      await scheduleChapterPublish(Number(chapterId), new Date(scheduledAt).toISOString());
+      toast.success('已设置定时发布');
+      setScheduledAt('');
+      void loadManuscript();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '定时发布失败');
+      console.error('Schedule publish error:', error);
+    }
+  };
+
+  /**
+   * 处理取消定时发布章节
+   */
+  const handleCancelSchedule = async () => {
+    if (!chapterId) return;
+
+    try {
+      await cancelChapterSchedule(Number(chapterId));
+      toast.success('已取消定时发布');
+      void loadManuscript();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '取消定时发布失败');
+      console.error('Cancel schedule error:', error);
+    }
+  };
+
+  /**
    * 处理取消发布章节
    */
   const handleUnpublish = async () => {
@@ -301,7 +339,7 @@ export default function ManuscriptEditPage() {
     }
   };
 
-  const getCurrentChapter = () => {
+  const getCurrentChapter = (): ManuscriptChapter | null => {
     if (!manuscript || !chapterId) return null;
 
     // 在所有章节中查找
@@ -310,7 +348,7 @@ export default function ManuscriptEditPage() {
       ...(manuscript.volumes?.flatMap((v) => v.chapters || []) || []),
     ];
 
-    return allChapters.find((ch) => ch.id?.toString() === chapterId);
+    return allChapters.find((ch) => ch.id?.toString() === chapterId) ?? null;
   };
 
   const currentChapter = getCurrentChapter();
@@ -410,17 +448,34 @@ export default function ManuscriptEditPage() {
             版本历史
           </Button>
 
-          {/* 发布/取消发布按钮 */}
+          {/* 发布/定时发布/取消发布按钮 */}
           {currentChapter.status === 'PUBLISHED' ? (
             <Button variant="outline" onClick={() => void handleUnpublish()}>
               <EyeOff className="mr-2 h-4 w-4" />
               取消发布
             </Button>
-          ) : (
-            <Button variant="outline" onClick={() => void handlePublish()}>
-              <Eye className="mr-2 h-4 w-4" />
-              发布章节
+          ) : currentChapter.status === 'SCHEDULED' ? (
+            <Button variant="outline" onClick={() => void handleCancelSchedule()}>
+              <Clock className="mr-2 h-4 w-4" />
+              取消定时
             </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(event) => setScheduledAt(event.target.value)}
+                className="w-44"
+              />
+              <Button variant="outline" onClick={() => void handleSchedulePublish()}>
+                <Clock className="mr-2 h-4 w-4" />
+                定时
+              </Button>
+              <Button variant="outline" onClick={() => void handlePublish()}>
+                <Eye className="mr-2 h-4 w-4" />
+                发布章节
+              </Button>
+            </div>
           )}
 
           {/* 保存按钮 */}

@@ -8,7 +8,7 @@ export const ManuscriptStatusEnum = z.enum([
   'PUBLISHED',
   'ABANDONED',
 ]);
-export const ChapterStatusEnum = z.enum(['DRAFT', 'PUBLISHED']);
+export const ChapterStatusEnum = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED']);
 
 export type ManuscriptStatus = z.infer<typeof ManuscriptStatusEnum>;
 export type ChapterStatus = z.infer<typeof ChapterStatusEnum>;
@@ -99,6 +99,7 @@ export const manuscriptChapterSchema = z.object({
   wordCount: z.number(),
   status: ChapterStatusEnum,
   publishedAt: z.string().nullable().optional(),
+  scheduledAt: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   content: manuscriptChapterContentSchema.nullable().optional(),

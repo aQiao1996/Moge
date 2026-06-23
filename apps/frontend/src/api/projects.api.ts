@@ -3,6 +3,13 @@
  * 提供小说项目的 CRUD 功能和设定关联管理
  */
 import { get, post, put, del } from '@/lib/request';
+import type {
+  AIProviderValue,
+  AiContextLengthStrategyValue,
+  AiResultApplyStrategyValue,
+  ProjectMemberRoleValue,
+  UpdateProjectAiConfigValues,
+} from '@moge/types';
 
 // 项目接口
 export interface Project {
@@ -60,6 +67,46 @@ export interface ProjectSettings {
     createdAt: string;
     updatedAt: string;
   }>;
+}
+
+export interface ProjectAiConfig {
+  id: number;
+  projectId: number;
+  provider: AIProviderValue;
+  model: string;
+  temperature: string;
+  maxTokens: number;
+  defaultContinuePresetId?: number | null;
+  defaultPolishPresetId?: number | null;
+  defaultExpandPresetId?: number | null;
+  defaultOutlinePresetId?: number | null;
+  enableCharacterContext: boolean;
+  enableSystemContext: boolean;
+  enableWorldContext: boolean;
+  enableMiscContext: boolean;
+  enableChapterSummaryContext: boolean;
+  enableProjectMemoryContext: boolean;
+  contextLengthStrategy: AiContextLengthStrategyValue;
+  resultApplyStrategy: AiResultApplyStrategyValue;
+  asyncTaskThreshold: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectMember {
+  id: number;
+  projectId: number;
+  userId: number;
+  role: ProjectMemberRoleValue;
+  user?: {
+    id: number;
+    username: string;
+    email?: string | null;
+    name?: string | null;
+    avatarUrl?: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -142,6 +189,49 @@ export const getProjectSettings = async (id: number): Promise<ProjectSettings> =
       misc: [],
     };
   }
+};
+
+export const getProjectAiConfig = async (id: number): Promise<ProjectAiConfig> => {
+  const response = await get<ProjectAiConfig>(`/projects/${id}/ai-config`);
+  return response.data;
+};
+
+export const updateProjectAiConfig = async (
+  id: number,
+  data: UpdateProjectAiConfigValues
+): Promise<ProjectAiConfig> => {
+  const response = await put<ProjectAiConfig>(`/projects/${id}/ai-config`, data);
+  return response.data;
+};
+
+export const getProjectMembers = async (id: number): Promise<ProjectMember[]> => {
+  const response = await get<ProjectMember[]>(`/projects/${id}/members`);
+  return response.data || [];
+};
+
+export const addProjectMember = async (
+  id: number,
+  data: { userId: number; role: Exclude<ProjectMemberRoleValue, 'OWNER'> }
+): Promise<ProjectMember> => {
+  const response = await post<ProjectMember>(`/projects/${id}/members`, data);
+  return response.data;
+};
+
+export const updateProjectMember = async (
+  id: number,
+  userId: number,
+  data: { role: Exclude<ProjectMemberRoleValue, 'OWNER'> }
+): Promise<ProjectMember> => {
+  const response = await put<ProjectMember>(`/projects/${id}/members/${userId}`, data);
+  return response.data;
+};
+
+export const removeProjectMember = async (
+  id: number,
+  userId: number
+): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(`/projects/${id}/members/${userId}`);
+  return response.data;
 };
 
 /**

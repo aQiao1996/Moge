@@ -5,11 +5,14 @@ import {
   AiContextLengthStrategy,
   AiResultApplyStrategy,
   Prisma as PrismaNamespace,
+  ProjectMemberRole,
 } from '../../generated/prisma';
 import type {
   CreateProjectRequest,
   UpdateProjectAiConfigInput,
   UpdateProjectRequest,
+  AddProjectMemberInput,
+  UpdateProjectMemberInput,
 } from './projects.schemas';
 
 type ProjectAiConfigResponse = Omit<project_ai_configs, 'temperature'> & {
@@ -40,6 +43,8 @@ type ProjectAiConfigWritableData = Omit<
   Prisma.project_ai_configsUncheckedCreateInput,
   'id' | 'projectId' | 'createdAt' | 'updatedAt'
 >;
+
+type ProjectAccessMode = 'read' | 'write' | 'owner';
 
 /**
  * 项目服务
@@ -78,15 +83,52 @@ export class ProjectsService {
     };
   }
 
-  private async assertProjectOwned(userId: number, id: number): Promise<void> {
-    const project = await this.prisma.projects.findFirst({
+  private async getProjectForAccess(userId: number, id: number, mode: ProjectAccessMode) {
+    const ownedProject = await this.prisma.projects.findFirst({
       where: { id, userId },
-      select: { id: true },
     });
 
-    if (!project) {
+    if (ownedProject) {
+      return ownedProject;
+    }
+
+    if (mode === 'owner') {
       throw new NotFoundException('项目不存在或无权限访问');
     }
+
+    const member = await this.prisma.project_members.findUnique({
+      where: {
+        projectId_userId: {
+          projectId: id,
+          userId,
+        },
+      },
+      select: {
+        role: true,
+      },
+    });
+
+    if (!member) {
+      throw new NotFoundException('项目不存在或无权限访问');
+    }
+
+    if (mode === 'write' && member.role === ProjectMemberRole.VIEWER) {
+      throw new NotFoundException('项目不存在或无权限访问');
+    }
+
+    const sharedProject = await this.prisma.projects.findFirst({
+      where: { id },
+    });
+
+    if (!sharedProject) {
+      throw new NotFoundException('项目不存在或无权限访问');
+    }
+
+    return sharedProject;
+  }
+
+  private async assertProjectOwned(userId: number, id: number): Promise<void> {
+    await this.getProjectForAccess(userId, id, 'write');
   }
 
   private buildProjectAiConfigData(data: UpdateProjectAiConfigInput): ProjectAiConfigWritableData {
@@ -246,15 +288,7 @@ export class ProjectsService {
    * @returns 项目详情
    */
   async getProjectById(userId: number, id: number): Promise<projects> {
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
-
-    return project;
+    return this.getProjectForAccess(userId, id, 'read');
   }
 
   /**
@@ -264,7 +298,7 @@ export class ProjectsService {
    * @returns 项目级 AI 配置
    */
   async getProjectAiConfig(userId: number, id: number): Promise<ProjectAiConfigResponse> {
-    await this.assertProjectOwned(userId, id);
+    await this.getProjectForAccess(userId, id, 'read');
 
     const config = await this.prisma.project_ai_configs.findUnique({
       where: { projectId: id },
@@ -380,6 +414,87 @@ export class ProjectsService {
         },
       },
     });
+  }
+
+  async getProjectMembers(userId: number, id: number) {
+    await this.getProjectForAccess(userId, id, 'read');
+
+    return this.prisma.project_members.findMany({
+      where: { projectId: id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addProjectMember(userId: number, id: number, data: AddProjectMemberInput) {
+    await this.getProjectForAccess(userId, id, 'owner');
+
+    if (data.userId === userId) {
+      throw new BadRequestException('不能将项目所有者添加为协作成员');
+    }
+
+    return this.prisma.project_members.upsert({
+      where: {
+        projectId_userId: {
+          projectId: id,
+          userId: data.userId,
+        },
+      },
+      create: {
+        projectId: id,
+        userId: data.userId,
+        role: data.role,
+      },
+      update: {
+        role: data.role,
+      },
+    });
+  }
+
+  async updateProjectMember(
+    userId: number,
+    id: number,
+    memberUserId: number,
+    data: UpdateProjectMemberInput
+  ) {
+    await this.getProjectForAccess(userId, id, 'owner');
+
+    return this.prisma.project_members.update({
+      where: {
+        projectId_userId: {
+          projectId: id,
+          userId: memberUserId,
+        },
+      },
+      data: {
+        role: data.role,
+      },
+    });
+  }
+
+  async removeProjectMember(userId: number, id: number, memberUserId: number) {
+    await this.getProjectForAccess(userId, id, 'owner');
+
+    await this.prisma.project_members.delete({
+      where: {
+        projectId_userId: {
+          projectId: id,
+          userId: memberUserId,
+        },
+      },
+    });
+
+    return { message: '项目成员已移除' };
   }
 
   /**

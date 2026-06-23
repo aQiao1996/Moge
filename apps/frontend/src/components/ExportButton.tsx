@@ -11,12 +11,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
-import { Download, FileText, FileCode, Eye } from 'lucide-react';
+import { Download, FileText, FileCode, Eye, BookOpen, FileType } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   exportChapterToTxt,
   exportManuscriptToTxt,
   exportManuscriptToMarkdown,
+  exportManuscriptToEpub,
+  exportManuscriptToDocx,
   previewExport,
 } from '@/api/export.api';
 import {
@@ -85,6 +87,36 @@ export default function ExportButton({
     }
   };
 
+  const handleExportEpub = async () => {
+    if (type !== 'manuscript') return;
+
+    setLoading(true);
+    try {
+      await exportManuscriptToEpub(id);
+      toast.success('EPUB导出成功');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '导出失败');
+      console.error('导出失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportDocx = async () => {
+    if (type !== 'manuscript') return;
+
+    setLoading(true);
+    try {
+      await exportManuscriptToDocx(id);
+      toast.success('DOCX导出成功');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '导出失败');
+      console.error('导出失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePreview = async (format: 'txt' | 'markdown') => {
     setLoading(true);
     try {
@@ -120,10 +152,20 @@ export default function ExportButton({
 
           {/* Markdown格式（仅文稿） */}
           {type === 'manuscript' && (
-            <DropdownMenuItem onClick={() => void handleExportMarkdown()}>
-              <FileCode className="mr-2 h-4 w-4" />
-              导出为 Markdown
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={() => void handleExportMarkdown()}>
+                <FileCode className="mr-2 h-4 w-4" />
+                导出为 Markdown
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleExportEpub()}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                导出为 EPUB
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleExportDocx()}>
+                <FileType className="mr-2 h-4 w-4" />
+                导出为 DOCX
+              </DropdownMenuItem>
+            </>
           )}
 
           <DropdownMenuSeparator />

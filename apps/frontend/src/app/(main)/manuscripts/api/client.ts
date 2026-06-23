@@ -154,6 +154,22 @@ export async function publishChapter(chapterId: number) {
 }
 
 /**
+ * 定时发布章节
+ */
+export async function scheduleChapterPublish(chapterId: number, scheduledAt: string) {
+  return post<ManuscriptChapter>(`/manuscripts/chapters/${chapterId}/schedule-publish`, {
+    scheduledAt,
+  });
+}
+
+/**
+ * 取消定时发布
+ */
+export async function cancelChapterSchedule(chapterId: number) {
+  return post<ManuscriptChapter>(`/manuscripts/chapters/${chapterId}/cancel-schedule`);
+}
+
+/**
  * 取消发布章节
  */
 export async function unpublishChapter(chapterId: number) {

@@ -26,6 +26,38 @@ interface ExportErrorResponse {
   message?: string;
 }
 
+async function downloadExportFile(url: string, fallbackFilename: string): Promise<void> {
+  const response = await fetch(`/moge-api${url}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth-token') || ''}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await getExportErrorMessage(response, '导出失败'));
+  }
+
+  const contentDisposition = response.headers.get('content-disposition');
+  let filename = fallbackFilename;
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+    if (filenameMatch) {
+      filename = decodeURIComponent(filenameMatch[1]);
+    }
+  }
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
 async function getExportErrorMessage(response: Response, fallback: string): Promise<string> {
   const contentType = response.headers.get('content-type');
 
@@ -52,29 +84,7 @@ async function getExportErrorMessage(response: Response, fallback: string): Prom
  * 导出单个章节为TXT（下载文件）
  */
 export async function exportChapterToTxt(chapterId: number): Promise<void> {
-  const url = `/export/chapter/${chapterId}/txt`;
-
-  // 直接使用fetch进行blob下载
-  const response = await fetch(`/moge-api${url}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth-token') || ''}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(await getExportErrorMessage(response, '导出失败'));
-  }
-
-  const blob = await response.blob();
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.download = `chapter_${chapterId}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(downloadUrl);
+  await downloadExportFile(`/export/chapter/${chapterId}/txt`, `chapter_${chapterId}.txt`);
 }
 
 /**
@@ -91,78 +101,40 @@ export async function exportManuscriptToTxt(
   if (options?.includeMetadata) params.append('includeMetadata', 'true');
   if (options?.preserveFormatting) params.append('preserveFormatting', 'true');
 
-  const url = `/export/manuscript/${manuscriptId}/txt?${params.toString()}`;
-
-  // 直接使用fetch进行blob下载
-  const response = await fetch(`/moge-api${url}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth-token') || ''}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(await getExportErrorMessage(response, '导出失败'));
-  }
-
-  // 从响应头获取文件名
-  const contentDisposition = response.headers.get('content-disposition');
-  let filename = `manuscript_${manuscriptId}.txt`;
-  if (contentDisposition) {
-    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-    if (filenameMatch) {
-      filename = decodeURIComponent(filenameMatch[1]);
-    }
-  }
-
-  const blob = await response.blob();
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(downloadUrl);
+  await downloadExportFile(
+    `/export/manuscript/${manuscriptId}/txt?${params.toString()}`,
+    `manuscript_${manuscriptId}.txt`
+  );
 }
 
 /**
  * 导出整个文稿为Markdown（下载文件）
  */
 export async function exportManuscriptToMarkdown(manuscriptId: number): Promise<void> {
-  const url = `/export/manuscript/${manuscriptId}/markdown`;
+  await downloadExportFile(
+    `/export/manuscript/${manuscriptId}/markdown`,
+    `manuscript_${manuscriptId}.md`
+  );
+}
 
-  // 直接使用fetch进行blob下载
-  const response = await fetch(`/moge-api${url}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth-token') || ''}`,
-    },
-  });
+/**
+ * 导出整个文稿为EPUB（下载文件）
+ */
+export async function exportManuscriptToEpub(manuscriptId: number): Promise<void> {
+  await downloadExportFile(
+    `/export/manuscript/${manuscriptId}/epub`,
+    `manuscript_${manuscriptId}.epub`
+  );
+}
 
-  if (!response.ok) {
-    throw new Error(await getExportErrorMessage(response, '导出失败'));
-  }
-
-  // 从响应头获取文件名
-  const contentDisposition = response.headers.get('content-disposition');
-  let filename = `manuscript_${manuscriptId}.md`;
-  if (contentDisposition) {
-    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-    if (filenameMatch) {
-      filename = decodeURIComponent(filenameMatch[1]);
-    }
-  }
-
-  const blob = await response.blob();
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(downloadUrl);
+/**
+ * 导出整个文稿为DOCX（下载文件）
+ */
+export async function exportManuscriptToDocx(manuscriptId: number): Promise<void> {
+  await downloadExportFile(
+    `/export/manuscript/${manuscriptId}/docx`,
+    `manuscript_${manuscriptId}.docx`
+  );
 }
 
 /**

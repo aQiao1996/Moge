@@ -16,10 +16,11 @@ import {
   SaveChapterContentDto,
 } from './manuscripts.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import type { AIModelRuntimeConfig, AIProvider } from '../ai/ai.service';
 import { AIService } from '../ai/ai.service';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { Prisma } from '../../generated/prisma';
+import { Prisma, type project_ai_configs } from '../../generated/prisma';
 import {
   buildRecentDateKeys,
   buildWritingDeltaEvents,
@@ -36,6 +37,28 @@ interface TransactionLock {
 
 const MANUSCRIPT_LOCK_NAMESPACE = 1001;
 const MANUSCRIPT_VOLUME_LOCK_NAMESPACE = 1002;
+
+interface ManuscriptAiConfig {
+  provider: AIProvider;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  enableCharacterContext: boolean;
+  enableSystemContext: boolean;
+  enableWorldContext: boolean;
+  enableMiscContext: boolean;
+}
+
+const DEFAULT_MANUSCRIPT_AI_CONFIG: ManuscriptAiConfig = {
+  provider: 'openai_compatible',
+  model: 'gpt-5.2',
+  temperature: 0.6,
+  maxTokens: 2000,
+  enableCharacterContext: true,
+  enableSystemContext: true,
+  enableWorldContext: true,
+  enableMiscContext: true,
+};
 
 /**
  * 文稿服务
@@ -80,6 +103,32 @@ export class ManuscriptsService {
     return {
       namespace: MANUSCRIPT_VOLUME_LOCK_NAMESPACE,
       scopeId: volumeId,
+    };
+  }
+
+  private normalizeManuscriptAiConfig(config?: project_ai_configs | null): ManuscriptAiConfig {
+    if (!config) {
+      return DEFAULT_MANUSCRIPT_AI_CONFIG;
+    }
+
+    return {
+      provider: config.provider as AIProvider,
+      model: config.model,
+      temperature: Number(config.temperature),
+      maxTokens: config.maxTokens,
+      enableCharacterContext: config.enableCharacterContext,
+      enableSystemContext: config.enableSystemContext,
+      enableWorldContext: config.enableWorldContext,
+      enableMiscContext: config.enableMiscContext,
+    };
+  }
+
+  private toAiModelRuntimeConfig(config: ManuscriptAiConfig): AIModelRuntimeConfig {
+    return {
+      provider: config.provider,
+      model: config.model,
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
     };
   }
 
@@ -889,6 +938,7 @@ export class ManuscriptsService {
         data: {
           status: 'PUBLISHED',
           publishedAt: currentChapter.publishedAt || new Date(),
+          scheduledAt: null,
         },
       });
 
@@ -896,6 +946,193 @@ export class ManuscriptsService {
 
       return updatedChapter;
     });
+  }
+
+  /**
+   * 设置章节定时发布时间。
+   */
+  async scheduleChapterPublish(chapterId: number, userId: number, scheduledAt: Date) {
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('定时发布时间不正确');
+    }
+
+    if (scheduledAt.getTime() <= Date.now()) {
+      throw new BadRequestException('定时发布时间必须晚于当前时间');
+    }
+
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const updatedChapter = await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          status: 'SCHEDULED',
+          scheduledAt,
+          publishedAt: null,
+        },
+      });
+
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+      return updatedChapter;
+    });
+  }
+
+  /**
+   * 取消章节定时发布。
+   */
+  async cancelChapterSchedule(chapterId: number, userId: number) {
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
+      const updatedChapter = await tx.manuscript_chapter.update({
+        where: { id: chapterId },
+        data: {
+          status: 'DRAFT',
+          scheduledAt: null,
+        },
+      });
+
+      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+      return updatedChapter;
+    });
+  }
+
+  /**
+   * 发布当前用户已到定时时间的章节。
+   */
+  async publishDueScheduledChapters(userId: number, now = new Date()) {
+    const chapters = await this.prisma.manuscript_chapter.findMany({
+      where: {
+        status: 'SCHEDULED',
+        scheduledAt: {
+          lte: now,
+        },
+        OR: [
+          {
+            manuscript: {
+              userId,
+            },
+          },
+          {
+            volume: {
+              manuscript: {
+                userId,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        manuscript: true,
+        volume: {
+          include: {
+            manuscript: true,
+          },
+        },
+      },
+    });
+
+    const manuscriptIds = new Set<number>();
+    chapters.forEach((chapter) => {
+      const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+      if (manuscript) {
+        manuscriptIds.add(manuscript.id);
+      }
+    });
+
+    await this.runLockedTransaction(
+      Array.from(manuscriptIds).map((manuscriptId) => this.getManuscriptLock(manuscriptId)),
+      async (tx) => {
+        for (const chapter of chapters) {
+          await tx.manuscript_chapter.update({
+            where: { id: chapter.id },
+            data: {
+              status: 'PUBLISHED',
+              publishedAt: chapter.publishedAt || now,
+              scheduledAt: null,
+            },
+          });
+        }
+
+        for (const manuscriptId of manuscriptIds) {
+          await this.recalculateManuscriptTotalWords(manuscriptId, tx);
+        }
+      }
+    );
+
+    return { count: chapters.length };
+  }
+
+  /**
+   * 发布全部已到定时时间的章节，供后台定时任务使用。
+   */
+  async publishAllDueScheduledChapters(now = new Date()) {
+    const chapters = await this.prisma.manuscript_chapter.findMany({
+      where: {
+        status: 'SCHEDULED',
+        scheduledAt: {
+          lte: now,
+        },
+      },
+      include: {
+        manuscript: true,
+        volume: {
+          include: {
+            manuscript: true,
+          },
+        },
+      },
+    });
+
+    const manuscriptIds = new Set<number>();
+    chapters.forEach((chapter) => {
+      const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+      if (manuscript) {
+        manuscriptIds.add(manuscript.id);
+      }
+    });
+
+    await this.runLockedTransaction(
+      Array.from(manuscriptIds).map((manuscriptId) => this.getManuscriptLock(manuscriptId)),
+      async (tx) => {
+        for (const chapter of chapters) {
+          await tx.manuscript_chapter.update({
+            where: { id: chapter.id },
+            data: {
+              status: 'PUBLISHED',
+              publishedAt: chapter.publishedAt || now,
+              scheduledAt: null,
+            },
+          });
+        }
+
+        for (const manuscriptId of manuscriptIds) {
+          await this.recalculateManuscriptTotalWords(manuscriptId, tx);
+        }
+      }
+    );
+
+    return { count: chapters.length };
   }
 
   /**
@@ -918,6 +1155,7 @@ export class ManuscriptsService {
         where: { id: chapterId },
         data: {
           status: 'DRAFT',
+          scheduledAt: null,
         },
       });
 
@@ -985,6 +1223,7 @@ export class ManuscriptsService {
             data: {
               status: 'PUBLISHED',
               publishedAt: currentChapter?.publishedAt || new Date(),
+              scheduledAt: null,
             },
           });
         }
@@ -1078,18 +1317,31 @@ export class ManuscriptsService {
           id: manuscript.projectId,
           userId,
         },
+        include: {
+          aiConfig: true,
+        },
       });
 
       if (!project) {
         throw new NotFoundException(`Project with id ${manuscript.projectId} not found`);
       }
 
+      const aiConfig = this.normalizeManuscriptAiConfig(project.aiConfig);
+
       // 并行获取所有关联的设定详情
       const [characters, systems, worlds, misc] = await Promise.all([
-        this.getCharactersByIds(project.characters || [], userId),
-        this.getSystemsByIds(project.systems || [], userId),
-        this.getWorldsByIds(project.worlds || [], userId),
-        this.getMiscByIds(project.misc || [], userId),
+        aiConfig.enableCharacterContext
+          ? this.getCharactersByIds(project.characters || [], userId)
+          : Promise.resolve([]),
+        aiConfig.enableSystemContext
+          ? this.getSystemsByIds(project.systems || [], userId)
+          : Promise.resolve([]),
+        aiConfig.enableWorldContext
+          ? this.getWorldsByIds(project.worlds || [], userId)
+          : Promise.resolve([]),
+        aiConfig.enableMiscContext
+          ? this.getMiscByIds(project.misc || [], userId)
+          : Promise.resolve([]),
       ]);
 
       return {
@@ -1097,6 +1349,7 @@ export class ManuscriptsService {
         systems,
         worlds,
         misc,
+        aiConfig,
       };
     } else {
       // 直接使用文稿的设定数组
@@ -1112,6 +1365,7 @@ export class ManuscriptsService {
         systems,
         worlds,
         misc,
+        aiConfig: DEFAULT_MANUSCRIPT_AI_CONFIG,
       };
     }
   }
@@ -1217,7 +1471,9 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     try {
       this.logger.debug(`[AI 续写] 章节ID: ${chapterId}, 用户ID: ${userId}`);
 
-      const model = this.aiService.getDefaultStreamingModel();
+      const model = this.aiService.getConfiguredStreamingModel(
+        this.toAiModelRuntimeConfig(settings.aiConfig)
+      );
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],
@@ -1289,7 +1545,9 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         `[AI 润色] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
       );
 
-      const model = this.aiService.getDefaultStreamingModel();
+      const model = this.aiService.getConfiguredStreamingModel(
+        this.toAiModelRuntimeConfig(settings.aiConfig)
+      );
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],
@@ -1361,7 +1619,9 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
         `[AI 扩写] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
       );
 
-      const model = this.aiService.getDefaultStreamingModel();
+      const model = this.aiService.getConfiguredStreamingModel(
+        this.toAiModelRuntimeConfig(settings.aiConfig)
+      );
       const prompt = ChatPromptTemplate.fromMessages([
         ['system', systemPrompt],
         ['human', userPrompt],

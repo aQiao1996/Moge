@@ -16,6 +16,13 @@ export interface AIStreamingDebugInfo {
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
 }
 
+export interface AIModelRuntimeConfig {
+  provider: AIProvider;
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
 const SUPPORTED_AI_PROVIDERS: AIProvider[] = ['gemini', 'openai', 'moonshot', 'openai_compatible'];
 
 @Injectable()
@@ -93,6 +100,55 @@ export class AIService {
    */
   getDefaultStreamingModel(): BaseChatModel {
     return this.getStreamingModel(this.getDefaultProvider());
+  }
+
+  /**
+   * 根据项目级配置创建流式模型。
+   * @param config 项目保存的模型运行参数
+   * @returns 支持流式输出的模型实例
+   */
+  getConfiguredStreamingModel(config: AIModelRuntimeConfig): BaseChatModel {
+    switch (config.provider) {
+      case 'gemini':
+        return new ChatGoogleGenerativeAI({
+          apiKey: this.configService.get<string>('GEMINI_API_KEY'),
+          modelName: config.model,
+          streaming: true,
+          temperature: config.temperature,
+          maxOutputTokens: config.maxTokens,
+        });
+
+      case 'openai':
+        return this.createOpenAICompatibleModel({
+          label: 'OpenAI',
+          apiKeyEnvName: 'OPENAI_API_KEY',
+          modelName: config.model,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+        });
+
+      case 'moonshot':
+        return this.createOpenAICompatibleModel({
+          label: 'Moonshot',
+          apiKeyEnvName: 'MOONSHOT_API_KEY',
+          modelName: config.model,
+          baseURL:
+            this.configService.get<string>('MOONSHOT_BASE_URL') ?? 'https://api.moonshot.cn/v1',
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+        });
+
+      case 'openai_compatible':
+        return this.createOpenAICompatibleModel({
+          label: 'OpenAI Compatible',
+          apiKeyEnvName: 'OPENAI_COMPATIBLE_API_KEY',
+          modelName: config.model,
+          baseURL: this.getRequiredConfig('OPENAI_COMPATIBLE_BASE_URL'),
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+          reasoningEffort: 'low',
+        });
+    }
   }
 
   /**

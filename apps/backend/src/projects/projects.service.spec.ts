@@ -7,6 +7,9 @@ interface MockPrismaService {
   projects: {
     findFirst: jest.Mock;
   };
+  project_members: {
+    findUnique: jest.Mock;
+  };
   project_ai_configs: {
     findUnique: jest.Mock;
     upsert: jest.Mock;
@@ -17,6 +20,9 @@ function createBasePrisma(): MockPrismaService {
   return {
     projects: {
       findFirst: jest.fn(),
+    },
+    project_members: {
+      findUnique: jest.fn(),
     },
     project_ai_configs: {
       findUnique: jest.fn(),
@@ -154,5 +160,37 @@ describe('ProjectsService AI config', () => {
     ).rejects.toThrow(NotFoundException);
     expect(prisma.project_ai_configs.findUnique).not.toHaveBeenCalled();
     expect(prisma.project_ai_configs.upsert).not.toHaveBeenCalled();
+  });
+
+  it('allows project members to read shared projects', async () => {
+    const prisma = createBasePrisma();
+    prisma.projects.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: projectId,
+      userId: 200,
+      name: '协作项目',
+    });
+    prisma.project_members.findUnique.mockResolvedValue({
+      projectId,
+      userId,
+      role: 'EDITOR',
+    });
+
+    const service = createService(prisma);
+
+    await expect(service.getProjectById(userId, projectId)).resolves.toMatchObject({
+      id: projectId,
+      name: '协作项目',
+    });
+    expect(prisma.project_members.findUnique).toHaveBeenCalledWith({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+      select: {
+        role: true,
+      },
+    });
   });
 });

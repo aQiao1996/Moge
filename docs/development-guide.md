@@ -73,16 +73,24 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - `POST /manuscripts/chapters/:id/ai/polish` - AI润色 (✅ 注入设定)
 - `POST /manuscripts/chapters/:id/ai/expand` - AI扩写 (✅ 注入设定)
 - `POST /manuscripts/chapters/:id/publish` - 发布章节
+- `POST /manuscripts/chapters/:id/schedule-publish` - 定时发布章节
+- `POST /manuscripts/chapters/:id/cancel-schedule` - 取消定时发布
+- `POST /manuscripts/chapters/run-due-publish` - 执行到期定时发布
 - `GET /manuscripts/chapters/:id/versions` - 获取版本历史
 - `POST /manuscripts/chapters/:id/versions/:version/restore` - 恢复版本
 - `GET /projects/:id/ai-config` - 获取项目级 AI 配置
 - `PUT /projects/:id/ai-config` - 更新项目级 AI 配置
+- `GET /projects/:id/members` - 获取项目协作成员
+- `POST /projects/:id/members` - 添加或更新项目协作成员
+- `PUT /projects/:id/members/:userId` - 更新项目协作成员角色
+- `DELETE /projects/:id/members/:userId` - 移除项目协作成员
 
-### P2 - 高级功能 (需单独确认)
+**导出模块**:
 
-- EPUB/DOCX导出：需要引入文档/电子书生成依赖并补充格式验收用例。
-- 定时发布：需要新增调度策略和迁移。
-- 多人协作权限：需要新增成员/角色/资源权限模型和迁移。
+- `GET /export/manuscript/:id/txt` - 导出 TXT
+- `GET /export/manuscript/:id/markdown` - 导出 Markdown
+- `GET /export/manuscript/:id/epub` - 导出 EPUB
+- `GET /export/manuscript/:id/docx` - 导出 DOCX
 
 ---
 
@@ -93,6 +101,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 设定: projects, character/system/world/misc_settings
 大纲: outline, outline_content, outline_volume, outline_chapter, outline_chapter_content
 文稿: manuscripts, manuscript_volume, manuscript_chapter, manuscript_chapter_content
+协作: project_members
 字典: dict_categories, dict_items, dict_item_versions
 ```
 
@@ -130,6 +139,9 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - **工作台**: 最近项目/大纲/文稿、今日待办、灵感便签；待办和便签复用内部辅助设定记录做用户级服务端持久化。
 - **字典**: 支持系统/个人/项目级词条、社区共享、复制到个人字典、编辑版本历史，以及分类内 JSON 导入导出。
 - **AI 配置**: 已提供项目级 AI 配置表与后端读写接口，支持模型、上下文来源、上下文长度策略、结果应用策略和后台任务阈值配置。
+- **多格式导出**: 文稿支持 TXT、Markdown、EPUB、DOCX 四类导出。
+- **定时发布**: 章节支持 `SCHEDULED` 状态、定时时间、到期发布执行接口，并通过后台定时任务每分钟自动发布到期章节。
+- **协作权限**: 项目成员表支持 `OWNER`、`EDITOR`、`VIEWER` 角色，项目读写会按所有者和成员角色校验，并提供成员管理接口。
 
 ### 部署与安全
 

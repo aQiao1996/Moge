@@ -16,7 +16,7 @@ pnpm install
 Docker Compose 默认使用以下 PostgreSQL 连接：
 
 ```bash
-postgresql://moge:moge_password@localhost:5432/moge?schema=public
+postgresql://moge:change_me_strong_password@localhost:5432/moge?schema=public
 ```
 
 后端本地环境可参考 `apps/backend/.env.example`，复制为
@@ -49,6 +49,29 @@ PUT /projects/:id/ai-config
 ```
 
 该配置用于保存项目默认模型、上下文来源策略和 AI 结果应用策略。
+
+文稿模块已支持多格式导出和定时发布：
+
+```bash
+GET /export/manuscript/:id/txt
+GET /export/manuscript/:id/markdown
+GET /export/manuscript/:id/epub
+GET /export/manuscript/:id/docx
+POST /manuscripts/chapters/:id/schedule-publish
+POST /manuscripts/chapters/:id/cancel-schedule
+POST /manuscripts/chapters/run-due-publish
+```
+
+后端会每分钟自动执行到期章节发布。
+
+项目协作权限已具备基础成员模型，支持 `OWNER`、`EDITOR`、`VIEWER` 三类角色；项目读写接口会按所有者和成员角色做权限判断：
+
+```bash
+GET /projects/:id/members
+POST /projects/:id/members
+PUT /projects/:id/members/:userId
+DELETE /projects/:id/members/:userId
+```
 
 ### 添加/管理依赖
 

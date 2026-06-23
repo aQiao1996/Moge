@@ -1,4 +1,8 @@
-import { createProjectSchema, updateProjectAiConfigSchema } from '@moge/types';
+import {
+  createProjectSchema,
+  projectMemberRoleSchema,
+  updateProjectAiConfigSchema,
+} from '@moge/types';
 import { z } from 'zod';
 
 const relationIdSchema = z
@@ -47,6 +51,19 @@ export const updateProjectMiscSchema = z
 
 export const updateProjectAiConfigRequestSchema = updateProjectAiConfigSchema;
 
+export const addProjectMemberRequestSchema = z
+  .object({
+    userId: z.coerce.number().int().positive('用户 ID 必须大于 0'),
+    role: projectMemberRoleSchema.exclude(['OWNER']),
+  })
+  .strict();
+
+export const updateProjectMemberRequestSchema = z
+  .object({
+    role: projectMemberRoleSchema.exclude(['OWNER']),
+  })
+  .strict();
+
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>;
 export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>;
 export type UpdateProjectCharactersInput = z.infer<typeof updateProjectCharactersSchema>;
@@ -54,3 +71,5 @@ export type UpdateProjectSystemsInput = z.infer<typeof updateProjectSystemsSchem
 export type UpdateProjectWorldsInput = z.infer<typeof updateProjectWorldsSchema>;
 export type UpdateProjectMiscInput = z.infer<typeof updateProjectMiscSchema>;
 export type UpdateProjectAiConfigInput = z.infer<typeof updateProjectAiConfigRequestSchema>;
+export type AddProjectMemberInput = z.infer<typeof addProjectMemberRequestSchema>;
+export type UpdateProjectMemberInput = z.infer<typeof updateProjectMemberRequestSchema>;

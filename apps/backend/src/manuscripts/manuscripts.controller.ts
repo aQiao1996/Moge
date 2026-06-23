@@ -24,6 +24,7 @@ import {
   ReorderVolumesDto,
   ReorderChaptersDto,
   BatchPublishChaptersDto,
+  ScheduleChapterPublishDto,
 } from './manuscripts.dto';
 import type { User } from '@moge/types';
 
@@ -232,6 +233,44 @@ export class ManuscriptsController {
   }
 
   /**
+   * 定时发布章节
+   */
+  @Post('chapters/:chapterId/schedule-publish')
+  async scheduleChapterPublish(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() dto: ScheduleChapterPublishDto
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.scheduleChapterPublish(
+      chapterId,
+      userId,
+      new Date(dto.scheduledAt)
+    );
+  }
+
+  /**
+   * 取消定时发布
+   */
+  @Post('chapters/:chapterId/cancel-schedule')
+  async cancelChapterSchedule(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.cancelChapterSchedule(chapterId, userId);
+  }
+
+  /**
+   * 执行到期定时发布
+   */
+  @Post('chapters/run-due-publish')
+  async publishDueScheduledChapters(@Request() req: AuthenticatedRequest) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.publishDueScheduledChapters(userId);
+  }
+
+  /**
    * 取消发布章节
    */
   @Post('chapters/:chapterId/unpublish')
@@ -262,7 +301,7 @@ export class ManuscriptsController {
   async getManuscriptSettings(
     @Request() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number
-  ) {
+  ): Promise<unknown> {
     const userId = Number(req.user.id);
     return this.manuscriptsService.getManuscriptSettings(id, userId);
   }

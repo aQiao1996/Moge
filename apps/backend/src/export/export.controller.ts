@@ -109,6 +109,38 @@ export class ExportController {
   }
 
   /**
+   * 导出整个文稿为EPUB
+   */
+  @Get('manuscript/:id/epub')
+  @ApiOperation({ summary: '导出整个文稿为EPUB' })
+  @ApiParam({ name: 'id', description: '文稿ID' })
+  async exportManuscriptToEpub(
+    @Param('id') id: string,
+    @Request() req: AuthRequest,
+    @Res() res: Response
+  ) {
+    const userId = this.getUserId(req);
+    const payload = await this.exportService.exportManuscriptToEpubFile(Number(id), userId);
+    return this.sendFile(res, payload);
+  }
+
+  /**
+   * 导出整个文稿为DOCX
+   */
+  @Get('manuscript/:id/docx')
+  @ApiOperation({ summary: '导出整个文稿为DOCX' })
+  @ApiParam({ name: 'id', description: '文稿ID' })
+  async exportManuscriptToDocx(
+    @Param('id') id: string,
+    @Request() req: AuthRequest,
+    @Res() res: Response
+  ) {
+    const userId = this.getUserId(req);
+    const payload = await this.exportService.exportManuscriptToDocxFile(Number(id), userId);
+    return this.sendFile(res, payload);
+  }
+
+  /**
    * 批量导出章节
    */
   @Post('chapters/batch')

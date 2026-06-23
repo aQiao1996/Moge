@@ -5,16 +5,45 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Users, Zap, Globe, Folder, Plus, Eye, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ArrowLeft,
+  Users,
+  Zap,
+  Globe,
+  Folder,
+  Plus,
+  Eye,
+  AlertCircle,
+  Bot,
+  Save,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  getProjectAiConfig,
   getProjectById,
   getProjectSettings,
+  updateProjectAiConfig,
+  type ProjectAiConfig,
   type Project,
   type ProjectSettings,
 } from '@/api/projects.api';
 import dayjs from '@/lib/dayjs';
+import { toast } from 'sonner';
+import type {
+  AIProviderValue,
+  AiContextLengthStrategyValue,
+  AiResultApplyStrategyValue,
+} from '@moge/types';
 
 type SettingCategoryKey = keyof ProjectSettings;
 type ProjectSettingItem = ProjectSettings[SettingCategoryKey][number];
@@ -63,12 +92,41 @@ const emptySettings: ProjectSettings = {
   misc: [],
 };
 
+const aiProviderOptions: Array<{ value: AIProviderValue; label: string }> = [
+  { value: 'openai_compatible', label: 'OpenAI 兼容' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'moonshot', label: 'Moonshot' },
+  { value: 'gemini', label: 'Gemini' },
+];
+
+const contextStrategyOptions: Array<{ value: AiContextLengthStrategyValue; label: string }> = [
+  { value: 'COMPACT', label: '紧凑' },
+  { value: 'BALANCED', label: '均衡' },
+  { value: 'EXPANDED', label: '扩展' },
+];
+
+const applyStrategyOptions: Array<{ value: AiResultApplyStrategyValue; label: string }> = [
+  { value: 'CANDIDATE', label: '候选结果' },
+  { value: 'DIRECT_INSERT', label: '直接插入' },
+];
+
+const contextToggleOptions: Array<{ key: keyof ProjectAiConfig; label: string }> = [
+  { key: 'enableCharacterContext', label: '角色' },
+  { key: 'enableSystemContext', label: '系统' },
+  { key: 'enableWorldContext', label: '世界' },
+  { key: 'enableMiscContext', label: '辅助' },
+  { key: 'enableChapterSummaryContext', label: '章节摘要' },
+  { key: 'enableProjectMemoryContext', label: '项目记忆' },
+];
+
 export default function ProjectSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = Number(params.projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [settings, setSettings] = useState<ProjectSettings>(emptySettings);
+  const [aiConfig, setAiConfig] = useState<ProjectAiConfig | null>(null);
+  const [savingAiConfig, setSavingAiConfig] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -88,12 +146,14 @@ export default function ProjectSettingsPage() {
       try {
         setLoading(true);
         setErrorMessage('');
-        const [projectData, settingsData] = await Promise.all([
+        const [projectData, settingsData, aiConfigData] = await Promise.all([
           getProjectById(projectId),
           getProjectSettings(projectId),
+          getProjectAiConfig(projectId),
         ]);
         setProject(projectData);
         setSettings(settingsData);
+        setAiConfig(aiConfigData);
       } catch (error) {
         console.error('加载项目详情失败:', error);
         setErrorMessage('项目不存在或无权限访问');
@@ -107,6 +167,42 @@ export default function ProjectSettingsPage() {
 
   const handleCategoryClick = (categoryKey: SettingCategoryKey) => {
     router.push(`/settings/library/${categoryKey}`);
+  };
+
+  const updateAiConfigField = <K extends keyof ProjectAiConfig>(
+    key: K,
+    value: ProjectAiConfig[K]
+  ) => {
+    setAiConfig((current) => (current ? { ...current, [key]: value } : current));
+  };
+
+  const handleSaveAiConfig = async () => {
+    if (!aiConfig) return;
+
+    try {
+      setSavingAiConfig(true);
+      const savedConfig = await updateProjectAiConfig(projectId, {
+        provider: aiConfig.provider,
+        model: aiConfig.model,
+        temperature: Number(aiConfig.temperature),
+        maxTokens: aiConfig.maxTokens,
+        enableCharacterContext: aiConfig.enableCharacterContext,
+        enableSystemContext: aiConfig.enableSystemContext,
+        enableWorldContext: aiConfig.enableWorldContext,
+        enableMiscContext: aiConfig.enableMiscContext,
+        enableChapterSummaryContext: aiConfig.enableChapterSummaryContext,
+        enableProjectMemoryContext: aiConfig.enableProjectMemoryContext,
+        contextLengthStrategy: aiConfig.contextLengthStrategy,
+        resultApplyStrategy: aiConfig.resultApplyStrategy,
+        asyncTaskThreshold: aiConfig.asyncTaskThreshold,
+      });
+      setAiConfig(savedConfig);
+      toast.success('AI 配置已保存');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'AI 配置保存失败');
+    } finally {
+      setSavingAiConfig(false);
+    }
   };
 
   if (loading) {
@@ -193,6 +289,158 @@ export default function ProjectSettingsPage() {
           </div>
         </div>
       </div>
+
+      {aiConfig && (
+        <Card
+          className="mb-6 border p-6"
+          style={{
+            backgroundColor: 'var(--moge-card-bg)',
+            borderColor: 'var(--moge-card-border)',
+          }}
+        >
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <Bot className="h-6 w-6 text-[var(--moge-primary)]" />
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--moge-text-main)]">AI 配置</h2>
+                <p className="text-sm text-[var(--moge-text-sub)]">
+                  模型、上下文与生成结果应用策略
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => void handleSaveAiConfig()} disabled={savingAiConfig}>
+              <Save className="mr-2 h-4 w-4" />
+              {savingAiConfig ? '保存中' : '保存配置'}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label>供应商</Label>
+              <Select
+                value={aiConfig.provider}
+                onValueChange={(value: AIProviderValue) => updateAiConfigField('provider', value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiProviderOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>模型</Label>
+              <Input
+                value={aiConfig.model}
+                onChange={(event) => updateAiConfigField('model', event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>温度</Label>
+              <Input
+                type="number"
+                min="0"
+                max="2"
+                step="0.01"
+                value={aiConfig.temperature}
+                onChange={(event) => updateAiConfigField('temperature', event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>最大 token</Label>
+              <Input
+                type="number"
+                min="1"
+                value={aiConfig.maxTokens}
+                onChange={(event) =>
+                  updateAiConfigField('maxTokens', Number(event.target.value || 0))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>上下文策略</Label>
+              <Select
+                value={aiConfig.contextLengthStrategy}
+                onValueChange={(value: AiContextLengthStrategyValue) =>
+                  updateAiConfigField('contextLengthStrategy', value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {contextStrategyOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>应用策略</Label>
+              <Select
+                value={aiConfig.resultApplyStrategy}
+                onValueChange={(value: AiResultApplyStrategyValue) =>
+                  updateAiConfigField('resultApplyStrategy', value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {applyStrategyOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>后台任务阈值</Label>
+              <Input
+                type="number"
+                min="0"
+                value={aiConfig.asyncTaskThreshold}
+                onChange={(event) =>
+                  updateAiConfigField('asyncTaskThreshold', Number(event.target.value || 0))
+                }
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-4">
+              <Label>上下文来源</Label>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+                {contextToggleOptions.map((option) => (
+                  <label
+                    key={option.key}
+                    className="flex h-9 items-center gap-2 rounded-md border px-3 text-sm text-[var(--moge-text-main)]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(aiConfig[option.key])}
+                      onChange={(event) => updateAiConfigField(option.key, event.target.checked)}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {categoryMeta.map((category) => {

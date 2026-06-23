@@ -40,6 +40,8 @@ model users {
   outlines          outline[]
   /// 所属的所有项目
   projects          projects[]
+  /// 参与协作的项目成员记录
+  projectMemberships project_members[]
   /// 所属的所有角色设定
   characterSettings character_settings[]
   /// 所属的所有系统设定
@@ -391,9 +393,41 @@ model projects {
   dictItems   dict_items[]
   /// 项目级 AI 配置
   aiConfig    project_ai_configs?
+  /// 项目协作成员
+  members     project_members[]
 
   @@index([userId])
   @@index([createdAt])
+}
+
+/// 项目成员角色
+enum ProjectMemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+/// 项目协作成员表
+model project_members {
+  id        Int               @id @default(autoincrement())
+  /// 所属项目 ID
+  projectId Int               @map("project_id")
+  /// 成员用户 ID
+  userId    Int               @map("user_id")
+  /// 成员角色
+  role      ProjectMemberRole @default(VIEWER)
+  /// 创建时间
+  createdAt DateTime          @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  /// 所属项目
+  project   projects          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 成员用户
+  user      users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId, role])
+  @@index([projectId, role])
 }
 
 /// 项目级 AI 上下文长度策略
@@ -722,10 +756,12 @@ model manuscript_chapter {
   sortOrder    Decimal                     @map("sort_order") @db.Decimal(10, 5)
   /// 章节字数（冗余字段）
   wordCount    Int                         @default(0) @map("word_count")
-  /// 章节状态（草稿/已发布）
+  /// 章节状态（草稿/定时发布/已发布）
   status       ChapterStatus               @default(DRAFT)
   /// 发布时间（首次发布时间）
   publishedAt  DateTime?                   @map("published_at")
+  /// 定时发布时间
+  scheduledAt  DateTime?                   @map("scheduled_at")
   /// 创建时间
   createdAt    DateTime                    @default(now()) @map("created_at")
   /// 更新时间
@@ -741,6 +777,7 @@ model manuscript_chapter {
   @@index([volumeId, sortOrder])
   @@index([status])
   @@index([publishedAt])
+  @@index([scheduledAt])
 }
 
 /// 文稿章节内容表
@@ -792,5 +829,6 @@ enum ManuscriptStatus {
 /// 章节状态枚举
 enum ChapterStatus {
   DRAFT // 草稿 - 未发布
+  SCHEDULED // 定时发布 - 等待到点发布
   PUBLISHED // 已发布
 }

@@ -1,10 +1,18 @@
 import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
+import JSZip from 'jszip';
 
 export interface ExportOptions {
   format: 'txt' | 'markdown';
   includeMetadata?: boolean;
   preserveFormatting?: boolean;
+}
+
+export interface TextExportFilePayload {
+  filename: string;
+  contentType: string;
+  content: string;
 }
 
 export interface BatchExportFailure {
@@ -23,11 +31,13 @@ export interface BatchExportResult {
 export interface ExportFilePayload {
   filename: string;
   contentType: string;
-  content: string;
+  content: string | Buffer;
 }
 
 const TXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
+const EPUB_CONTENT_TYPE = 'application/epub+zip';
+const DOCX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 interface ExportOutlineSummary {
   name: string;
@@ -58,6 +68,12 @@ interface ManuscriptExportData {
   outline: ExportOutlineSummary | null;
   noVolumeChapters: ExportChapterNode[];
   volumes: ExportVolumeNode[];
+}
+
+interface ExportDocumentSection {
+  level: 1 | 2 | 3;
+  title: string;
+  content?: string;
 }
 
 /**
@@ -150,7 +166,65 @@ export class ExportService {
     return title.replace(/\s/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, '');
   }
 
-  async exportChapterToTxtFile(chapterId: number, userId: number): Promise<ExportFilePayload> {
+  private escapeXml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  private buildPlainTextParagraphs(content: string): string[] {
+    const cleanContent = this.cleanMarkdown(content).trim();
+    return cleanContent ? cleanContent.split(/\n{2,}/).map((paragraph) => paragraph.trim()) : [];
+  }
+
+  private buildDocumentSections(data: ManuscriptExportData): ExportDocumentSection[] {
+    const sections: ExportDocumentSection[] = [
+      {
+        level: 1,
+        title: data.manuscript.name,
+      },
+    ];
+
+    for (const chapter of data.noVolumeChapters) {
+      sections.push({
+        level: 2,
+        title: chapter.title,
+        content: chapter.content?.content || '（本章暂无内容）',
+      });
+    }
+
+    let volumeIndex = 1;
+    for (const volume of data.volumes) {
+      if (volume.chapters.length === 0) {
+        continue;
+      }
+
+      sections.push({
+        level: 2,
+        title: `第${this.numberToChinese(volumeIndex)}卷 ${volume.title}`,
+        content: volume.description || undefined,
+      });
+
+      let chapterIndex = 1;
+      for (const chapter of volume.chapters) {
+        sections.push({
+          level: 3,
+          title: `第${this.numberToChinese(chapterIndex)}章 ${chapter.title}`,
+          content: chapter.content?.content || '（本章暂无内容）',
+        });
+        chapterIndex++;
+      }
+
+      volumeIndex++;
+    }
+
+    return sections;
+  }
+
+  async exportChapterToTxtFile(chapterId: number, userId: number): Promise<TextExportFilePayload> {
     const chapter = await this.prisma.manuscript_chapter.findFirst({
       where: {
         id: chapterId,
@@ -210,7 +284,7 @@ export class ExportService {
     manuscriptId: number,
     userId: number,
     options?: ExportOptions
-  ): Promise<ExportFilePayload> {
+  ): Promise<TextExportFilePayload> {
     const { manuscript, outline, noVolumeChapters, volumes } = await this.getManuscriptExportData(
       manuscriptId,
       userId
@@ -384,7 +458,7 @@ export class ExportService {
   async exportManuscriptToMarkdownFile(
     manuscriptId: number,
     userId: number
-  ): Promise<ExportFilePayload> {
+  ): Promise<TextExportFilePayload> {
     const { manuscript, noVolumeChapters, volumes } = await this.getManuscriptExportData(
       manuscriptId,
       userId
@@ -468,6 +542,125 @@ export class ExportService {
       filename: `${manuscript.name || 'manuscript'}_${new Date().getTime()}.md`,
       contentType: MARKDOWN_CONTENT_TYPE,
       content: output,
+    };
+  }
+
+  async exportManuscriptToEpubFile(
+    manuscriptId: number,
+    userId: number
+  ): Promise<ExportFilePayload> {
+    const data = await this.getManuscriptExportData(manuscriptId, userId);
+    const sections = this.buildDocumentSections(data);
+    const zip = new JSZip();
+
+    zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+    zip.file(
+      'META-INF/container.xml',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`
+    );
+
+    const body = sections
+      .map((section) => {
+        const heading = `h${section.level}`;
+        const paragraphs = section.content
+          ? this.buildPlainTextParagraphs(section.content)
+              .map((paragraph) => `<p>${this.escapeXml(paragraph)}</p>`)
+              .join('\n')
+          : '';
+        return `<section><${heading}>${this.escapeXml(section.title)}</${heading}>${paragraphs}</section>`;
+      })
+      .join('\n');
+
+    zip.file(
+      'OEBPS/nav.xhtml',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>${this.escapeXml(data.manuscript.name)}</title></head>
+<body><nav epub:type="toc"><ol><li><a href="chapter.xhtml">${this.escapeXml(data.manuscript.name)}</a></li></ol></nav></body>
+</html>`
+    );
+    zip.file(
+      'OEBPS/chapter.xhtml',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>${this.escapeXml(data.manuscript.name)}</title></head>
+<body>${body}</body>
+</html>`
+    );
+    zip.file(
+      'OEBPS/content.opf',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" unique-identifier="book-id" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="book-id">moge-${manuscriptId}</dc:identifier>
+    <dc:title>${this.escapeXml(data.manuscript.name)}</dc:title>
+    <dc:language>zh-CN</dc:language>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="chapter"/>
+  </spine>
+</package>`
+    );
+
+    return {
+      filename: `${data.manuscript.name || 'manuscript'}_${new Date().getTime()}.epub`,
+      contentType: EPUB_CONTENT_TYPE,
+      content: await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }),
+    };
+  }
+
+  async exportManuscriptToDocxFile(
+    manuscriptId: number,
+    userId: number
+  ): Promise<ExportFilePayload> {
+    const data = await this.getManuscriptExportData(manuscriptId, userId);
+    const children: Paragraph[] = [];
+
+    for (const section of this.buildDocumentSections(data)) {
+      children.push(
+        new Paragraph({
+          text: section.title,
+          heading:
+            section.level === 1
+              ? HeadingLevel.TITLE
+              : section.level === 2
+                ? HeadingLevel.HEADING_1
+                : HeadingLevel.HEADING_2,
+        })
+      );
+
+      if (section.content) {
+        this.buildPlainTextParagraphs(section.content).forEach((paragraph) => {
+          children.push(
+            new Paragraph({
+              children: [new TextRun(paragraph)],
+            })
+          );
+        });
+      }
+    }
+
+    const document = new Document({
+      sections: [
+        {
+          children,
+        },
+      ],
+    });
+
+    return {
+      filename: `${data.manuscript.name || 'manuscript'}_${new Date().getTime()}.docx`,
+      contentType: DOCX_CONTENT_TYPE,
+      content: await Packer.toBuffer(document),
     };
   }
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { execFileSync, spawnSync } = require('child_process');
+const { existsSync } = require('fs');
 const { extname } = require('path');
 
 const SUPPORTED_EXTENSIONS = new Set([
@@ -85,6 +86,7 @@ function getAllFiles() {
  */
 function filterLintFiles(files) {
   return files
+    .filter((file) => existsSync(file))
     .filter((file) => SUPPORTED_EXTENSIONS.has(extname(file)))
     .sort((left, right) => left.localeCompare(right, 'zh-CN'));
 }

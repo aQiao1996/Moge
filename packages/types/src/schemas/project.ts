@@ -34,6 +34,7 @@ export const updateProjectSchema = createProjectSchema.partial();
 export const aiProviderSchema = z.enum(['gemini', 'openai', 'moonshot', 'openai_compatible']);
 export const aiContextLengthStrategySchema = z.enum(['COMPACT', 'BALANCED', 'EXPANDED']);
 export const aiResultApplyStrategySchema = z.enum(['CANDIDATE', 'DIRECT_INSERT']);
+export const projectMemberRoleSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
 
 export const projectAiConfigSchema = z.object({
   provider: aiProviderSchema,
@@ -76,3 +77,4 @@ export type AiContextLengthStrategyValue = z.infer<typeof aiContextLengthStrateg
 export type AiResultApplyStrategyValue = z.infer<typeof aiResultApplyStrategySchema>;
 export type ProjectAiConfigValues = z.infer<typeof projectAiConfigSchema>;
 export type UpdateProjectAiConfigValues = z.infer<typeof updateProjectAiConfigSchema>;
+export type ProjectMemberRoleValue = z.infer<typeof projectMemberRoleSchema>;

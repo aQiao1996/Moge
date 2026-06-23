@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { Manuscript } from '@moge/types';
 import {
@@ -71,7 +72,7 @@ interface SortableVolumeProps {
       id?: number | string;
       title?: string;
       wordCount?: number;
-      status?: 'DRAFT' | 'PUBLISHED';
+      status?: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
     }>;
   };
   isExpanded: boolean;
@@ -216,7 +217,7 @@ interface SortableChapterProps {
     id?: number | string;
     title?: string;
     wordCount?: number;
-    status?: 'DRAFT' | 'PUBLISHED';
+    status?: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
   };
   onChapterClick: (chapterId: string) => void;
   onEditChapter: (chapterId: string, title: string) => void;
@@ -257,6 +258,11 @@ function SortableChapter({
       >
         <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
         <span className="truncate">{chapter.title}</span>
+        {chapter.status === 'SCHEDULED' && (
+          <Badge variant="secondary" className="text-xs">
+            定时
+          </Badge>
+        )}
         {chapter.status === 'PUBLISHED' && (
           <span title="已发布">
             <Eye className="text-primary ml-2 h-3.5 w-3.5" />
