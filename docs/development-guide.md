@@ -51,7 +51,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 | 文稿       | ✅   | CRUD、卷章管理、编辑器、AI辅助                   |
 | 工作台     | ✅   | 统计卡片、最近项目、待办、灵感便签               |
 | 搜索/@引用 | ✅   | 统一搜索、@引用预览、反向链接                    |
-| 导出       | ✅   | TXT/Markdown导出                                 |
+| 导出       | ✅   | TXT/Markdown/EPUB/DOCX导出                       |
 
 ---
 
@@ -150,7 +150,7 @@ pnpm --filter @moge/backend prisma studio  # 数据库可视化
 - **安全响应头**: 后端统一设置 `nosniff`、`DENY`、`no-referrer` 等基础响应头，并移除 `X-Powered-By`。
 - **Swagger**: 生产 Docker 配置默认 `SWAGGER_ENABLED=false`；仅建议在受信网络内临时开启。
 - **反向代理**: Docker 配置默认 `TRUST_PROXY=true`，用于代理部署时识别真实客户端 IP。
-- **数据库**: Docker Compose 默认数据库连接为 `postgresql://moge:moge_password@localhost:5432/moge?schema=public`，本地后端环境参考 `apps/backend/.env.example`。
+- **数据库**: Docker Compose 默认数据库连接为 `postgresql://moge:change_me_strong_password@localhost:5432/moge?schema=public`，本地后端环境参考 `apps/backend/.env.example`。
 - **E2E**: `pnpm run test:e2e` 覆盖公开健康检查和 JWT 保护路由。
 
 ---
