@@ -26,6 +26,28 @@ export interface WorkspaceItems {
   ideas: WorkspaceIdea[];
 }
 
+export interface WorkspaceAiUsageRecord {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  taskType: string;
+  provider: string;
+  model: string;
+  status: string;
+  latencyMs: number | null;
+  createdAt: string;
+}
+
+export interface WorkspaceAiUsageOverview {
+  totalCalls: number;
+  successCount: number;
+  failedCount: number;
+  averageLatencyMs: number | null;
+  candidateCount: number;
+  appliedCandidateCount: number;
+  recentRecords: WorkspaceAiUsageRecord[];
+}
+
 const WORKSPACE_MISC_NAME = '__moge_workspace__';
 const WORKSPACE_MISC_TYPE = 'workspace_private';
 
@@ -404,15 +426,119 @@ export class WorkspaceService {
   }
 
   /**
+   * 获取 AI 使用概览
+   * @param userId 用户ID
+   */
+  async getAiUsageOverview(userId: number): Promise<WorkspaceAiUsageOverview> {
+    const projects = await this.prisma.projects.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    const projectNameById = new Map(projects.map((project) => [project.id, project.name]));
+    const projectIds = projects.map((project) => project.id);
+    const aiRecordScope = {
+      projectId: { in: projectIds },
+    };
+
+    const [
+      recentRecords,
+      totalCalls,
+      successCount,
+      failedCount,
+      latencyAggregate,
+      candidateCount,
+      appliedCount,
+    ] = await Promise.all([
+      this.prisma.ai_generation_records.findMany({
+        where: aiRecordScope,
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          projectId: true,
+          taskType: true,
+          provider: true,
+          model: true,
+          status: true,
+          latencyMs: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.ai_generation_records.count({
+        where: aiRecordScope,
+      }),
+      this.prisma.ai_generation_records.count({
+        where: {
+          ...aiRecordScope,
+          status: 'SUCCESS',
+        },
+      }),
+      this.prisma.ai_generation_records.count({
+        where: {
+          ...aiRecordScope,
+          status: 'FAILED',
+        },
+      }),
+      this.prisma.ai_generation_records.aggregate({
+        where: {
+          ...aiRecordScope,
+          status: 'SUCCESS',
+        },
+        _avg: {
+          latencyMs: true,
+        },
+      }),
+      this.prisma.ai_generation_candidates.count({
+        where: {
+          projectId: { in: projectIds },
+        },
+      }),
+      this.prisma.ai_generation_candidates.count({
+        where: {
+          applyStatus: 'APPLIED',
+          projectId: { in: projectIds },
+        },
+      }),
+    ]);
+
+    return {
+      totalCalls,
+      successCount,
+      failedCount,
+      averageLatencyMs:
+        latencyAggregate._avg.latencyMs === null
+          ? null
+          : Math.round(Number(latencyAggregate._avg.latencyMs)),
+      candidateCount,
+      appliedCandidateCount: appliedCount,
+      recentRecords: recentRecords.map((record) => ({
+        id: record.id,
+        projectId: record.projectId,
+        projectName: record.projectId ? (projectNameById.get(record.projectId) ?? null) : null,
+        taskType: record.taskType,
+        provider: record.provider,
+        model: record.model,
+        status: record.status,
+        latencyMs: record.latencyMs,
+        createdAt: record.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
    * 获取工作台汇总数据
    * @param userId 用户ID
    */
   async getWorkspaceSummary(userId: number) {
-    const [recentProjects, recentOutlines, recentManuscripts, stats] = await Promise.all([
+    const [recentProjects, recentOutlines, recentManuscripts, stats, aiUsage] = await Promise.all([
       this.getRecentProjects(userId),
       this.getRecentOutlines(userId),
       this.getRecentManuscripts(userId),
       this.getWritingStats(userId),
+      this.getAiUsageOverview(userId),
     ]);
 
     return {
@@ -420,6 +546,7 @@ export class WorkspaceService {
       recentOutlines,
       recentManuscripts,
       stats,
+      aiUsage,
     };
   }
 }

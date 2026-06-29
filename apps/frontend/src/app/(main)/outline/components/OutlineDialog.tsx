@@ -30,6 +30,7 @@ import {
 import { MogeMultiSelect } from '@/app/components/MogeMultiSelect';
 import { Button } from '@/components/ui/button';
 import SettingSelectorDialog from '@/app/(main)/settings/components/SettingSelectorDialog';
+import { getProjects, type Project } from '@/api/projects.api';
 
 interface OutlineDialogProps {
   mode: 'create' | 'edit';
@@ -62,6 +63,7 @@ export default function OutlineDialog({
   const { createOutline, updateOutline } = useOutlineStore();
   const { novelTypes, novelEras, novelTags, fetchNovelTypes, fetchNovelEras, fetchNovelTags } =
     useDictStore();
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const isEditMode = mode === 'edit';
 
@@ -83,6 +85,7 @@ export default function OutlineDialog({
     { name: 'name', label: '小说名称', required: !isEditMode },
     { name: 'type', label: '小说类型', required: !isEditMode },
     { name: 'era', label: '故事时代' },
+    { name: 'projectId', label: '关联项目' },
     { name: 'tags', label: '小说标签' },
     { name: 'conflict', label: '核心冲突' },
     { name: 'remark', label: '备注' },
@@ -127,6 +130,31 @@ export default function OutlineDialog({
               {novelEras.map((e) => (
                 <MogeSelectItem key={e.id} value={e.label}>
                   {e.label}
+                </MogeSelectItem>
+              ))}
+            </MogeSelectContent>
+          </MogeSelect>
+        );
+      }
+
+      if (name === 'projectId') {
+        const value = typeof field.value === 'number' ? String(field.value) : 'none';
+
+        return (
+          <MogeSelect
+            onValueChange={(nextValue) =>
+              field.onChange(nextValue === 'none' ? undefined : Number(nextValue))
+            }
+            value={value}
+          >
+            <MogeSelectTrigger>
+              <MogeSelectValue placeholder="可选：绑定设定集项目" />
+            </MogeSelectTrigger>
+            <MogeSelectContent>
+              <MogeSelectItem value="none">无项目</MogeSelectItem>
+              {projects.map((project) => (
+                <MogeSelectItem key={project.id} value={String(project.id)}>
+                  {project.name}
                 </MogeSelectItem>
               ))}
             </MogeSelectContent>
@@ -192,7 +220,7 @@ export default function OutlineDialog({
 
       return <MogeInput autoComplete="off" placeholder="会说话的核弹" {...field} />;
     },
-    [novelTypes, novelEras, novelTags]
+    [novelTypes, novelEras, novelTags, projects]
   );
 
   const onSubmit = async (values: FormValues) => {
@@ -240,6 +268,7 @@ export default function OutlineDialog({
           name: '',
           type: '',
           era: '',
+          projectId: undefined,
           conflict: '',
           tags: [],
           remark: '',
@@ -257,6 +286,7 @@ export default function OutlineDialog({
           void fetchNovelTypes();
           void fetchNovelEras();
           void fetchNovelTags();
+          void getProjects().then(setProjects);
         }}
       />
 

@@ -17,43 +17,45 @@ datasource db {
 
 // * ==================== 用户表 ====================
 model users {
-  id                Int                  @id @default(autoincrement())
+  id                 Int                  @id @default(autoincrement())
   /// 用户登录账号，全局唯一
-  username          String               @unique
+  username           String               @unique
   /// 用户邮箱，第三方登录时使用，全局唯一
-  email             String?              @unique
+  email              String?              @unique
   /// 邮箱验证通过的时间，未验证则为空
-  emailVerifiedAt   DateTime?            @map("email_verified_at")
+  emailVerifiedAt    DateTime?            @map("email_verified_at")
   /// bcrypt 哈希后的密码；OAuth 用户此处为空
-  passwordHash      String?              @map("password_hash")
+  passwordHash       String?              @map("password_hash")
   /// 昵称
-  name              String?
+  name               String?
   /// 头像 URL
-  avatarUrl         String?              @map("avatar_url")
+  avatarUrl          String?              @map("avatar_url")
   /// 记录创建时间
-  createdAt         DateTime             @default(now()) @map("created_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
   /// 记录更新时间
-  updatedAt         DateTime             @updatedAt @map("updated_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
   /// 该用户绑定的所有第三方账号
-  accounts          accounts[]
+  accounts           accounts[]
   /// 所属的所有大纲
-  outlines          outline[]
+  outlines           outline[]
   /// 所属的所有项目
-  projects          projects[]
+  projects           projects[]
   /// 参与协作的项目成员记录
   projectMemberships project_members[]
   /// 所属的所有角色设定
-  characterSettings character_settings[]
+  characterSettings  character_settings[]
   /// 所属的所有系统设定
-  systemSettings    system_settings[]
+  systemSettings     system_settings[]
   /// 所属的所有世界设定
-  worldSettings     world_settings[]
+  worldSettings      world_settings[]
   /// 所属的所有辅助设定
-  miscSettings      misc_settings[]
+  miscSettings       misc_settings[]
   /// 所属的所有个人/项目字典项
-  dictItems         dict_items[]
+  dictItems          dict_items[]
   /// 所属的所有文稿
-  manuscripts       manuscripts[]
+  manuscripts        manuscripts[]
+  /// 创建的 AI 后台任务
+  aiJobs             ai_jobs[]
 }
 
 // * ==================== 第三方账号关联表 ====================
@@ -98,9 +100,9 @@ model dict_categories {
 
 /// 字典项表
 model dict_items {
-  id           Int             @id @default(autoincrement())
+  id           Int                  @id @default(autoincrement())
   /// 所属分类编码
-  categoryCode String          @map("category_code")
+  categoryCode String               @map("category_code")
   /// 显示标签，如 '科幻'
   label        String
   /// 存储值（既是编码也是存储值），如 'sci_fi'
@@ -108,31 +110,31 @@ model dict_items {
   /// 描述信息
   description  String?
   /// 排序
-  sortOrder    Int             @default(0) @map("sort_order")
+  sortOrder    Int                  @default(0) @map("sort_order")
   /// 是否启用
-  isEnabled    Boolean         @default(true) @map("is_enabled")
+  isEnabled    Boolean              @default(true) @map("is_enabled")
   /// 词条作用域：系统、用户、项目
-  scope        DictScope       @default(SYSTEM)
+  scope        DictScope            @default(SYSTEM)
   /// 所属用户 ID，系统词条为空
-  userId       Int?            @map("user_id")
+  userId       Int?                 @map("user_id")
   /// 所属项目 ID，仅项目词条有值
-  projectId    Int?            @map("project_id")
+  projectId    Int?                 @map("project_id")
   /// 共享状态
-  shareStatus  DictShareStatus @default(PRIVATE) @map("share_status")
+  shareStatus  DictShareStatus      @default(PRIVATE) @map("share_status")
   /// 词条版本号
-  version      Int             @default(1)
+  version      Int                  @default(1)
   /// 来源词条 ID，用于社区复制
-  sourceItemId Int?            @map("source_item_id")
+  sourceItemId Int?                 @map("source_item_id")
   /// 创建时间
-  createdAt    DateTime        @default(now()) @map("created_at")
+  createdAt    DateTime             @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt    DateTime        @updatedAt @map("updated_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
   /// 所属分类
-  category     dict_categories @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
+  category     dict_categories      @relation(fields: [categoryCode], references: [code], onDelete: Cascade)
   /// 所属用户
-  user         users?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         users?               @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// 所属项目
-  project      projects?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project      projects?            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   /// 版本历史
   versions     dict_item_versions[]
 
@@ -199,6 +201,8 @@ model outline {
   remark     String?           @db.Text
   /// 业务生命周期状态
   status     OutlineStatus     @default(DRAFT)
+  /// 关联的设定集项目ID
+  projectId  Int?              @map("project_id")
   /// 关联的角色设定ID列表
   characters String[]          @default([])
   /// 关联的系统设定ID列表
@@ -211,6 +215,8 @@ model outline {
   userId     Int               @map("user_id")
   /// 创建人关联
   user       users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 关联的设定集项目
+  project    projects?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
   /// 记录创建时间
   createdAt  DateTime          @default(now()) @map("created_at")
   /// 记录更新时间
@@ -223,6 +229,7 @@ model outline {
   chapters   outline_chapter[]
 
   @@index([userId, status])
+  @@index([projectId])
   @@index([createdAt])
 }
 
@@ -364,37 +371,47 @@ enum OutlineStatus {
 
 /// 小说项目表
 model projects {
-  id          Int      @id @default(autoincrement())
+  id              Int                 @id @default(autoincrement())
   /// 项目名称
-  name        String
+  name            String
   /// 项目类型（小说类型）
-  type        String
+  type            String
   /// 项目描述
-  description String?  @db.Text
+  description     String?             @db.Text
   /// 项目标签
-  tags        String[] @default([])
+  tags            String[]            @default([])
   /// 关联的角色设定ID列表
-  characters  String[] @default([])
+  characters      String[]            @default([])
   /// 关联的系统设定ID列表
-  systems     String[] @default([])
+  systems         String[]            @default([])
   /// 关联的世界设定ID列表
-  worlds      String[] @default([])
+  worlds          String[]            @default([])
   /// 关联的辅助设定ID列表
-  misc        String[] @default([])
+  misc            String[]            @default([])
   /// 所属用户ID
-  userId      Int      @map("user_id")
+  userId          Int                 @map("user_id")
   /// 创建时间
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
   /// 所属用户
-  user        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            users               @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// 项目级字典项
-  dictItems   dict_items[]
+  dictItems       dict_items[]
   /// 项目级 AI 配置
-  aiConfig    project_ai_configs?
+  aiConfig        project_ai_configs?
   /// 项目协作成员
-  members     project_members[]
+  members         project_members[]
+  /// 项目级 Prompt 预设
+  aiPromptPresets ai_prompt_presets[]
+  /// 项目关联大纲
+  outlines         outline[]
+  /// 项目 AI 后台任务
+  aiJobs          ai_jobs[]
+  /// 项目记忆
+  memoryItems     project_memory_items[]
+  /// 项目知识资料
+  knowledgeDocuments knowledge_documents[]
 
   @@index([userId])
   @@index([createdAt])
@@ -488,8 +505,416 @@ model project_ai_configs {
   updatedAt                   DateTime                @updatedAt @map("updated_at")
   /// 所属项目
   project                     projects                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 默认续写预设
+  defaultContinuePreset       ai_prompt_presets?      @relation("ProjectAiConfigDefaultContinuePreset", fields: [defaultContinuePresetId], references: [id], onDelete: SetNull)
+  /// 默认润色预设
+  defaultPolishPreset         ai_prompt_presets?      @relation("ProjectAiConfigDefaultPolishPreset", fields: [defaultPolishPresetId], references: [id], onDelete: SetNull)
+  /// 默认扩写预设
+  defaultExpandPreset         ai_prompt_presets?      @relation("ProjectAiConfigDefaultExpandPreset", fields: [defaultExpandPresetId], references: [id], onDelete: SetNull)
+  /// 默认大纲预设
+  defaultOutlinePreset        ai_prompt_presets?      @relation("ProjectAiConfigDefaultOutlinePreset", fields: [defaultOutlinePresetId], references: [id], onDelete: SetNull)
 
   @@index([provider, model])
+}
+
+/// AI 生成任务类型
+enum AiTaskType {
+  OUTLINE_GENERATE
+  MANUSCRIPT_CONTINUE
+  MANUSCRIPT_POLISH
+  MANUSCRIPT_EXPAND
+  CHAPTER_SUMMARIZE
+}
+
+/// Prompt 预设作用域
+enum AiPromptPresetScope {
+  SYSTEM
+  USER
+  PROJECT
+}
+
+/// AI Prompt 预设主表
+model ai_prompt_presets {
+  id                     Int                         @id @default(autoincrement())
+  /// 预设编码
+  code                   String
+  /// 预设名称
+  name                   String
+  /// 任务类型
+  taskType               AiTaskType                  @map("task_type")
+  /// 预设作用域
+  scope                  AiPromptPresetScope         @default(SYSTEM)
+  /// 所属项目 ID，项目级预设必填
+  projectId              Int?                        @map("project_id")
+  /// 描述
+  description            String?                     @db.Text
+  /// 是否系统预设
+  isSystemPreset         Boolean                     @default(false) @map("is_system_preset")
+  /// 是否启用
+  isEnabled              Boolean                     @default(true) @map("is_enabled")
+  /// 最新版本号
+  latestVersion          Int                         @default(1) @map("latest_version")
+  /// 创建人
+  createdBy              Int?                        @map("created_by")
+  /// 创建时间
+  createdAt              DateTime                    @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt              DateTime                    @updatedAt @map("updated_at")
+  /// 所属项目
+  project                projects?                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 使用该预设作为默认续写的项目配置
+  defaultContinueConfigs project_ai_configs[]        @relation("ProjectAiConfigDefaultContinuePreset")
+  /// 使用该预设作为默认润色的项目配置
+  defaultPolishConfigs   project_ai_configs[]        @relation("ProjectAiConfigDefaultPolishPreset")
+  /// 使用该预设作为默认扩写的项目配置
+  defaultExpandConfigs   project_ai_configs[]        @relation("ProjectAiConfigDefaultExpandPreset")
+  /// 使用该预设作为默认大纲的项目配置
+  defaultOutlineConfigs  project_ai_configs[]        @relation("ProjectAiConfigDefaultOutlinePreset")
+  /// 版本记录
+  versions               ai_prompt_preset_versions[]
+
+  @@unique([code, scope, projectId])
+  @@index([taskType, scope, isEnabled])
+  @@index([projectId, taskType, isEnabled])
+}
+
+/// AI Prompt 预设版本表
+model ai_prompt_preset_versions {
+  id                 Int               @id @default(autoincrement())
+  /// 所属预设 ID
+  presetId           Int               @map("preset_id")
+  /// 版本号
+  version            Int
+  /// 系统提示词
+  systemPrompt       String            @map("system_prompt") @db.Text
+  /// 用户提示词模板
+  userPromptTemplate String            @map("user_prompt_template") @db.Text
+  /// 输出格式
+  outputFormat       String?           @map("output_format")
+  /// 参数 schema
+  parameterSchema    Json?             @map("parameter_schema")
+  /// 版本备注
+  notes              String?           @db.Text
+  /// 创建人
+  createdBy          Int?              @map("created_by")
+  /// 创建时间
+  createdAt          DateTime          @default(now()) @map("created_at")
+  /// 所属预设
+  preset             ai_prompt_presets @relation(fields: [presetId], references: [id], onDelete: Cascade)
+
+  @@unique([presetId, version])
+  @@index([presetId, version])
+}
+
+/// AI 候选结果类型
+enum AiCandidateType {
+  TEXT
+}
+
+/// AI 候选结果应用状态
+enum AiCandidateApplyStatus {
+  PENDING
+  APPLIED
+  DISCARDED
+}
+
+/// AI 候选结果应用方式
+enum AiCandidateApplyMode {
+  INSERT_TAIL
+  REPLACE_SELECTION
+  OVERWRITE_DRAFT
+  SAVE_AS_DRAFT
+}
+
+/// AI 后台任务状态
+enum AiJobStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELED
+  PARTIAL_SUCCESS
+}
+
+/// 项目记忆状态
+enum ProjectMemoryStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// 项目资料状态
+enum KnowledgeDocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// 项目记忆条目表
+model project_memory_items {
+  id         Int                 @id @default(autoincrement())
+  /// 所属项目 ID
+  projectId  Int                 @map("project_id")
+  /// 记忆分类
+  category   String
+  /// 标题
+  title      String
+  /// 内容
+  content    String              @db.Text
+  /// 优先级，值越大越优先进入上下文
+  priority   Int                 @default(0)
+  /// 来源类型
+  sourceType String              @default("MANUAL") @map("source_type")
+  /// 来源 ID
+  sourceId   Int?                @map("source_id")
+  /// 状态
+  status     ProjectMemoryStatus @default(ACTIVE)
+  /// 创建人
+  createdBy  Int?                @map("created_by")
+  /// 创建时间
+  createdAt  DateTime            @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+  /// 所属项目
+  project    projects            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status, priority])
+  @@index([projectId, category])
+}
+
+/// 项目知识资料表
+model knowledge_documents {
+  id           Int                     @id @default(autoincrement())
+  /// 所属项目 ID
+  projectId    Int                     @map("project_id")
+  /// 资料标题
+  title        String
+  /// 资料类型
+  documentType String                  @map("document_type")
+  /// 资料正文
+  content      String                  @db.Text
+  /// 来源标识
+  source       String                  @default("MANUAL")
+  /// 状态
+  status       KnowledgeDocumentStatus @default(ACTIVE)
+  /// 创建人
+  createdBy    Int?                    @map("created_by")
+  /// 创建时间
+  createdAt    DateTime                @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+  /// 所属项目
+  project      projects                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 切片
+  chunks       knowledge_chunks[]
+
+  @@index([projectId, status, updatedAt])
+  @@index([projectId, documentType])
+}
+
+/// 项目知识资料切片表
+model knowledge_chunks {
+  id         Int                 @id @default(autoincrement())
+  /// 所属资料 ID
+  documentId Int                 @map("document_id")
+  /// 所属项目 ID
+  projectId  Int                 @map("project_id")
+  /// 切片序号
+  chunkIndex Int                 @map("chunk_index")
+  /// 切片内容
+  content    String              @db.Text
+  /// 关键词
+  keywords   String[]            @default([])
+  /// 切片摘要
+  summary    String?             @db.Text
+  /// 创建时间
+  createdAt  DateTime            @default(now()) @map("created_at")
+  /// 所属资料
+  document   knowledge_documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([projectId])
+}
+
+/// AI 后台任务表
+model ai_jobs {
+  id                Int                     @id @default(autoincrement())
+  /// 创建任务的用户 ID
+  userId            Int                     @map("user_id")
+  /// 所属项目 ID
+  projectId         Int?                    @map("project_id")
+  /// 所属大纲 ID
+  outlineId         Int?                    @map("outline_id")
+  /// 所属文稿 ID
+  manuscriptId      Int?                    @map("manuscript_id")
+  /// 所属章节 ID
+  chapterId         Int?                    @map("chapter_id")
+  /// 任务类型
+  taskType          AiTaskType              @map("task_type")
+  /// 任务状态
+  status            AiJobStatus             @default(QUEUED)
+  /// 优先级，值越大越优先
+  priority          Int                     @default(0)
+  /// AI 供应商
+  provider          String?
+  /// 模型名称
+  model             String?
+  /// Prompt 预设 ID
+  presetId          Int?                    @map("preset_id")
+  /// Prompt 预设版本
+  presetVersion     Int?                    @map("preset_version")
+  /// 输入参数快照
+  inputPayload      Json?                   @map("input_payload")
+  /// 上下文元信息
+  contextMeta       Json?                   @map("context_meta")
+  /// 结果摘要
+  resultSummary     Json?                   @map("result_summary")
+  /// 错误信息
+  errorMessage      String?                 @map("error_message") @db.Text
+  /// 已重试次数
+  retryCount        Int                     @default(0) @map("retry_count")
+  /// 最大重试次数
+  maxRetries        Int                     @default(0) @map("max_retries")
+  /// 下次重试时间
+  nextRetryAt       DateTime?               @map("next_retry_at")
+  /// 锁定时间
+  lockedAt          DateTime?               @map("locked_at")
+  /// 锁定 worker 标识
+  lockedBy          String?                 @map("locked_by")
+  /// worker 心跳时间
+  heartbeatAt       DateTime?               @map("heartbeat_at")
+  /// 开始时间
+  startedAt         DateTime?               @map("started_at")
+  /// 结束时间
+  finishedAt        DateTime?               @map("finished_at")
+  /// 创建时间
+  createdAt         DateTime                @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+  /// 所属用户
+  user              users                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 所属项目
+  project           projects?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// 事件记录
+  events            ai_job_events[]
+  /// 生成记录
+  generationRecords ai_generation_records[]
+
+  @@index([userId, status, createdAt])
+  @@index([projectId, status, createdAt])
+  @@index([status, priority, nextRetryAt, createdAt])
+  @@index([lockedAt])
+}
+
+/// AI 后台任务事件表
+model ai_job_events {
+  id        Int      @id @default(autoincrement())
+  /// 所属任务 ID
+  jobId     Int      @map("job_id")
+  /// 事件类型
+  eventType String   @map("event_type")
+  /// 事件消息
+  message   String?  @db.Text
+  /// 事件负载
+  payload   Json?
+  /// 创建时间
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 所属任务
+  job       ai_jobs  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+}
+
+/// AI 生成记录表
+model ai_generation_records {
+  id              Int                        @id @default(autoincrement())
+  /// 后台任务 ID，Phase A 同步调用为空
+  jobId           Int?                       @map("job_id")
+  /// 所属项目 ID
+  projectId       Int?                       @map("project_id")
+  /// 所属大纲 ID
+  outlineId       Int?                       @map("outline_id")
+  /// 任务类型
+  taskType        AiTaskType                 @map("task_type")
+  /// AI 供应商
+  provider        String
+  /// 模型名称
+  model           String
+  /// Prompt 预设 ID
+  presetId        Int?                       @map("preset_id")
+  /// Prompt 预设版本
+  presetVersion   Int?                       @map("preset_version")
+  /// 请求参数快照
+  requestPayload  Json?                      @map("request_payload")
+  /// 上下文快照
+  contextSnapshot Json?                      @map("context_snapshot")
+  /// 模型输出文本
+  outputText      String?                    @map("output_text") @db.Text
+  /// token 使用情况
+  tokenUsage      Json?                      @map("token_usage")
+  /// 请求耗时
+  latencyMs       Int?                       @map("latency_ms")
+  /// 调用状态
+  status          String
+  /// 错误信息
+  errorMessage    String?                    @map("error_message") @db.Text
+  /// 创建时间
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  /// 候选结果
+  candidates      ai_generation_candidates[]
+  /// 所属后台任务
+  job             ai_jobs?                   @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, taskType, createdAt])
+  @@index([outlineId, taskType, createdAt])
+  @@index([provider, model])
+  @@index([jobId])
+}
+
+/// AI 生成候选结果表
+model ai_generation_candidates {
+  id                    Int                    @id @default(autoincrement())
+  /// 所属生成记录 ID
+  generationRecordId    Int                    @map("generation_record_id")
+  /// 所属项目 ID
+  projectId             Int?                   @map("project_id")
+  /// 所属大纲 ID
+  outlineId             Int?                   @map("outline_id")
+  /// 所属文稿 ID
+  manuscriptId          Int?                   @map("manuscript_id")
+  /// 所属章节 ID
+  chapterId             Int?                   @map("chapter_id")
+  /// 候选类型
+  candidateType         AiCandidateType        @default(TEXT) @map("candidate_type")
+  /// 目标对象类型
+  targetType            String                 @map("target_type")
+  /// 目标对象 ID
+  targetId              Int?                   @map("target_id")
+  /// 目标内容版本
+  targetContentVersion  Int?                   @map("target_content_version")
+  /// 目标内容哈希
+  expectedContentHash   String?                @map("expected_content_hash")
+  /// 候选内容
+  content               String                 @db.Text
+  /// diff 元信息
+  diffMeta              Json?                  @map("diff_meta")
+  /// 应用状态
+  applyStatus           AiCandidateApplyStatus @default(PENDING) @map("apply_status")
+  /// 采纳人
+  appliedBy             Int?                   @map("applied_by")
+  /// 采纳时间
+  appliedAt             DateTime?              @map("applied_at")
+  /// 采纳方式
+  applyMode             AiCandidateApplyMode?  @map("apply_mode")
+  /// 采纳后的内容版本
+  appliedContentVersion Int?                   @map("applied_content_version")
+  /// 创建时间
+  createdAt             DateTime               @default(now()) @map("created_at")
+  /// 所属生成记录
+  generationRecord      ai_generation_records  @relation(fields: [generationRecordId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, applyStatus, createdAt])
+  @@index([manuscriptId, chapterId, applyStatus])
+  @@index([generationRecordId])
 }
 
 /// 角色设定表
@@ -772,12 +1197,39 @@ model manuscript_chapter {
   volume       manuscript_volume?          @relation(fields: [volumeId], references: [id], onDelete: Cascade)
   /// 章节内容（一对一）
   content      manuscript_chapter_content?
+  /// 章节摘要（一对一）
+  summary      chapter_summaries?
 
   @@index([manuscriptId, sortOrder])
   @@index([volumeId, sortOrder])
   @@index([status])
   @@index([publishedAt])
   @@index([scheduledAt])
+}
+
+/// 章节摘要表
+model chapter_summaries {
+  id            Int                @id @default(autoincrement())
+  /// 所属章节 ID
+  chapterId     Int                @unique @map("chapter_id")
+  /// 所属项目 ID
+  projectId     Int?               @map("project_id")
+  /// 摘要内容
+  summary       String             @db.Text
+  /// 摘要类型
+  summaryType   String             @default("MANUAL") @map("summary_type")
+  /// 摘要来源正文版本
+  sourceVersion Int?               @map("source_version")
+  /// 生成人或维护人
+  generatedBy   Int?               @map("generated_by")
+  /// 创建时间
+  createdAt     DateTime           @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  /// 所属章节
+  chapter       manuscript_chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, updatedAt])
 }
 
 /// 文稿章节内容表

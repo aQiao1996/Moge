@@ -12,6 +12,7 @@ import type {
   UpdateOutlineValues,
   OutlineVolume,
   OutlineChapter,
+  AiJob,
 } from '@moge/types';
 
 interface GetOutlinesResponse {
@@ -136,6 +137,16 @@ export const updateOutlineApi = async (id: string, data: UpdateOutlineValues): P
  */
 export const deleteOutlineApi = async (id: string): Promise<void> => {
   await httpRequest.delete(`/outline/${id}`);
+};
+
+/**
+ * 创建大纲后台生成任务
+ * @param id 大纲 ID
+ * @returns 创建后的 AI 任务
+ */
+export const createOutlineGenerateJobApi = async (id: string): Promise<AiJob> => {
+  const response = await httpRequest.post<AiJob>(`/outline/${id}/generate-job`);
+  return response.data;
 };
 
 /**

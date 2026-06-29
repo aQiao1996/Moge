@@ -14,21 +14,31 @@ import {
   Calendar,
   PenTool,
   ArrowRight,
+  Eye,
   LayoutDashboard,
   CheckCircle2,
   Lightbulb,
   Plus,
   Trash2,
+  Bot,
+  Clock,
+  Loader2,
+  RotateCcw,
+  XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
+  cancelAiJob,
   createWorkspaceIdea,
   createWorkspaceTodo,
   deleteWorkspaceIdea,
   deleteWorkspaceTodo,
+  getAiJobs,
   getWorkspaceItems,
   getWorkspaceSummary,
+  retryAiJob,
   updateWorkspaceTodo,
+  type WorkspaceAiJob,
   type WorkspaceIdea,
   type WorkspaceSummary,
   type WorkspaceTodo,
@@ -67,6 +77,9 @@ export default function WorkspacePage() {
   const [ideas, setIdeas] = useState<WorkspaceIdea[]>([]);
   const [todoText, setTodoText] = useState('');
   const [ideaText, setIdeaText] = useState('');
+  const [aiJobs, setAiJobs] = useState<WorkspaceAiJob[]>([]);
+  const [cancelingJobId, setCancelingJobId] = useState<number | null>(null);
+  const [retryingJobId, setRetryingJobId] = useState<number | null>(null);
   const { novelTypes, fetchNovelTypes } = useDictStore();
 
   // 加载字典数据
@@ -77,6 +90,7 @@ export default function WorkspacePage() {
   useEffect(() => {
     void loadWorkspaceSummary();
     void loadWorkspaceItems();
+    void loadAiJobs();
   }, []);
 
   const loadWorkspaceSummary = async () => {
@@ -128,12 +142,93 @@ export default function WorkspacePage() {
     }
   };
 
+  const loadAiJobs = async () => {
+    try {
+      const jobs = await getAiJobs({ limit: 5 });
+      setAiJobs(jobs);
+    } catch (error) {
+      console.error('加载 AI 任务失败:', error);
+    }
+  };
+
   // 格式化数字
   const formatNumber = (num: number) => {
     if (num >= 10000) {
       return (num / 10000).toFixed(1) + '万';
     }
     return num.toString();
+  };
+
+  const formatLatency = (latencyMs: number | null | undefined) => {
+    if (latencyMs === null || latencyMs === undefined) {
+      return '-';
+    }
+
+    return latencyMs >= 1000 ? `${(latencyMs / 1000).toFixed(1)}s` : `${latencyMs}ms`;
+  };
+
+  const getAiTaskLabel = (taskType: string) => {
+    const taskMap: Record<string, string> = {
+      MANUSCRIPT_CONTINUE: '续写',
+      MANUSCRIPT_POLISH: '润色',
+      MANUSCRIPT_EXPAND: '扩写',
+      CHAPTER_SUMMARIZE: '章节摘要',
+    };
+
+    return taskMap[taskType] ?? taskType;
+  };
+
+  const getAiJobStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      PENDING: { label: '待入队', className: 'bg-gray-100 text-gray-600' },
+      QUEUED: { label: '排队中', className: 'bg-blue-100 text-blue-600' },
+      RUNNING: { label: '运行中', className: 'bg-amber-100 text-amber-700' },
+      SUCCESS: { label: '已完成', className: 'bg-emerald-100 text-emerald-700' },
+      FAILED: { label: '失败', className: 'bg-red-100 text-red-700' },
+      CANCELED: { label: '已取消', className: 'bg-gray-100 text-gray-500' },
+      PARTIAL_SUCCESS: { label: '部分完成', className: 'bg-cyan-100 text-cyan-700' },
+    };
+    const config = statusMap[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' };
+
+    return (
+      <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const canCancelAiJob = (status: string) => {
+    return status === 'PENDING' || status === 'QUEUED' || status === 'RUNNING';
+  };
+
+  const canRetryAiJob = (status: string) => {
+    return status === 'FAILED' || status === 'CANCELED';
+  };
+
+  const cancelJob = async (jobId: number) => {
+    try {
+      setCancelingJobId(jobId);
+      const canceled = await cancelAiJob(jobId);
+      setAiJobs((jobs) => jobs.map((job) => (job.id === canceled.id ? canceled : job)));
+      toast.success('AI 任务已取消');
+    } catch (error) {
+      console.error('取消 AI 任务失败:', error);
+    } finally {
+      setCancelingJobId(null);
+    }
+  };
+
+  const retryJob = async (jobId: number) => {
+    try {
+      setRetryingJobId(jobId);
+      const retried = await retryAiJob(jobId);
+      setAiJobs((jobs) => jobs.map((job) => (job.id === retried.id ? retried : job)));
+      toast.success('AI 任务已重新入队');
+    } catch (error) {
+      console.error('重试 AI 任务失败:', error);
+    } finally {
+      setRetryingJobId(null);
+    }
   };
 
   const addTodo = async () => {
@@ -445,6 +540,188 @@ export default function WorkspacePage() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-6">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <Bot className="h-5 w-5 text-[var(--moge-primary)]" />
+              AI 使用概览
+            </h3>
+            <p className="mt-1 text-sm text-[var(--moge-text-sub)]">
+              最近生成调用、候选采纳和耗时概况
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+            <div className="rounded-md border px-3 py-2">
+              <p className="text-xs text-[var(--moge-text-muted)]">调用</p>
+              <p className="font-semibold text-[var(--moge-text-main)]">
+                {summary?.aiUsage.totalCalls ?? 0}
+              </p>
+            </div>
+            <div className="rounded-md border px-3 py-2">
+              <p className="text-xs text-[var(--moge-text-muted)]">失败</p>
+              <p className="font-semibold text-[var(--moge-text-main)]">
+                {summary?.aiUsage.failedCount ?? 0}
+              </p>
+            </div>
+            <div className="rounded-md border px-3 py-2">
+              <p className="text-xs text-[var(--moge-text-muted)]">采纳</p>
+              <p className="font-semibold text-[var(--moge-text-main)]">
+                {summary?.aiUsage.appliedCandidateCount ?? 0}
+              </p>
+            </div>
+            <div className="rounded-md border px-3 py-2">
+              <p className="text-xs text-[var(--moge-text-muted)]">均耗时</p>
+              <p className="font-semibold text-[var(--moge-text-main)]">
+                {formatLatency(summary?.aiUsage.averageLatencyMs)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--moge-text-main)]">
+              <Clock className="h-4 w-4 text-[var(--moge-text-muted)]" />
+              最近生成记录
+            </div>
+            {summary?.aiUsage.recentRecords.length ? (
+              summary.aiUsage.recentRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex flex-col gap-2 rounded-md border p-3 md:flex-row md:items-center md:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-[var(--moge-text-main)]">
+                        {getAiTaskLabel(record.taskType)}
+                      </span>
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                        {record.status}
+                      </span>
+                      <span className="text-xs text-[var(--moge-text-muted)]">
+                        {record.provider} · {record.model}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-[var(--moge-text-muted)]">
+                      {record.projectName || '未关联项目'} · {dayjs(record.createdAt).fromNow()}
+                    </p>
+                  </div>
+                  <span className="text-xs text-[var(--moge-text-sub)]">
+                    {formatLatency(record.latencyMs)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="rounded border border-dashed py-8 text-center text-sm text-[var(--moge-text-muted)]">
+                暂无 AI 生成记录
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--moge-text-main)]">
+                <Bot className="h-4 w-4 text-[var(--moge-primary)]" />
+                最近 AI 任务
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/workspace/ai-jobs')}
+                className="text-xs"
+              >
+                查看全部
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {aiJobs.length ? (
+              aiJobs.map((job) => {
+                const jobId = job.id ?? 0;
+                const taskType = job.taskType ?? 'UNKNOWN';
+                const status = job.status ?? 'UNKNOWN';
+                const priority = job.priority ?? 0;
+                const createdAt = job.createdAt ?? new Date().toISOString();
+
+                return (
+                  <div
+                    key={jobId}
+                    className="flex flex-col gap-3 rounded-md border p-3 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-[var(--moge-text-main)]">
+                          {getAiTaskLabel(taskType)}
+                        </span>
+                        {getAiJobStatusBadge(status)}
+                        {priority > 0 && (
+                          <span className="rounded bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
+                            P{priority}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 truncate text-xs text-[var(--moge-text-muted)]">
+                        {job.projectId ? `项目 #${job.projectId}` : '未关联项目'} ·{' '}
+                        {dayjs(createdAt).fromNow()}
+                      </p>
+                      {job.errorMessage && (
+                        <p className="mt-1 line-clamp-1 text-xs text-red-600">{job.errorMessage}</p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/workspace/ai-jobs/${jobId}`)}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
+                        详情
+                      </Button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {canRetryAiJob(status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void retryJob(jobId)}
+                            disabled={retryingJobId === jobId}
+                          >
+                            {retryingJobId === jobId ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="mr-1 h-4 w-4" />
+                            )}
+                            重试
+                          </Button>
+                        )}
+                        {canCancelAiJob(status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void cancelJob(jobId)}
+                            disabled={cancelingJobId === jobId}
+                          >
+                            {cancelingJobId === jobId ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="mr-1 h-4 w-4" />
+                            )}
+                            取消
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="rounded border border-dashed py-8 text-center text-sm text-[var(--moge-text-muted)]">
+                暂无 AI 任务
+              </p>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* 最近内容 */}
       <div className="grid gap-6 lg:grid-cols-3">

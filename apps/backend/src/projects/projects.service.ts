@@ -1,23 +1,50 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Prisma, project_ai_configs, projects } from '../../generated/prisma';
+import type {
+  Prisma,
+  ai_prompt_presets,
+  project_ai_configs,
+  projects,
+} from '../../generated/prisma';
 import {
   AiContextLengthStrategy,
   AiResultApplyStrategy,
+  AiTaskType,
   Prisma as PrismaNamespace,
   ProjectMemberRole,
 } from '../../generated/prisma';
 import type {
+  AppendProjectPromptPresetVersionInput,
+  CreateProjectPromptPresetInput,
+  UpdateProjectPromptPresetInput,
   CreateProjectRequest,
   UpdateProjectAiConfigInput,
   UpdateProjectRequest,
   AddProjectMemberInput,
   UpdateProjectMemberInput,
+  CreateProjectMemoryItemInput,
+  UpdateProjectMemoryItemInput,
+  CreateProjectKnowledgeDocumentInput,
+  UpdateProjectKnowledgeDocumentInput,
 } from './projects.schemas';
 
 type ProjectAiConfigResponse = Omit<project_ai_configs, 'temperature'> & {
   temperature: string;
 };
+
+type ProjectPromptPresetResponse = ai_prompt_presets;
+type PromptPresetWithLatestVersion = ai_prompt_presets & {
+  versions: Array<{
+    systemPrompt: string;
+    userPromptTemplate: string;
+    outputFormat: string | null;
+    parameterSchema: Prisma.JsonValue | null;
+    notes: string | null;
+  }>;
+};
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 const DEFAULT_AI_CONFIG = {
   provider: 'openai_compatible',
@@ -45,6 +72,21 @@ type ProjectAiConfigWritableData = Omit<
 >;
 
 type ProjectAccessMode = 'read' | 'write' | 'owner';
+
+type DefaultPromptPresetField =
+  | 'defaultContinuePresetId'
+  | 'defaultPolishPresetId'
+  | 'defaultExpandPresetId'
+  | 'defaultOutlinePresetId';
+
+const DEFAULT_PROMPT_TASK_TYPES: Record<DefaultPromptPresetField, AiTaskType> = {
+  defaultContinuePresetId: AiTaskType.MANUSCRIPT_CONTINUE,
+  defaultPolishPresetId: AiTaskType.MANUSCRIPT_POLISH,
+  defaultExpandPresetId: AiTaskType.MANUSCRIPT_EXPAND,
+  defaultOutlinePresetId: AiTaskType.OUTLINE_GENERATE,
+};
+
+const KNOWLEDGE_CHUNK_MAX_LENGTH = 1200;
 
 /**
  * 项目服务
@@ -131,6 +173,115 @@ export class ProjectsService {
     await this.getProjectForAccess(userId, id, 'write');
   }
 
+  private async validateDefaultPromptPresets(
+    userId: number,
+    projectId: number,
+    data: UpdateProjectAiConfigInput
+  ): Promise<void> {
+    const presetConditions = (
+      Object.entries(DEFAULT_PROMPT_TASK_TYPES) as Array<[DefaultPromptPresetField, AiTaskType]>
+    )
+      .filter(([field]) => data[field] !== undefined && data[field] !== null)
+      .map(([field, taskType]) => ({
+        id: data[field],
+        taskType,
+        isEnabled: true,
+      }));
+
+    if (presetConditions.length === 0) {
+      return;
+    }
+
+    const matchedCount = await this.prisma.ai_prompt_presets.count({
+      where: {
+        OR: presetConditions,
+        AND: [
+          {
+            OR: [
+              { scope: 'SYSTEM' },
+              { scope: 'USER', createdBy: userId },
+              { scope: 'PROJECT', projectId },
+            ],
+          },
+        ],
+      },
+    });
+
+    if (matchedCount !== presetConditions.length) {
+      throw new BadRequestException('默认 Prompt 预设不存在或不适用于当前项目');
+    }
+  }
+
+  private assignClearedDefaultPromptPreset(
+    target: Prisma.project_ai_configsUncheckedUpdateInput,
+    taskType: AiTaskType
+  ): void {
+    if (taskType === AiTaskType.MANUSCRIPT_CONTINUE) {
+      target.defaultContinuePresetId = null;
+    } else if (taskType === AiTaskType.MANUSCRIPT_POLISH) {
+      target.defaultPolishPresetId = null;
+    } else if (taskType === AiTaskType.MANUSCRIPT_EXPAND) {
+      target.defaultExpandPresetId = null;
+    } else if (taskType === AiTaskType.OUTLINE_GENERATE) {
+      target.defaultOutlinePresetId = null;
+    }
+  }
+
+  private buildDefaultPromptPresetReferenceFilter(
+    presetId: number,
+    taskType: AiTaskType
+  ): Prisma.project_ai_configsWhereInput {
+    if (taskType === AiTaskType.MANUSCRIPT_CONTINUE) {
+      return { defaultContinuePresetId: presetId };
+    }
+
+    if (taskType === AiTaskType.MANUSCRIPT_POLISH) {
+      return { defaultPolishPresetId: presetId };
+    }
+
+    if (taskType === AiTaskType.MANUSCRIPT_EXPAND) {
+      return { defaultExpandPresetId: presetId };
+    }
+
+    if (taskType === AiTaskType.OUTLINE_GENERATE) {
+      return { defaultOutlinePresetId: presetId };
+    }
+
+    return { id: -1 };
+  }
+
+  private isJsonValue(value: unknown): value is JsonValue {
+    if (value === null) {
+      return true;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return Number.isFinite(value) || typeof value !== 'number';
+    }
+
+    if (Array.isArray(value)) {
+      return value.every((item) => this.isJsonValue(item));
+    }
+
+    if (typeof value === 'object') {
+      return Object.values(value).every((item) => this.isJsonValue(item));
+    }
+
+    return false;
+  }
+
+  private toJsonInput(value: unknown): Prisma.InputJsonValue | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (!this.isJsonValue(value)) {
+      throw new BadRequestException('Prompt 参数 schema 必须是合法 JSON');
+    }
+
+    return value === null ? undefined : value;
+  }
+
   private buildProjectAiConfigData(data: UpdateProjectAiConfigInput): ProjectAiConfigWritableData {
     return {
       ...DEFAULT_AI_CONFIG,
@@ -140,6 +291,35 @@ export class ProjectsService {
           ? DEFAULT_AI_CONFIG.temperature
           : new PrismaNamespace.Decimal(data.temperature.toFixed(2)),
     };
+  }
+
+  private buildKnowledgeChunks(documentId: number, projectId: number, content: string) {
+    const normalized = content.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return [];
+    }
+
+    const chunks: Array<{
+      documentId: number;
+      projectId: number;
+      chunkIndex: number;
+      content: string;
+      keywords: string[];
+      summary: string | null;
+    }> = [];
+
+    for (let start = 0; start < normalized.length; start += KNOWLEDGE_CHUNK_MAX_LENGTH) {
+      chunks.push({
+        documentId,
+        projectId,
+        chunkIndex: chunks.length,
+        content: normalized.slice(start, start + KNOWLEDGE_CHUNK_MAX_LENGTH),
+        keywords: [],
+        summary: null,
+      });
+    }
+
+    return chunks;
   }
 
   private normalizeStoredSettingIds(ids?: string[]): string[] | undefined {
@@ -315,6 +495,439 @@ export class ProjectsService {
   }
 
   /**
+   * 获取项目可用的 Prompt 预设列表。
+   * @param userId 用户ID
+   * @param id 项目ID
+   * @returns 系统预设与当前项目预设
+   */
+  async getProjectPromptPresets(
+    userId: number,
+    id: number
+  ): Promise<ProjectPromptPresetResponse[]> {
+    await this.getProjectForAccess(userId, id, 'read');
+
+    return this.prisma.ai_prompt_presets.findMany({
+      where: {
+        OR: [
+          { scope: 'SYSTEM', isEnabled: true },
+          { scope: 'USER', createdBy: userId, isEnabled: true },
+          { scope: 'PROJECT', projectId: id },
+        ],
+      },
+      orderBy: [{ taskType: 'asc' }, { scope: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  /**
+   * 创建项目级 Prompt 预设，并写入初始版本。
+   * @param userId 用户ID
+   * @param id 项目ID
+   * @param data Prompt 预设数据
+   * @returns 新建的 Prompt 预设
+   */
+  async createProjectPromptPreset(
+    userId: number,
+    id: number,
+    data: CreateProjectPromptPresetInput
+  ) {
+    await this.assertProjectOwned(userId, id);
+
+    return this.prisma.ai_prompt_presets.create({
+      data: {
+        code: `project-${id}-${data.code}`,
+        name: data.name,
+        taskType: data.taskType,
+        scope: 'PROJECT',
+        projectId: id,
+        description: data.description,
+        isSystemPreset: false,
+        isEnabled: true,
+        latestVersion: 1,
+        createdBy: userId,
+        versions: {
+          create: {
+            version: 1,
+            systemPrompt: data.systemPrompt,
+            userPromptTemplate: data.userPromptTemplate,
+            outputFormat: data.outputFormat,
+            parameterSchema: this.toJsonInput(data.parameterSchema),
+            notes: data.notes,
+            createdBy: userId,
+          },
+        },
+      },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    });
+  }
+
+  /**
+   * 创建用户级 Prompt 预设，并写入初始版本。
+   * 项目 ID 仅用于确认当前用户在项目上下文中有写权限，预设本身可跨项目复用。
+   * @param userId 用户ID
+   * @param projectId 当前项目ID
+   * @param data Prompt 预设数据
+   * @returns 新建的用户级 Prompt 预设
+   */
+  async createUserPromptPreset(
+    userId: number,
+    projectId: number,
+    data: CreateProjectPromptPresetInput
+  ) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.ai_prompt_presets.create({
+      data: {
+        code: `user-${userId}-${data.code}`,
+        name: data.name,
+        taskType: data.taskType,
+        scope: 'USER',
+        projectId: null,
+        description: data.description,
+        isSystemPreset: false,
+        isEnabled: true,
+        latestVersion: 1,
+        createdBy: userId,
+        versions: {
+          create: {
+            version: 1,
+            systemPrompt: data.systemPrompt,
+            userPromptTemplate: data.userPromptTemplate,
+            outputFormat: data.outputFormat,
+            parameterSchema: this.toJsonInput(data.parameterSchema),
+            notes: data.notes,
+            createdBy: userId,
+          },
+        },
+      },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    });
+  }
+
+  /**
+   * 更新项目级 Prompt 预设元信息，不修改版本内容。
+   * @param userId 用户ID
+   * @param projectId 项目ID
+   * @param presetId 预设ID
+   * @param data 预设元信息
+   * @returns 更新后的 Prompt 预设
+   */
+  async updateProjectPromptPreset(
+    userId: number,
+    projectId: number,
+    presetId: number,
+    data: UpdateProjectPromptPresetInput
+  ) {
+    await this.assertProjectOwned(userId, projectId);
+
+    const preset = await this.prisma.ai_prompt_presets.findFirst({
+      where: {
+        id: presetId,
+        projectId,
+        scope: 'PROJECT',
+      },
+    });
+
+    if (!preset) {
+      throw new NotFoundException('Prompt 预设不存在或无权限访问');
+    }
+
+    return this.prisma.ai_prompt_presets.update({
+      where: { id: presetId },
+      data: {
+        ...(data.code !== undefined ? { code: `project-${projectId}-${data.code}` } : {}),
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+      },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    });
+  }
+
+  /**
+   * 更新个人 Prompt 预设元信息，不修改版本内容。
+   * @param userId 用户ID
+   * @param projectId 当前项目ID
+   * @param presetId 预设ID
+   * @param data 预设元信息
+   * @returns 更新后的 Prompt 预设
+   */
+  async updateUserPromptPreset(
+    userId: number,
+    projectId: number,
+    presetId: number,
+    data: UpdateProjectPromptPresetInput
+  ) {
+    await this.assertProjectOwned(userId, projectId);
+
+    const preset = await this.prisma.ai_prompt_presets.findFirst({
+      where: {
+        id: presetId,
+        createdBy: userId,
+        scope: 'USER',
+      },
+    });
+
+    if (!preset) {
+      throw new NotFoundException('Prompt 预设不存在或无权限访问');
+    }
+
+    return this.prisma.ai_prompt_presets.update({
+      where: { id: presetId },
+      data: {
+        ...(data.code !== undefined ? { code: `user-${userId}-${data.code}` } : {}),
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+      },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    });
+  }
+
+  /**
+   * 为项目级 Prompt 预设追加新版本。
+   * @param userId 用户ID
+   * @param projectId 项目ID
+   * @param presetId 预设ID
+   * @param data 版本内容
+   * @returns 更新后的 Prompt 预设
+   */
+  async appendProjectPromptPresetVersion(
+    userId: number,
+    projectId: number,
+    presetId: number,
+    data: AppendProjectPromptPresetVersionInput
+  ) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const preset = await tx.ai_prompt_presets.findFirst({
+        where: {
+          id: presetId,
+          projectId,
+          scope: 'PROJECT',
+          isEnabled: true,
+        },
+      });
+
+      if (!preset) {
+        throw new NotFoundException('Prompt 预设不存在或无权限访问');
+      }
+
+      const nextVersion = preset.latestVersion + 1;
+      await tx.ai_prompt_preset_versions.create({
+        data: {
+          presetId,
+          version: nextVersion,
+          systemPrompt: data.systemPrompt,
+          userPromptTemplate: data.userPromptTemplate,
+          outputFormat: data.outputFormat,
+          parameterSchema: this.toJsonInput(data.parameterSchema),
+          notes: data.notes,
+          createdBy: userId,
+        },
+      });
+
+      return tx.ai_prompt_presets.update({
+        where: { id: presetId },
+        data: { latestVersion: nextVersion },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      });
+    });
+  }
+
+  /**
+   * 为个人 Prompt 预设追加新版本。
+   * @param userId 用户ID
+   * @param projectId 当前项目ID
+   * @param presetId 预设ID
+   * @param data 版本内容
+   * @returns 更新后的 Prompt 预设
+   */
+  async appendUserPromptPresetVersion(
+    userId: number,
+    projectId: number,
+    presetId: number,
+    data: AppendProjectPromptPresetVersionInput
+  ) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const preset = await tx.ai_prompt_presets.findFirst({
+        where: {
+          id: presetId,
+          createdBy: userId,
+          scope: 'USER',
+          isEnabled: true,
+        },
+      });
+
+      if (!preset) {
+        throw new NotFoundException('Prompt 预设不存在或无权限访问');
+      }
+
+      const nextVersion = preset.latestVersion + 1;
+      await tx.ai_prompt_preset_versions.create({
+        data: {
+          presetId,
+          version: nextVersion,
+          systemPrompt: data.systemPrompt,
+          userPromptTemplate: data.userPromptTemplate,
+          outputFormat: data.outputFormat,
+          parameterSchema: this.toJsonInput(data.parameterSchema),
+          notes: data.notes,
+          createdBy: userId,
+        },
+      });
+
+      return tx.ai_prompt_presets.update({
+        where: { id: presetId },
+        data: { latestVersion: nextVersion },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      });
+    });
+  }
+
+  /**
+   * 将系统或当前项目可用 Prompt 预设克隆为当前项目预设。
+   * @param userId 用户ID
+   * @param projectId 项目ID
+   * @param presetId 源预设ID
+   * @returns 新建的项目级 Prompt 预设
+   */
+  async cloneProjectPromptPreset(userId: number, projectId: number, presetId: number) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const sourcePreset = (await tx.ai_prompt_presets.findFirst({
+        where: {
+          id: presetId,
+          isEnabled: true,
+          OR: [
+            { scope: 'SYSTEM' },
+            { scope: 'USER', createdBy: userId },
+            { scope: 'PROJECT', projectId },
+          ],
+        },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      })) as PromptPresetWithLatestVersion | null;
+
+      const latestVersion = sourcePreset?.versions[0];
+      if (!sourcePreset || !latestVersion) {
+        throw new NotFoundException('Prompt 预设不存在或无权限访问');
+      }
+
+      return tx.ai_prompt_presets.create({
+        data: {
+          code: `project-${projectId}-clone-${presetId}`,
+          name: `${sourcePreset.name} 副本`,
+          taskType: sourcePreset.taskType,
+          scope: 'PROJECT',
+          projectId,
+          description: sourcePreset.description,
+          isSystemPreset: false,
+          isEnabled: true,
+          latestVersion: 1,
+          createdBy: userId,
+          versions: {
+            create: {
+              version: 1,
+              systemPrompt: latestVersion.systemPrompt,
+              userPromptTemplate: latestVersion.userPromptTemplate,
+              outputFormat: latestVersion.outputFormat,
+              parameterSchema: this.toJsonInput(latestVersion.parameterSchema),
+              notes: `从「${sourcePreset.name}」克隆：${latestVersion.notes ?? `v${sourcePreset.latestVersion}`}`,
+              createdBy: userId,
+            },
+          },
+        },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      });
+    });
+  }
+
+  /**
+   * 停用项目级 Prompt 预设，并清理项目默认预设引用。
+   * @param userId 用户ID
+   * @param projectId 项目ID
+   * @param presetId 预设ID
+   * @returns 停用后的 Prompt 预设
+   */
+  async disableProjectPromptPreset(userId: number, projectId: number, presetId: number) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const preset = await tx.ai_prompt_presets.findFirst({
+        where: {
+          id: presetId,
+          projectId,
+          scope: 'PROJECT',
+          isEnabled: true,
+        },
+      });
+
+      if (!preset) {
+        throw new NotFoundException('Prompt 预设不存在或无权限访问');
+      }
+
+      const defaultPresetUpdate: Prisma.project_ai_configsUncheckedUpdateInput = {};
+      this.assignClearedDefaultPromptPreset(defaultPresetUpdate, preset.taskType);
+
+      await tx.project_ai_configs.upsert({
+        where: { projectId },
+        create: {
+          ...DEFAULT_AI_CONFIG,
+          projectId,
+        },
+        update: defaultPresetUpdate,
+      });
+
+      return tx.ai_prompt_presets.update({
+        where: { id: presetId },
+        data: { isEnabled: false },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      });
+    });
+  }
+
+  /**
+   * 停用个人 Prompt 预设，并清理当前用户项目中的默认预设引用。
+   * @param userId 用户ID
+   * @param projectId 当前项目ID
+   * @param presetId 预设ID
+   * @returns 停用后的 Prompt 预设
+   */
+  async disableUserPromptPreset(userId: number, projectId: number, presetId: number) {
+    await this.assertProjectOwned(userId, projectId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const preset = await tx.ai_prompt_presets.findFirst({
+        where: {
+          id: presetId,
+          createdBy: userId,
+          scope: 'USER',
+          isEnabled: true,
+        },
+      });
+
+      if (!preset) {
+        throw new NotFoundException('Prompt 预设不存在或无权限访问');
+      }
+
+      const defaultPresetUpdate: Prisma.project_ai_configsUncheckedUpdateInput = {};
+      this.assignClearedDefaultPromptPreset(defaultPresetUpdate, preset.taskType);
+
+      await tx.project_ai_configs.updateMany({
+        where: this.buildDefaultPromptPresetReferenceFilter(presetId, preset.taskType),
+        data: defaultPresetUpdate,
+      });
+
+      return tx.ai_prompt_presets.update({
+        where: { id: presetId },
+        data: { isEnabled: false },
+        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+      });
+    });
+  }
+
+  /**
    * 更新项目级 AI 配置；不存在时创建。
    * @param userId 用户ID
    * @param id 项目ID
@@ -327,6 +940,7 @@ export class ProjectsService {
     data: UpdateProjectAiConfigInput
   ): Promise<ProjectAiConfigResponse> {
     await this.assertProjectOwned(userId, id);
+    await this.validateDefaultPromptPresets(userId, id, data);
 
     const createData: Prisma.project_ai_configsUncheckedCreateInput = {
       ...this.buildProjectAiConfigData(data),
@@ -495,6 +1109,156 @@ export class ProjectsService {
     });
 
     return { message: '项目成员已移除' };
+  }
+
+  async listProjectMemoryItems(userId: number, id: number) {
+    await this.getProjectForAccess(userId, id, 'read');
+
+    return this.prisma.project_memory_items.findMany({
+      where: {
+        projectId: id,
+        status: 'ACTIVE',
+      },
+      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+    });
+  }
+
+  async createProjectMemoryItem(userId: number, id: number, data: CreateProjectMemoryItemInput) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    return this.prisma.project_memory_items.create({
+      data: {
+        projectId: id,
+        category: data.category,
+        title: data.title,
+        content: data.content,
+        priority: data.priority ?? 0,
+        sourceType: data.sourceType ?? 'MANUAL',
+        sourceId: data.sourceId ?? null,
+        status: 'ACTIVE',
+        createdBy: userId,
+      },
+    });
+  }
+
+  async updateProjectMemoryItem(
+    userId: number,
+    id: number,
+    memoryId: number,
+    data: UpdateProjectMemoryItemInput
+  ) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    return this.prisma.project_memory_items.update({
+      where: {
+        id: memoryId,
+        projectId: id,
+      },
+      data,
+    });
+  }
+
+  async deleteProjectMemoryItem(userId: number, id: number, memoryId: number) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    await this.prisma.project_memory_items.delete({
+      where: {
+        id: memoryId,
+        projectId: id,
+      },
+    });
+
+    return { message: '项目记忆已删除' };
+  }
+
+  async listProjectKnowledgeDocuments(userId: number, id: number) {
+    await this.getProjectForAccess(userId, id, 'read');
+
+    return this.prisma.knowledge_documents.findMany({
+      where: {
+        projectId: id,
+        status: 'ACTIVE',
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async createProjectKnowledgeDocument(
+    userId: number,
+    id: number,
+    data: CreateProjectKnowledgeDocumentInput
+  ) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    return this.prisma.$transaction(async (tx) => {
+      const document = await tx.knowledge_documents.create({
+        data: {
+          projectId: id,
+          title: data.title,
+          documentType: data.documentType,
+          content: data.content,
+          source: data.source ?? 'MANUAL',
+          status: 'ACTIVE',
+          createdBy: userId,
+        },
+      });
+      const chunks = this.buildKnowledgeChunks(document.id, id, document.content);
+
+      if (chunks.length > 0) {
+        await tx.knowledge_chunks.createMany({
+          data: chunks,
+        });
+      }
+
+      return document;
+    });
+  }
+
+  async updateProjectKnowledgeDocument(
+    userId: number,
+    id: number,
+    documentId: number,
+    data: UpdateProjectKnowledgeDocumentInput
+  ) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    return this.prisma.$transaction(async (tx) => {
+      const document = await tx.knowledge_documents.update({
+        where: {
+          id: documentId,
+          projectId: id,
+        },
+        data,
+      });
+
+      if (data.content !== undefined) {
+        await tx.knowledge_chunks.deleteMany({
+          where: { documentId },
+        });
+        const chunks = this.buildKnowledgeChunks(document.id, id, document.content);
+
+        if (chunks.length > 0) {
+          await tx.knowledge_chunks.createMany({
+            data: chunks,
+          });
+        }
+      }
+
+      return document;
+    });
+  }
+
+  async deleteProjectKnowledgeDocument(userId: number, id: number, documentId: number) {
+    await this.getProjectForAccess(userId, id, 'write');
+
+    await this.prisma.knowledge_documents.delete({
+      where: {
+        id: documentId,
+        projectId: id,
+      },
+    });
+
+    return { message: '项目资料已删除' };
   }
 
   /**

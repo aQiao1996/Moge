@@ -7,6 +7,7 @@ export const createOutlineSchema = z.object({
   conflict: z.string().optional(),
   tags: z.array(z.string()).optional(),
   remark: z.string().optional(),
+  projectId: z.number().int().positive().optional(),
   // 关联的设定
   characters: z.array(z.string()).optional(),
   systems: z.array(z.string()).optional(),
@@ -19,6 +20,7 @@ export type CreateOutlineValues = z.infer<typeof createOutlineSchema>;
 export const outlineSchema = createOutlineSchema.extend({
   id: z.string(),
   status: z.enum(['DRAFT', 'GENERATING', 'GENERATED', 'PUBLISHED', 'DISCARDED']),
+  projectId: z.number().nullable().optional(),
   userId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

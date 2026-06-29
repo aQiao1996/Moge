@@ -14,13 +14,38 @@ import {
   CreateChapterDto,
   UpdateChapterDto,
   SaveChapterContentDto,
+  SaveChapterSummaryDto,
+  ApplyAiCandidateDto,
+  ManuscriptAiOverrideConfigDto,
 } from './manuscripts.dto';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { AIModelRuntimeConfig, AIProvider } from '../ai/ai.service';
+import type { AIModelRuntimeConfig } from '../ai/ai.service';
 import { AIService } from '../ai/ai.service';
+import { AiJobsService } from '../ai-jobs/ai-jobs.service';
+import {
+  ManuscriptAiContextService,
+  type ManuscriptAiConfig,
+} from './manuscript-ai-context.service';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { Prisma, type project_ai_configs } from '../../generated/prisma';
+import {
+  AiCandidateApplyStatus,
+  AiCandidateApplyMode,
+  AiCandidateType,
+  AiJobStatus,
+  AiTaskType,
+  Prisma,
+  type ai_generation_candidates,
+  type ai_generation_records,
+} from '../../generated/prisma';
+import type {
+  AiContextSourceItem,
+  AiEffectiveConfig,
+  AiGenerationCandidate,
+  AiGenerationRecord,
+  AiGenerationResponse,
+  AiTaskType as SharedAiTaskType,
+} from '@moge/types';
 import {
   buildRecentDateKeys,
   buildWritingDeltaEvents,
@@ -38,27 +63,42 @@ interface TransactionLock {
 const MANUSCRIPT_LOCK_NAMESPACE = 1001;
 const MANUSCRIPT_VOLUME_LOCK_NAMESPACE = 1002;
 
-interface ManuscriptAiConfig {
-  provider: AIProvider;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  enableCharacterContext: boolean;
-  enableSystemContext: boolean;
-  enableWorldContext: boolean;
-  enableMiscContext: boolean;
+interface ManuscriptPromptInput {
+  settingsContext: string;
+  currentContent: string;
+  sourceText?: string;
+  customPrompt?: string;
 }
 
-const DEFAULT_MANUSCRIPT_AI_CONFIG: ManuscriptAiConfig = {
-  provider: 'openai_compatible',
-  model: 'gpt-5.2',
-  temperature: 0.6,
-  maxTokens: 2000,
-  enableCharacterContext: true,
-  enableSystemContext: true,
-  enableWorldContext: true,
-  enableMiscContext: true,
-};
+interface ManuscriptPromptDefinition {
+  systemPrompt: string;
+  userPromptTemplate: string;
+}
+
+interface ResolvedPromptPreset {
+  presetId: number | null;
+  presetVersion: number | null;
+  systemPrompt: string;
+  userPrompt: string;
+}
+
+type ManuscriptAiTaskOverrideConfig = ManuscriptAiOverrideConfigDto;
+
+interface ChapterForSummaryJob {
+  id: number;
+  manuscriptId?: number | null;
+  manuscript?: { id: number; userId: number; projectId?: number | null } | null;
+  volume?: { manuscript?: { id: number; userId: number; projectId?: number | null } | null } | null;
+  content?: { content?: string | null; version: number } | null;
+}
+
+type ChapterSummaryJobTrigger = 'MANUAL' | 'CONTENT_SAVED' | 'PUBLISHED';
+
+const ACTIVE_CHAPTER_SUMMARY_JOB_STATUSES = [
+  AiJobStatus.PENDING,
+  AiJobStatus.QUEUED,
+  AiJobStatus.RUNNING,
+];
 
 /**
  * 文稿服务
@@ -69,7 +109,9 @@ export class ManuscriptsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly aiService: AIService
+    private readonly aiService: AIService,
+    private readonly aiJobsService?: AiJobsService,
+    private readonly aiContextService = new ManuscriptAiContextService(prisma)
   ) {}
 
   /**
@@ -106,29 +148,291 @@ export class ManuscriptsService {
     };
   }
 
-  private normalizeManuscriptAiConfig(config?: project_ai_configs | null): ManuscriptAiConfig {
-    if (!config) {
-      return DEFAULT_MANUSCRIPT_AI_CONFIG;
-    }
-
-    return {
-      provider: config.provider as AIProvider,
-      model: config.model,
-      temperature: Number(config.temperature),
-      maxTokens: config.maxTokens,
-      enableCharacterContext: config.enableCharacterContext,
-      enableSystemContext: config.enableSystemContext,
-      enableWorldContext: config.enableWorldContext,
-      enableMiscContext: config.enableMiscContext,
-    };
-  }
-
   private toAiModelRuntimeConfig(config: ManuscriptAiConfig): AIModelRuntimeConfig {
     return {
       provider: config.provider,
       model: config.model,
       temperature: config.temperature,
       maxTokens: config.maxTokens,
+    };
+  }
+
+  private toEffectiveConfig(
+    config: ManuscriptAiConfig,
+    taskType: SharedAiTaskType
+  ): AiEffectiveConfig {
+    return {
+      provider: config.provider,
+      model: config.model,
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+      contextLengthStrategy: config.contextLengthStrategy,
+      resultApplyStrategy: config.resultApplyStrategy,
+      defaultPresetId: this.getDefaultPresetId(config, taskType),
+    };
+  }
+
+  private applyOneOffAiOverride(
+    config: ManuscriptAiConfig,
+    taskType: SharedAiTaskType,
+    overrideConfig?: ManuscriptAiTaskOverrideConfig
+  ): ManuscriptAiConfig {
+    if (!overrideConfig) {
+      return config;
+    }
+
+    const mergedConfig: ManuscriptAiConfig = {
+      ...config,
+      ...(overrideConfig.provider !== undefined ? { provider: overrideConfig.provider } : {}),
+      ...(overrideConfig.model !== undefined ? { model: overrideConfig.model } : {}),
+      ...(overrideConfig.temperature !== undefined
+        ? { temperature: overrideConfig.temperature }
+        : {}),
+      ...(overrideConfig.maxTokens !== undefined ? { maxTokens: overrideConfig.maxTokens } : {}),
+      ...(overrideConfig.contextLengthStrategy !== undefined
+        ? { contextLengthStrategy: overrideConfig.contextLengthStrategy }
+        : {}),
+    };
+
+    if (overrideConfig.defaultPresetId !== undefined) {
+      if (taskType === AiTaskType.MANUSCRIPT_CONTINUE) {
+        mergedConfig.defaultContinuePresetId = overrideConfig.defaultPresetId;
+      } else if (taskType === AiTaskType.MANUSCRIPT_POLISH) {
+        mergedConfig.defaultPolishPresetId = overrideConfig.defaultPresetId;
+      } else if (taskType === AiTaskType.MANUSCRIPT_EXPAND) {
+        mergedConfig.defaultExpandPresetId = overrideConfig.defaultPresetId;
+      }
+    }
+
+    return mergedConfig;
+  }
+
+  private serializeAiOverrideConfig(
+    overrideConfig?: ManuscriptAiTaskOverrideConfig
+  ): Prisma.InputJsonObject | null {
+    if (!overrideConfig) {
+      return null;
+    }
+
+    return {
+      ...(overrideConfig.provider !== undefined ? { provider: overrideConfig.provider } : {}),
+      ...(overrideConfig.model !== undefined ? { model: overrideConfig.model } : {}),
+      ...(overrideConfig.temperature !== undefined
+        ? { temperature: overrideConfig.temperature }
+        : {}),
+      ...(overrideConfig.maxTokens !== undefined ? { maxTokens: overrideConfig.maxTokens } : {}),
+      ...(overrideConfig.contextLengthStrategy !== undefined
+        ? { contextLengthStrategy: overrideConfig.contextLengthStrategy }
+        : {}),
+      ...(overrideConfig.defaultPresetId !== undefined
+        ? { defaultPresetId: overrideConfig.defaultPresetId }
+        : {}),
+    };
+  }
+
+  private getDefaultPresetId(
+    config: ManuscriptAiConfig,
+    taskType: SharedAiTaskType
+  ): number | null {
+    switch (taskType) {
+      case 'MANUSCRIPT_CONTINUE':
+        return config.defaultContinuePresetId ?? null;
+      case 'MANUSCRIPT_POLISH':
+        return config.defaultPolishPresetId ?? null;
+      case 'MANUSCRIPT_EXPAND':
+        return config.defaultExpandPresetId ?? null;
+    }
+  }
+
+  private buildAppliedCandidateContent(params: {
+    mode: AiCandidateApplyMode;
+    existingContent: string;
+    candidateContent: string;
+    selectedText?: string;
+  }): string {
+    if (
+      params.mode === AiCandidateApplyMode.OVERWRITE_DRAFT ||
+      params.mode === AiCandidateApplyMode.SAVE_AS_DRAFT
+    ) {
+      return params.candidateContent;
+    }
+
+    if (params.mode === AiCandidateApplyMode.REPLACE_SELECTION) {
+      const selectedText = params.selectedText?.trim();
+      if (!selectedText) {
+        throw new BadRequestException('替换选区时必须提供选中文本');
+      }
+
+      if (!params.existingContent.includes(selectedText)) {
+        throw new BadRequestException('选中文本已变化，请重新选择后再采纳');
+      }
+
+      return params.existingContent.replace(selectedText, params.candidateContent);
+    }
+
+    return params.existingContent
+      ? `${params.existingContent.trimEnd()}\n\n${params.candidateContent}`
+      : params.candidateContent;
+  }
+
+  private getSystemDefaultPresetCode(taskType: AiTaskType): string {
+    switch (taskType) {
+      case AiTaskType.MANUSCRIPT_CONTINUE:
+        return 'system_manuscript_continue_default';
+      case AiTaskType.MANUSCRIPT_POLISH:
+        return 'system_manuscript_polish_default';
+      case AiTaskType.MANUSCRIPT_EXPAND:
+        return 'system_manuscript_expand_default';
+    }
+  }
+
+  private renderPromptTemplate(
+    template: string,
+    input: ManuscriptPromptInput & { taskType: string }
+  ) {
+    const values: Record<string, string> = {
+      settingsContext: input.settingsContext,
+      currentContent: input.currentContent,
+      sourceText: input.sourceText ?? '',
+      customPrompt: input.customPrompt ?? '',
+      taskType: input.taskType,
+    };
+
+    const withConditionals = template.replace(
+      /\{\{#([a-zA-Z0-9_]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,
+      (_match, key: string, content: string) => (values[key]?.trim() ? content : '')
+    );
+
+    return withConditionals.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (_match, key: string) => {
+      return values[key] ?? '';
+    });
+  }
+
+  private async resolvePromptPreset(params: {
+    taskType: AiTaskType;
+    aiConfig: ManuscriptAiConfig;
+    userId: number;
+    projectId?: number | null;
+    fallback: ManuscriptPromptDefinition;
+    input: ManuscriptPromptInput;
+  }): Promise<ResolvedPromptPreset> {
+    const promptDelegate = this.prisma.ai_prompt_presets;
+    if (!promptDelegate) {
+      return {
+        presetId: null,
+        presetVersion: null,
+        systemPrompt: params.fallback.systemPrompt,
+        userPrompt: this.renderPromptTemplate(params.fallback.userPromptTemplate, {
+          ...params.input,
+          taskType: params.taskType,
+        }),
+      };
+    }
+
+    const defaultPresetId = this.getDefaultPresetId(params.aiConfig, params.taskType);
+    const preset = await promptDelegate.findFirst({
+      where: defaultPresetId
+        ? {
+            id: defaultPresetId,
+            taskType: params.taskType,
+            isEnabled: true,
+            OR: [
+              { scope: 'SYSTEM' },
+              { scope: 'USER', createdBy: params.userId },
+              { scope: 'PROJECT', projectId: params.projectId ?? null },
+            ],
+          }
+        : {
+            code: this.getSystemDefaultPresetCode(params.taskType),
+            taskType: params.taskType,
+            scope: 'SYSTEM',
+            isEnabled: true,
+          },
+      include: {
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
+      },
+    });
+    const version = preset?.versions[0];
+
+    if (!preset || !version) {
+      return {
+        presetId: null,
+        presetVersion: null,
+        systemPrompt: params.fallback.systemPrompt,
+        userPrompt: this.renderPromptTemplate(params.fallback.userPromptTemplate, {
+          ...params.input,
+          taskType: params.taskType,
+        }),
+      };
+    }
+
+    return {
+      presetId: preset.id,
+      presetVersion: version.version,
+      systemPrompt: this.renderPromptTemplate(version.systemPrompt, {
+        ...params.input,
+        taskType: params.taskType,
+      }),
+      userPrompt: this.renderPromptTemplate(version.userPromptTemplate, {
+        ...params.input,
+        taskType: params.taskType,
+      }),
+    };
+  }
+
+  private toIsoString(value?: Date | string | null): string | null {
+    if (!value) {
+      return null;
+    }
+
+    return value instanceof Date ? value.toISOString() : value;
+  }
+
+  private serializeGenerationRecord(record: ai_generation_records): AiGenerationRecord {
+    return {
+      id: record.id,
+      jobId: record.jobId,
+      projectId: record.projectId,
+      taskType: record.taskType,
+      provider: record.provider,
+      model: record.model,
+      presetId: record.presetId,
+      presetVersion: record.presetVersion,
+      requestPayload: record.requestPayload,
+      contextSnapshot: record.contextSnapshot,
+      outputText: record.outputText,
+      tokenUsage: record.tokenUsage,
+      latencyMs: record.latencyMs,
+      status: record.status,
+      errorMessage: record.errorMessage,
+      createdAt: record.createdAt.toISOString(),
+    };
+  }
+
+  private serializeGenerationCandidate(candidate: ai_generation_candidates): AiGenerationCandidate {
+    return {
+      id: candidate.id,
+      generationRecordId: candidate.generationRecordId,
+      projectId: candidate.projectId,
+      outlineId: candidate.outlineId,
+      manuscriptId: candidate.manuscriptId,
+      chapterId: candidate.chapterId,
+      candidateType: candidate.candidateType,
+      targetType: candidate.targetType,
+      targetId: candidate.targetId,
+      targetContentVersion: candidate.targetContentVersion,
+      expectedContentHash: candidate.expectedContentHash,
+      content: candidate.content,
+      diffMeta: candidate.diffMeta,
+      applyStatus: candidate.applyStatus,
+      appliedBy: candidate.appliedBy,
+      appliedAt: this.toIsoString(candidate.appliedAt),
+      applyMode: candidate.applyMode,
+      appliedContentVersion: candidate.appliedContentVersion,
+      createdAt: candidate.createdAt.toISOString(),
     };
   }
 
@@ -908,7 +1212,195 @@ export class ManuscriptsService {
       await this.recalculateManuscriptTotalWords(manuscript.id, tx);
     });
 
+    await this.createChapterSummaryJobIfNeeded(chapterId, userId, 'CONTENT_SAVED');
+
     return this.getChapterContent(chapterId, userId);
+  }
+
+  /**
+   * 获取章节摘要
+   */
+  async getChapterSummary(chapterId: number, userId: number) {
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    return this.prisma.chapter_summaries.findUnique({
+      where: { chapterId },
+    });
+  }
+
+  /**
+   * 保存章节摘要
+   */
+  async saveChapterSummary(chapterId: number, dto: SaveChapterSummaryDto, userId: number) {
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    const summary = dto.summary.trim();
+    if (!summary) {
+      throw new BadRequestException('章节摘要不能为空');
+    }
+
+    return this.prisma.chapter_summaries.upsert({
+      where: { chapterId },
+      create: {
+        chapterId,
+        projectId: manuscript.projectId,
+        summary,
+        summaryType: 'MANUAL',
+        sourceVersion: chapter.content?.version ?? null,
+        generatedBy: userId,
+      },
+      update: {
+        projectId: manuscript.projectId,
+        summary,
+        summaryType: 'MANUAL',
+        sourceVersion: chapter.content?.version ?? null,
+        generatedBy: userId,
+      },
+    });
+  }
+
+  /**
+   * 创建章节摘要 AI 任务
+   */
+  async createChapterSummaryJob(chapterId: number, userId: number) {
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    if (!chapter.content?.content?.trim()) {
+      throw new BadRequestException('章节正文为空，无法生成摘要');
+    }
+
+    return this.createChapterSummaryJobForChapter(chapter, userId, 'MANUAL', 0);
+  }
+
+  private async createChapterSummaryJobForChapter(
+    chapter: ChapterForSummaryJob,
+    userId: number,
+    trigger: ChapterSummaryJobTrigger,
+    priority: number
+  ) {
+    if (!this.aiJobsService) {
+      throw new BadRequestException('AI 任务服务未启用');
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript) {
+      throw new BadRequestException('章节缺少所属文稿，无法生成摘要');
+    }
+
+    if (!chapter.content?.content?.trim()) {
+      throw new BadRequestException('章节正文为空，无法生成摘要');
+    }
+
+    return this.aiJobsService.createJob(userId, {
+      taskType: AiTaskType.CHAPTER_SUMMARIZE,
+      projectId: manuscript.projectId,
+      manuscriptId: manuscript.id,
+      chapterId: chapter.id,
+      priority,
+      inputPayload: {
+        sourceVersion: chapter.content.version,
+      },
+      contextMeta: {
+        trigger,
+      },
+    });
+  }
+
+  private async shouldCreateAutomaticChapterSummaryJob(chapter: ChapterForSummaryJob) {
+    if (!this.aiJobsService) {
+      return false;
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    const contentVersion = chapter.content?.version;
+    const projectId = manuscript?.projectId;
+
+    if (!manuscript || !projectId || !contentVersion || !chapter.content?.content?.trim()) {
+      return false;
+    }
+
+    const project = await this.prisma.projects.findFirst({
+      where: {
+        id: projectId,
+        userId: manuscript.userId,
+      },
+      select: {
+        aiConfig: {
+          select: {
+            enableChapterSummaryContext: true,
+          },
+        },
+      },
+    });
+
+    if (!project?.aiConfig?.enableChapterSummaryContext) {
+      return false;
+    }
+
+    const existingSummary = await this.prisma.chapter_summaries.findUnique({
+      where: { chapterId: chapter.id },
+      select: { sourceVersion: true },
+    });
+
+    if (existingSummary?.sourceVersion === contentVersion) {
+      return false;
+    }
+
+    const activeJob = await this.prisma.ai_jobs.findFirst({
+      where: {
+        chapterId: chapter.id,
+        taskType: AiTaskType.CHAPTER_SUMMARIZE,
+        status: { in: ACTIVE_CHAPTER_SUMMARY_JOB_STATUSES },
+      },
+      select: { id: true },
+    });
+
+    return !activeJob;
+  }
+
+  private async createChapterSummaryJobIfNeeded(
+    chapterId: number,
+    userId: number,
+    trigger: Exclude<ChapterSummaryJobTrigger, 'MANUAL'>
+  ) {
+    const chapter = await this.getChapterWithManuscript(this.prisma, chapterId, true);
+
+    if (!chapter) {
+      return;
+    }
+
+    if (!(await this.shouldCreateAutomaticChapterSummaryJob(chapter))) {
+      return;
+    }
+
+    await this.createChapterSummaryJobForChapter(chapter, userId, trigger, -1);
   }
 
   /**
@@ -926,26 +1418,33 @@ export class ManuscriptsService {
       throw new ForbiddenException('无权访问该章节');
     }
 
-    return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
-      const currentChapter = await this.getChapterWithManuscript(tx, chapterId);
+    const publishedChapter = await this.runLockedTransaction(
+      [this.getManuscriptLock(manuscript.id)],
+      async (tx) => {
+        const currentChapter = await this.getChapterWithManuscript(tx, chapterId);
 
-      if (!currentChapter) {
-        throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+        if (!currentChapter) {
+          throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+        }
+
+        const updatedChapter = await tx.manuscript_chapter.update({
+          where: { id: chapterId },
+          data: {
+            status: 'PUBLISHED',
+            publishedAt: currentChapter.publishedAt || new Date(),
+            scheduledAt: null,
+          },
+        });
+
+        await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+        return updatedChapter;
       }
+    );
 
-      const updatedChapter = await tx.manuscript_chapter.update({
-        where: { id: chapterId },
-        data: {
-          status: 'PUBLISHED',
-          publishedAt: currentChapter.publishedAt || new Date(),
-          scheduledAt: null,
-        },
-      });
+    await this.createChapterSummaryJobIfNeeded(chapterId, userId, 'PUBLISHED');
 
-      await this.recalculateManuscriptTotalWords(manuscript.id, tx);
-
-      return updatedChapter;
-    });
+    return publishedChapter;
   }
 
   /**
@@ -1309,123 +1808,90 @@ export class ManuscriptsService {
    */
   async getManuscriptSettings(manuscriptId: number, userId: number) {
     const manuscript = await this.findOne(manuscriptId, userId);
-
-    if (manuscript.projectId) {
-      // 通过项目获取设定
-      const project = await this.prisma.projects.findFirst({
-        where: {
-          id: manuscript.projectId,
-          userId,
-        },
-        include: {
-          aiConfig: true,
-        },
-      });
-
-      if (!project) {
-        throw new NotFoundException(`Project with id ${manuscript.projectId} not found`);
-      }
-
-      const aiConfig = this.normalizeManuscriptAiConfig(project.aiConfig);
-
-      // 并行获取所有关联的设定详情
-      const [characters, systems, worlds, misc] = await Promise.all([
-        aiConfig.enableCharacterContext
-          ? this.getCharactersByIds(project.characters || [], userId)
-          : Promise.resolve([]),
-        aiConfig.enableSystemContext
-          ? this.getSystemsByIds(project.systems || [], userId)
-          : Promise.resolve([]),
-        aiConfig.enableWorldContext
-          ? this.getWorldsByIds(project.worlds || [], userId)
-          : Promise.resolve([]),
-        aiConfig.enableMiscContext
-          ? this.getMiscByIds(project.misc || [], userId)
-          : Promise.resolve([]),
-      ]);
-
-      return {
-        characters,
-        systems,
-        worlds,
-        misc,
-        aiConfig,
-      };
-    } else {
-      // 直接使用文稿的设定数组
-      const [characters, systems, worlds, misc] = await Promise.all([
-        this.getCharactersByIds(manuscript.characters || [], userId),
-        this.getSystemsByIds(manuscript.systems || [], userId),
-        this.getWorldsByIds(manuscript.worlds || [], userId),
-        this.getMiscByIds(manuscript.misc || [], userId),
-      ]);
-
-      return {
-        characters,
-        systems,
-        worlds,
-        misc,
-        aiConfig: DEFAULT_MANUSCRIPT_AI_CONFIG,
-      };
-    }
+    return this.aiContextService.loadManuscriptContext(manuscript, userId);
   }
 
-  /**
-   * 构建设定上下文文本
-   * 将关联的设定信息格式化为 AI 可理解的上下文
-   */
-  private buildSettingsContext(settings: {
-    characters: Array<{ name: string; background?: string | null; [key: string]: unknown }>;
-    systems: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
-    worlds: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
-    misc: Array<{ name: string; description?: string | null; [key: string]: unknown }>;
-  }): string {
-    const parts: string[] = [];
-    const getOptionalString = (value: unknown): string | undefined => {
-      return typeof value === 'string' && value.trim() ? value : undefined;
+  private async persistAiGenerationCandidate(params: {
+    taskType: AiTaskType;
+    manuscriptId: number;
+    projectId?: number | null;
+    outlineId?: number | null;
+    chapterId: number;
+    targetContentVersion?: number | null;
+    outputText: string;
+    customPrompt?: string;
+    sourceText?: string;
+    overrideConfig?: ManuscriptAiTaskOverrideConfig;
+    systemPrompt: string;
+    userPrompt: string;
+    presetId?: number | null;
+    presetVersion?: number | null;
+    effectiveConfig: AiEffectiveConfig;
+    contextSources: AiContextSourceItem[];
+    latencyMs: number;
+  }): Promise<AiGenerationResponse> {
+    const requestPayload: Prisma.InputJsonObject = {
+      customPrompt: params.customPrompt ?? null,
+      sourceTextLength: params.sourceText?.length ?? null,
+      overrideConfig: this.serializeAiOverrideConfig(params.overrideConfig),
     };
 
-    if (settings.characters.length > 0) {
-      parts.push('## 角色设定');
-      settings.characters.forEach((char) => {
-        const summary =
-          getOptionalString(char.background) ??
-          getOptionalString(char.personality) ??
-          '暂无背景描述';
-        parts.push(`- ${char.name}: ${summary}`);
-      });
-    }
+    const generationRecord = await this.prisma.ai_generation_records.create({
+      data: {
+        projectId: params.projectId ?? null,
+        taskType: params.taskType,
+        provider: params.effectiveConfig.provider,
+        model: params.effectiveConfig.model,
+        presetId: params.presetId ?? null,
+        presetVersion: params.presetVersion ?? null,
+        requestPayload,
+        contextSnapshot: {
+          sources: params.contextSources,
+          systemPrompt: params.systemPrompt,
+          userPrompt: params.userPrompt,
+        },
+        outputText: params.outputText,
+        latencyMs: params.latencyMs,
+        status: 'SUCCESS',
+      },
+    });
 
-    if (settings.systems.length > 0) {
-      parts.push('## 系统设定');
-      settings.systems.forEach((sys) => {
-        parts.push(`- ${sys.name}: ${sys.description || '暂无描述'}`);
-      });
-    }
+    const candidate = await this.prisma.ai_generation_candidates.create({
+      data: {
+        generationRecordId: generationRecord.id,
+        projectId: params.projectId ?? null,
+        outlineId: params.outlineId ?? null,
+        manuscriptId: params.manuscriptId,
+        chapterId: params.chapterId,
+        candidateType: AiCandidateType.TEXT,
+        targetType: 'MANUSCRIPT_CHAPTER_CONTENT',
+        targetId: params.chapterId,
+        targetContentVersion: params.targetContentVersion ?? null,
+        content: params.outputText,
+        applyStatus: AiCandidateApplyStatus.PENDING,
+      },
+    });
 
-    if (settings.worlds.length > 0) {
-      parts.push('## 世界设定');
-      settings.worlds.forEach((world) => {
-        parts.push(`- ${world.name}: ${world.description || '暂无描述'}`);
-      });
-    }
-
-    if (settings.misc.length > 0) {
-      parts.push('## 辅助设定');
-      settings.misc.forEach((misc) => {
-        parts.push(`- ${misc.name}: ${misc.description || '暂无描述'}`);
-      });
-    }
-
-    return parts.length > 0 ? parts.join('\n') : '暂无关联设定，请根据已有内容自由发挥。';
+    return {
+      generationRecord: this.serializeGenerationRecord(generationRecord),
+      candidate: this.serializeGenerationCandidate(candidate),
+      effectiveConfig: params.effectiveConfig,
+      contextSources: params.contextSources,
+    };
   }
 
-  /**
-   * AI 续写章节内容
-   */
-  async continueChapter(chapterId: number, userId: number, customPrompt?: string): Promise<string> {
+  private async runManuscriptAiGeneration(params: {
+    taskType: AiTaskType;
+    logLabel: string;
+    chapterId: number;
+    userId: number;
+    sourceText?: string;
+    customPrompt?: string;
+    overrideConfig?: ManuscriptAiTaskOverrideConfig;
+    createFallbackPrompt: (input: ManuscriptPromptInput) => ManuscriptPromptDefinition;
+  }): Promise<AiGenerationResponse> {
     const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
+      where: { id: params.chapterId },
       include: {
         manuscript: true,
         volume: { include: { manuscript: true } },
@@ -1434,23 +1900,106 @@ export class ManuscriptsService {
     });
 
     if (!chapter) {
-      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
+      throw new NotFoundException(`Chapter with id ${params.chapterId} not found`);
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript || manuscript.userId !== params.userId) {
       throw new ForbiddenException('无权访问该章节');
     }
 
-    // 获取设定上下文
-    const settings = await this.getManuscriptSettings(manuscript.id, userId);
-    const settingsContext = this.buildSettingsContext(settings);
-
-    // 获取当前章节内容
+    const settings = await this.aiContextService.loadManuscriptContext(manuscript, params.userId, {
+      chapterId: params.chapterId,
+      manuscriptId: chapter.manuscriptId,
+      volumeId: chapter.volumeId,
+      sortOrder: chapter.sortOrder,
+    });
+    const { settingsContext, contextSources } = settings;
+    const effectiveAiConfig = this.applyOneOffAiOverride(
+      settings.aiConfig,
+      params.taskType,
+      params.overrideConfig
+    );
     const currentContent = chapter.content?.content || '';
+    const promptInput = {
+      settingsContext,
+      currentContent,
+      sourceText: params.sourceText,
+      customPrompt: params.customPrompt,
+    };
+    const fallbackPrompt = params.createFallbackPrompt(promptInput);
+    const resolvedPrompt = await this.resolvePromptPreset({
+      taskType: params.taskType,
+      aiConfig: effectiveAiConfig,
+      userId: params.userId,
+      projectId: manuscript.projectId,
+      fallback: fallbackPrompt,
+      input: promptInput,
+    });
 
-    // 构建 AI 提示词
-    const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是根据已有的章节内容和相关设定，续写后续内容。
+    try {
+      this.logger.debug(
+        `[${params.logLabel}] 章节ID: ${params.chapterId}, 用户ID: ${params.userId}`
+      );
+
+      const startedAt = Date.now();
+      const model = this.aiService.getConfiguredStreamingModel(
+        this.toAiModelRuntimeConfig(effectiveAiConfig)
+      );
+      const prompt = ChatPromptTemplate.fromMessages([
+        ['system', resolvedPrompt.systemPrompt],
+        ['human', resolvedPrompt.userPrompt],
+      ]);
+      const chain = prompt.pipe(model).pipe(new StringOutputParser());
+      const result = await chain.invoke({});
+
+      this.logger.debug(
+        `[${params.logLabel}完成] 章节ID: ${params.chapterId}, 生成字数: ${result.length}`
+      );
+
+      return this.persistAiGenerationCandidate({
+        taskType: params.taskType,
+        manuscriptId: manuscript.id,
+        projectId: manuscript.projectId,
+        outlineId: manuscript.outlineId,
+        chapterId: params.chapterId,
+        targetContentVersion: chapter.content?.version ?? null,
+        outputText: result,
+        customPrompt: params.customPrompt,
+        sourceText: params.sourceText,
+        overrideConfig: params.overrideConfig,
+        systemPrompt: resolvedPrompt.systemPrompt,
+        userPrompt: resolvedPrompt.userPrompt,
+        presetId: resolvedPrompt.presetId,
+        presetVersion: resolvedPrompt.presetVersion,
+        effectiveConfig: this.toEffectiveConfig(effectiveAiConfig, params.taskType),
+        contextSources,
+        latencyMs: Date.now() - startedAt,
+      });
+    } catch (error) {
+      this.logger.error(`[${params.logLabel}失败] 章节ID: ${params.chapterId}`, error);
+      throw new BadRequestException(`${params.logLabel}失败，请稍后重试`);
+    }
+  }
+
+  /**
+   * AI 续写章节内容
+   */
+  async continueChapter(
+    chapterId: number,
+    userId: number,
+    customPrompt?: string,
+    overrideConfig?: ManuscriptAiTaskOverrideConfig
+  ): Promise<AiGenerationResponse> {
+    return this.runManuscriptAiGeneration({
+      taskType: AiTaskType.MANUSCRIPT_CONTINUE,
+      logLabel: 'AI 续写',
+      chapterId,
+      userId,
+      customPrompt,
+      overrideConfig,
+      createFallbackPrompt: ({ settingsContext, currentContent }) => {
+        const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是根据已有的章节内容和相关设定，续写后续内容。
 
 ## 续写要求：
 1. 保持与已有内容的文风一致
@@ -1462,33 +2011,16 @@ export class ManuscriptsService {
 ## 相关设定：
 ${settingsContext}`;
 
-    const userPrompt = `## 已有章节内容：
+        const userPromptTemplate = `## 已有章节内容：
 ${currentContent.substring(Math.max(0, currentContent.length - 2000))}
 
-${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+{{#customPrompt}}## 额外要求：
+{{customPrompt}}
+{{/customPrompt}}
 请根据以上内容续写后续情节。`;
-
-    try {
-      this.logger.debug(`[AI 续写] 章节ID: ${chapterId}, 用户ID: ${userId}`);
-
-      const model = this.aiService.getConfiguredStreamingModel(
-        this.toAiModelRuntimeConfig(settings.aiConfig)
-      );
-      const prompt = ChatPromptTemplate.fromMessages([
-        ['system', systemPrompt],
-        ['human', userPrompt],
-      ]);
-      const chain = prompt.pipe(model).pipe(new StringOutputParser());
-
-      const result = await chain.invoke({});
-
-      this.logger.debug(`[AI 续写完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`[AI 续写失败] 章节ID: ${chapterId}`, error);
-      throw new BadRequestException('AI 续写失败，请稍后重试');
-    }
+        return { systemPrompt, userPromptTemplate };
+      },
+    });
   }
 
   /**
@@ -1498,30 +2030,19 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     chapterId: number,
     userId: number,
     text: string,
-    customPrompt?: string
-  ): Promise<string> {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-      },
-    });
-
-    if (!chapter) {
-      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
-    }
-
-    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
-      throw new ForbiddenException('无权访问该章节');
-    }
-
-    // 构建 AI 提示词
-    const settings = await this.getManuscriptSettings(manuscript.id, userId);
-    const settingsContext = this.buildSettingsContext(settings);
-
-    const systemPrompt = `你是一位专业的文字编辑。你的任务是对提供的文本进行润色，提升文字表达质量。
+    customPrompt?: string,
+    overrideConfig?: ManuscriptAiTaskOverrideConfig
+  ): Promise<AiGenerationResponse> {
+    return this.runManuscriptAiGeneration({
+      taskType: AiTaskType.MANUSCRIPT_POLISH,
+      logLabel: 'AI 润色',
+      chapterId,
+      userId,
+      sourceText: text,
+      customPrompt,
+      overrideConfig,
+      createFallbackPrompt: ({ settingsContext }) => {
+        const systemPrompt = `你是一位专业的文字编辑。你的任务是对提供的文本进行润色，提升文字表达质量。
 
 ## 润色要求：
 1. 优化语言表达，使其更加流畅优美
@@ -1534,35 +2055,16 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 ## 相关设定：
 ${settingsContext}`;
 
-    const userPrompt = `## 待润色文本：
-${text}
+        const userPromptTemplate = `## 待润色文本：
+{{sourceText}}
 
-${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+{{#customPrompt}}## 额外要求：
+{{customPrompt}}
+{{/customPrompt}}
 请对以上文本进行润色，直接输出润色后的结果，不要添加任何解释说明。`;
-
-    try {
-      this.logger.debug(
-        `[AI 润色] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
-      );
-
-      const model = this.aiService.getConfiguredStreamingModel(
-        this.toAiModelRuntimeConfig(settings.aiConfig)
-      );
-      const prompt = ChatPromptTemplate.fromMessages([
-        ['system', systemPrompt],
-        ['human', userPrompt],
-      ]);
-      const chain = prompt.pipe(model).pipe(new StringOutputParser());
-
-      const result = await chain.invoke({});
-
-      this.logger.debug(`[AI 润色完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`[AI 润色失败] 章节ID: ${chapterId}`, error);
-      throw new BadRequestException('AI 润色失败，请稍后重试');
-    }
+        return { systemPrompt, userPromptTemplate };
+      },
+    });
   }
 
   /**
@@ -1572,31 +2074,19 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
     chapterId: number,
     userId: number,
     text: string,
-    customPrompt?: string
-  ): Promise<string> {
-    const chapter = await this.prisma.manuscript_chapter.findUnique({
-      where: { id: chapterId },
-      include: {
-        manuscript: true,
-        volume: { include: { manuscript: true } },
-      },
-    });
-
-    if (!chapter) {
-      throw new NotFoundException(`Chapter with id ${chapterId} not found`);
-    }
-
-    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
-      throw new ForbiddenException('无权访问该章节');
-    }
-
-    // 获取设定上下文
-    const settings = await this.getManuscriptSettings(manuscript.id, userId);
-    const settingsContext = this.buildSettingsContext(settings);
-
-    // 构建 AI 提示词
-    const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是对简短的文本进行扩写，丰富细节描写。
+    customPrompt?: string,
+    overrideConfig?: ManuscriptAiTaskOverrideConfig
+  ): Promise<AiGenerationResponse> {
+    return this.runManuscriptAiGeneration({
+      taskType: AiTaskType.MANUSCRIPT_EXPAND,
+      logLabel: 'AI 扩写',
+      chapterId,
+      userId,
+      sourceText: text,
+      customPrompt,
+      overrideConfig,
+      createFallbackPrompt: ({ settingsContext }) => {
+        const systemPrompt = `你是一位专业的网络小说作家助手。你的任务是对简短的文本进行扩写，丰富细节描写。
 
 ## 扩写要求：
 1. 扩充场景描写，增强画面感和代入感
@@ -1608,87 +2098,276 @@ ${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
 ## 相关设定：
 ${settingsContext}`;
 
-    const userPrompt = `## 待扩写文本：
-${text}
+        const userPromptTemplate = `## 待扩写文本：
+{{sourceText}}
 
-${customPrompt ? `## 额外要求：\n${customPrompt}\n` : ''}
+{{#customPrompt}}## 额外要求：
+{{customPrompt}}
+{{/customPrompt}}
 请对以上文本进行扩写，直接输出扩写后的结果，不要添加任何解释说明。`;
+        return { systemPrompt, userPromptTemplate };
+      },
+    });
+  }
 
-    try {
-      this.logger.debug(
-        `[AI 扩写] 章节ID: ${chapterId}, 用户ID: ${userId}, 文本长度: ${text.length}`
-      );
-
-      const model = this.aiService.getConfiguredStreamingModel(
-        this.toAiModelRuntimeConfig(settings.aiConfig)
-      );
-      const prompt = ChatPromptTemplate.fromMessages([
-        ['system', systemPrompt],
-        ['human', userPrompt],
-      ]);
-      const chain = prompt.pipe(model).pipe(new StringOutputParser());
-
-      const result = await chain.invoke({});
-
-      this.logger.debug(`[AI 扩写完成] 章节ID: ${chapterId}, 生成字数: ${result.length}`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`[AI 扩写失败] 章节ID: ${chapterId}`, error);
-      throw new BadRequestException('AI 扩写失败，请稍后重试');
+  async processChapterSummarizeJob(job: { userId?: number; chapterId?: number | null }) {
+    if (!job.userId || !job.chapterId) {
+      throw new BadRequestException('章节摘要任务缺少必要参数');
     }
+
+    const chapter = await this.getChapterWithManuscript(this.prisma, job.chapterId, true);
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with id ${job.chapterId} not found`);
+    }
+
+    const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+    if (!manuscript || manuscript.userId !== job.userId) {
+      throw new ForbiddenException('无权访问该章节');
+    }
+
+    const currentContent = chapter.content?.content?.trim();
+    if (!currentContent) {
+      throw new BadRequestException('章节正文为空，无法生成摘要');
+    }
+
+    const settings = await this.aiContextService.loadManuscriptContext(manuscript, job.userId, {
+      chapterId: job.chapterId,
+      manuscriptId: chapter.manuscriptId,
+      volumeId: chapter.volumeId,
+      sortOrder: chapter.sortOrder,
+    });
+    const model = this.aiService.getConfiguredStreamingModel(
+      this.toAiModelRuntimeConfig(settings.aiConfig)
+    );
+    const prompt = ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `你是一位小说编辑助手。请根据章节正文生成简洁准确的章节摘要，用于后续 AI 写作上下文。
+
+## 要求：
+1. 只输出摘要正文，不要添加标题或解释
+2. 保留关键事件、人物状态、冲突和伏笔
+3. 控制在 120 字以内
+
+## 项目上下文：
+${settings.settingsContext}`,
+      ],
+      [
+        'human',
+        `## 章节标题：
+${chapter.title}
+
+## 章节正文：
+${currentContent}`,
+      ],
+    ]);
+    const chain = prompt.pipe(model).pipe(new StringOutputParser());
+    const summary = (await chain.invoke({})).trim();
+
+    if (!summary) {
+      throw new BadRequestException('章节摘要生成结果为空');
+    }
+
+    await this.prisma.chapter_summaries.upsert({
+      where: { chapterId: job.chapterId },
+      create: {
+        chapterId: job.chapterId,
+        projectId: manuscript.projectId,
+        summary,
+        summaryType: 'AI',
+        sourceVersion: chapter.content?.version ?? null,
+        generatedBy: job.userId,
+      },
+      update: {
+        projectId: manuscript.projectId,
+        summary,
+        summaryType: 'AI',
+        sourceVersion: chapter.content?.version ?? null,
+        generatedBy: job.userId,
+      },
+    });
+
+    return {
+      chapterId: job.chapterId,
+      summaryLength: summary.length,
+    };
   }
 
   /**
-   * 根据 ID 列表获取角色设定
+   * 采纳 AI 候选结果
    */
-  private async getCharactersByIds(ids: string[], userId: number) {
-    if (!ids || ids.length === 0) return [];
-    return this.prisma.character_settings.findMany({
-      where: {
-        userId,
-        id: { in: ids.map(Number) },
+  async applyAiCandidate(
+    candidateId: number,
+    userId: number,
+    dto: ApplyAiCandidateDto
+  ): Promise<AiGenerationCandidate> {
+    if (
+      dto.mode !== AiCandidateApplyMode.INSERT_TAIL &&
+      dto.mode !== AiCandidateApplyMode.OVERWRITE_DRAFT &&
+      dto.mode !== AiCandidateApplyMode.SAVE_AS_DRAFT &&
+      dto.mode !== AiCandidateApplyMode.REPLACE_SELECTION
+    ) {
+      throw new BadRequestException('当前仅支持追加、替换选区、覆盖当前草稿或暂存为草稿');
+    }
+
+    const candidateSnapshot = await this.prisma.ai_generation_candidates.findUnique({
+      where: { id: candidateId },
+      select: {
+        manuscriptId: true,
       },
     });
+
+    if (!candidateSnapshot?.manuscriptId) {
+      throw new NotFoundException(`AI candidate with id ${candidateId} not found`);
+    }
+
+    return this.runLockedTransaction(
+      [this.getManuscriptLock(candidateSnapshot.manuscriptId)],
+      async (tx) => {
+        const candidate = await tx.ai_generation_candidates.findUnique({
+          where: { id: candidateId },
+        });
+
+        if (!candidate?.chapterId) {
+          throw new NotFoundException(`AI candidate with id ${candidateId} not found`);
+        }
+
+        if (candidate.applyStatus !== AiCandidateApplyStatus.PENDING) {
+          throw new BadRequestException('该候选结果已处理');
+        }
+
+        if (candidate.targetType !== 'MANUSCRIPT_CHAPTER_CONTENT') {
+          throw new BadRequestException('当前仅支持采纳章节正文候选');
+        }
+
+        const chapter = await this.getChapterWithManuscript(tx, candidate.chapterId, true);
+
+        if (!chapter) {
+          throw new NotFoundException(`Chapter with id ${candidate.chapterId} not found`);
+        }
+
+        const manuscript = chapter.manuscript || chapter.volume?.manuscript;
+        if (
+          !manuscript ||
+          manuscript.userId !== userId ||
+          manuscript.id !== candidate.manuscriptId
+        ) {
+          throw new ForbiddenException('无权采纳该候选结果');
+        }
+
+        const currentVersion = chapter.content?.version ?? null;
+        if (
+          candidate.targetContentVersion !== null &&
+          candidate.targetContentVersion !== currentVersion
+        ) {
+          throw new BadRequestException('章节内容已变化，请重新生成候选');
+        }
+
+        const existingContent = chapter.content?.content ?? '';
+        const nextContent = this.buildAppliedCandidateContent({
+          mode: dto.mode,
+          existingContent,
+          candidateContent: candidate.content,
+          selectedText: dto.selectedText,
+        });
+        const nextVersion = chapter.content ? chapter.content.version + 1 : 1;
+
+        if (chapter.content) {
+          await tx.manuscript_chapter_content_version.create({
+            data: {
+              contentId: chapter.content.id,
+              version: chapter.content.version,
+              content: chapter.content.content,
+            },
+          });
+
+          await tx.manuscript_chapter_content.update({
+            where: { chapterId: candidate.chapterId },
+            data: {
+              content: nextContent,
+              version: nextVersion,
+            },
+          });
+        } else {
+          await tx.manuscript_chapter_content.create({
+            data: {
+              chapterId: candidate.chapterId,
+              content: nextContent,
+              version: nextVersion,
+            },
+          });
+        }
+
+        await tx.manuscript_chapter.update({
+          where: { id: candidate.chapterId },
+          data: { wordCount: this.calculateWordCount(nextContent) },
+        });
+
+        await tx.manuscripts.update({
+          where: { id: manuscript.id },
+          data: {
+            lastEditedChapterId: candidate.chapterId,
+            lastEditedAt: new Date(),
+          },
+        });
+
+        await this.recalculateManuscriptTotalWords(manuscript.id, tx);
+
+        const appliedCandidate = await tx.ai_generation_candidates.update({
+          where: { id: candidateId },
+          data: {
+            applyStatus: AiCandidateApplyStatus.APPLIED,
+            appliedBy: userId,
+            appliedAt: new Date(),
+            applyMode: dto.mode,
+            appliedContentVersion: nextVersion,
+          },
+        });
+
+        return this.serializeGenerationCandidate(appliedCandidate);
+      }
+    );
   }
 
   /**
-   * 根据 ID 列表获取系统设定
+   * 丢弃 AI 候选结果
    */
-  private async getSystemsByIds(ids: string[], userId: number) {
-    if (!ids || ids.length === 0) return [];
-    return this.prisma.system_settings.findMany({
-      where: {
-        userId,
-        id: { in: ids.map(Number) },
-      },
+  async discardAiCandidate(candidateId: number, userId: number): Promise<AiGenerationCandidate> {
+    const candidate = await this.prisma.ai_generation_candidates.findUnique({
+      where: { id: candidateId },
     });
-  }
 
-  /**
-   * 根据 ID 列表获取世界设定
-   */
-  private async getWorldsByIds(ids: string[], userId: number) {
-    if (!ids || ids.length === 0) return [];
-    return this.prisma.world_settings.findMany({
-      where: {
-        userId,
-        id: { in: ids.map(Number) },
-      },
-    });
-  }
+    if (!candidate?.manuscriptId) {
+      throw new NotFoundException(`AI candidate with id ${candidateId} not found`);
+    }
 
-  /**
-   * 根据 ID 列表获取辅助设定
-   */
-  private async getMiscByIds(ids: string[], userId: number) {
-    if (!ids || ids.length === 0) return [];
-    return this.prisma.misc_settings.findMany({
+    const manuscript = await this.prisma.manuscripts.findFirst({
       where: {
+        id: candidate.manuscriptId,
         userId,
-        id: { in: ids.map(Number) },
+      },
+      select: { id: true },
+    });
+
+    if (!manuscript) {
+      throw new ForbiddenException('无权丢弃该候选结果');
+    }
+
+    if (candidate.applyStatus !== AiCandidateApplyStatus.PENDING) {
+      throw new BadRequestException('该候选结果已处理');
+    }
+
+    const discardedCandidate = await this.prisma.ai_generation_candidates.update({
+      where: { id: candidateId },
+      data: {
+        applyStatus: AiCandidateApplyStatus.DISCARDED,
+        appliedBy: userId,
+        appliedAt: new Date(),
       },
     });
+
+    return this.serializeGenerationCandidate(discardedCandidate);
   }
 
   /**

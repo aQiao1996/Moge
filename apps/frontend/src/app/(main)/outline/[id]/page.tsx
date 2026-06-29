@@ -14,13 +14,14 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { createOutlineGenerateJobApi } from '@/api/outline.api';
+import { getAiJob } from '@/api/workspace.api';
 import { useOutlineData } from '@/app/(main)/outline/hooks/useOutlineData';
-import { useOutlineGenerate } from '@/app/(main)/outline/hooks/useOutlineGenerate';
 import { useOutlineSave } from '@/app/(main)/outline/hooks/useOutlineSave';
 import { statusConfig } from '@/app/(main)/outline/constants/statusConfig';
 import OutlineStructureSidebar, {
@@ -31,6 +32,11 @@ import OutlineContentViewer from '@/app/(main)/outline/[id]/components/OutlineCo
 import OutlineSettingsPanel from '@/app/(main)/outline/[id]/components/OutlineSettingsPanel';
 import { useDictStore } from '@/stores/dictStore';
 import { getDictLabel } from '@/app/(main)/outline/utils/dictUtils';
+import { toast } from 'sonner';
+import type { AiJob } from '@moge/types';
+
+const ACTIVE_AI_JOB_STATUSES = new Set<AiJob['status']>(['PENDING', 'QUEUED', 'RUNNING']);
+const OUTLINE_GENERATE_JOB_POLL_INTERVAL_MS = 2000;
 
 export default function OutlineViewPage() {
   const params = useParams();
@@ -52,20 +58,6 @@ export default function OutlineViewPage() {
     autoLoad: true,
   });
 
-  // 智能生成
-  const {
-    isGenerating,
-    content: generatedContent,
-    generate,
-  } = useOutlineGenerate({
-    outlineId: id,
-    onComplete: () => {
-      // 生成完成后刷新数据并选中大纲总览
-      void refreshData();
-      setSelectedTitle('大纲总览');
-    },
-  });
-
   // 保存逻辑
   const { isSaving, saveContent } = useOutlineSave({
     outlineId: id,
@@ -79,6 +71,8 @@ export default function OutlineViewPage() {
   const [selectedContent, setSelectedContent] = useState<string>('');
   const [selectedTitle, setSelectedTitle] = useState<string>('');
   const [isStructureSidebarOpen, setStructureSidebarOpen] = useState(true);
+  const [isCreatingGenerateJob, setCreatingGenerateJob] = useState(false);
+  const [generateJobId, setGenerateJobId] = useState<number | null>(null);
 
   // 初始化默认选中大纲总览
   useEffect(() => {
@@ -87,14 +81,6 @@ export default function OutlineViewPage() {
       setSelectedTitle('大纲总览');
     }
   }, [outlineData]);
-
-  // 生成过程中实时更新内容
-  useEffect(() => {
-    if (isGenerating) {
-      setSelectedContent(generatedContent);
-      setSelectedTitle('大纲总览');
-    }
-  }, [isGenerating, generatedContent]);
 
   // 事件处理
   const handleSelectContent = (content: string, title: string) => {
@@ -112,6 +98,76 @@ export default function OutlineViewPage() {
 
   const handleSave = async () => {
     await saveContent(selectedContent);
+  };
+
+  const handleGenerateJobFinished = useCallback(
+    async (job: AiJob) => {
+      setGenerateJobId(null);
+
+      if (job.status === 'SUCCESS') {
+        toast.success('大纲生成完成');
+        await refreshData();
+        setSelectedTitle('大纲总览');
+        return;
+      }
+
+      if (job.status === 'FAILED') {
+        console.error('大纲生成任务失败:', job.errorMessage);
+        return;
+      }
+
+      if (job.status === 'CANCELED') {
+        toast.info('大纲生成任务已取消');
+      }
+    },
+    [refreshData]
+  );
+
+  useEffect(() => {
+    if (!generateJobId) {
+      return undefined;
+    }
+
+    let disposed = false;
+
+    const pollGenerateJob = async () => {
+      try {
+        const job = await getAiJob(generateJobId);
+
+        if (!ACTIVE_AI_JOB_STATUSES.has(job.status) && !disposed) {
+          await handleGenerateJobFinished(job);
+        }
+      } catch (error) {
+        console.error('查询大纲生成任务失败:', error);
+      }
+    };
+
+    void pollGenerateJob();
+    const timer = window.setInterval(() => {
+      void pollGenerateJob();
+    }, OUTLINE_GENERATE_JOB_POLL_INTERVAL_MS);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [generateJobId, handleGenerateJobFinished]);
+
+  const handleGenerate = async () => {
+    try {
+      setCreatingGenerateJob(true);
+      const job = await createOutlineGenerateJobApi(id);
+      if (!job.id) {
+        throw new Error('创建大纲生成任务未返回任务 ID');
+      }
+
+      toast.success(`大纲生成任务已创建 #${job.id}`);
+      setGenerateJobId(job.id);
+    } catch (error) {
+      console.error('创建大纲生成任务失败:', error);
+    } finally {
+      setCreatingGenerateJob(false);
+    }
   };
 
   // 加载状态
@@ -153,10 +209,10 @@ export default function OutlineViewPage() {
         eraLabel={getDictLabel(novelEras, outlineData.era)}
         selectedContent={selectedContent}
         selectedTitle={selectedTitle}
-        isGenerating={isGenerating}
+        isGenerating={isCreatingGenerateJob || generateJobId !== null}
         isSaving={isSaving}
         onBack={handleBack}
-        onGenerate={generate}
+        onGenerate={() => void handleGenerate()}
         onSave={() => void handleSave()}
         onEdit={handleEdit}
       />
@@ -195,7 +251,7 @@ export default function OutlineViewPage() {
               <OutlineContentViewer
                 selectedTitle={selectedTitle}
                 selectedContent={selectedContent}
-                isGenerating={isGenerating}
+                isGenerating={isCreatingGenerateJob || generateJobId !== null}
               />
             </TabsContent>
 

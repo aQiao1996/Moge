@@ -11,19 +11,25 @@ import {
   BarChart,
   CalendarDays,
   Flame,
+  Bot,
+  Timer,
+  CircleCheck,
 } from 'lucide-react';
 import { getUserStats, type UserStats } from '@/api/manuscripts.api';
+import { getAiUsageOverview, type WorkspaceAiUsageOverview } from '@/api/workspace.api';
 import MogePageHeader from '@/app/components/MogePageHeader';
 
 export default function StatsPage() {
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [aiUsage, setAiUsage] = useState<WorkspaceAiUsageOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const data = await getUserStats();
-        setStats(data);
+        const [writingStats, aiStats] = await Promise.all([getUserStats(), getAiUsageOverview()]);
+        setStats(writingStats);
+        setAiUsage(aiStats);
       } catch (error) {
         console.error('Failed to load stats:', error);
       } finally {
@@ -40,6 +46,12 @@ export default function StatsPage() {
 
   const publishRate = stats?.totalWords
     ? Math.round((stats.publishedWords / stats.totalWords) * 100)
+    : 0;
+  const aiSuccessRate = aiUsage?.totalCalls
+    ? Math.round((aiUsage.successCount / aiUsage.totalCalls) * 100)
+    : 0;
+  const aiAdoptionRate = aiUsage?.candidateCount
+    ? Math.round((aiUsage.appliedCandidateCount / aiUsage.candidateCount) * 100)
     : 0;
   const manuscriptStatusItems = [
     { label: '草稿', value: stats?.draftManuscripts ?? 0 },
@@ -151,6 +163,64 @@ export default function StatsPage() {
                   : 0}
                 %
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">AI 调用</CardTitle>
+              <Bot className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber(aiUsage?.totalCalls ?? 0)}</div>
+              <p className="text-muted-foreground text-xs">
+                失败 {formatNumber(aiUsage?.failedCount ?? 0)} 次
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">AI 成功率</CardTitle>
+              <CircleCheck className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{aiSuccessRate}%</div>
+              <p className="text-muted-foreground text-xs">
+                成功 {formatNumber(aiUsage?.successCount ?? 0)} 次
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">候选采纳</CardTitle>
+              <CheckCircle2 className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatNumber(aiUsage?.appliedCandidateCount ?? 0)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                采纳率 {aiAdoptionRate}% / 候选 {formatNumber(aiUsage?.candidateCount ?? 0)} 条
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">平均耗时</CardTitle>
+              <Timer className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {aiUsage?.averageLatencyMs
+                  ? `${(aiUsage.averageLatencyMs / 1000).toFixed(1)}s`
+                  : '-'}
+              </div>
+              <p className="text-muted-foreground text-xs">仅统计成功调用</p>
             </CardContent>
           </Card>
         </div>
@@ -389,6 +459,53 @@ export default function StatsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              <CardTitle>最近 AI 调用</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {aiUsage?.recentRecords.length ? (
+              <div className="space-y-3">
+                {aiUsage.recentRecords.map((record) => (
+                  <div
+                    key={record.id}
+                    className="flex items-center justify-between gap-4 rounded-md border p-3"
+                    style={{ borderColor: 'var(--moge-card-border)' }}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--moge-text-main)]">
+                        {record.projectName ?? '未关联项目'} · {record.taskType}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--moge-text-muted)]">
+                        {record.provider} / {record.model}
+                      </p>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-3 text-right">
+                      <span className="text-xs text-[var(--moge-text-muted)]">
+                        {record.latencyMs ? `${(record.latencyMs / 1000).toFixed(1)}s` : '-'}
+                      </span>
+                      <span
+                        className={`rounded-md px-2 py-1 text-xs ${
+                          record.status === 'SUCCESS'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}
+                      >
+                        {record.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground py-8 text-center text-sm">暂无 AI 调用记录</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

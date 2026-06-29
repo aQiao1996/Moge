@@ -75,6 +75,12 @@ export const saveChapterContentSchema = z.object({
 
 export type SaveChapterContentValues = z.infer<typeof saveChapterContentSchema>;
 
+export const saveChapterSummarySchema = z.object({
+  summary: z.string(),
+});
+
+export type SaveChapterSummaryValues = z.infer<typeof saveChapterSummarySchema>;
+
 // ==================== Entity Schemas ====================
 
 // 章节内容
@@ -88,6 +94,21 @@ export const manuscriptChapterContentSchema = z.object({
 });
 
 export type ManuscriptChapterContent = z.infer<typeof manuscriptChapterContentSchema>;
+
+// 章节摘要
+export const manuscriptChapterSummarySchema = z.object({
+  id: z.number(),
+  chapterId: z.number(),
+  projectId: z.number().nullable().optional(),
+  summary: z.string(),
+  summaryType: z.string(),
+  sourceVersion: z.number().nullable().optional(),
+  generatedBy: z.number().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type ManuscriptChapterSummary = z.infer<typeof manuscriptChapterSummarySchema>;
 
 // 章节
 export const manuscriptChapterSchema = z.object({
@@ -103,6 +124,7 @@ export const manuscriptChapterSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   content: manuscriptChapterContentSchema.nullable().optional(),
+  summary: manuscriptChapterSummarySchema.nullable().optional(),
 });
 
 export type ManuscriptChapter = z.infer<typeof manuscriptChapterSchema>;
@@ -177,3 +199,200 @@ export const manuscriptSettingsSchema = z.object({
 });
 
 export type ManuscriptSettings = z.infer<typeof manuscriptSettingsSchema>;
+
+export const aiTaskTypeSchema = z.enum([
+  'OUTLINE_GENERATE',
+  'MANUSCRIPT_CONTINUE',
+  'MANUSCRIPT_POLISH',
+  'MANUSCRIPT_EXPAND',
+  'CHAPTER_SUMMARIZE',
+]);
+export const aiPromptPresetScopeSchema = z.enum(['SYSTEM', 'USER', 'PROJECT']);
+export const aiCandidateTypeSchema = z.enum(['TEXT']);
+export const aiCandidateApplyModeSchema = z.enum([
+  'INSERT_TAIL',
+  'REPLACE_SELECTION',
+  'OVERWRITE_DRAFT',
+  'SAVE_AS_DRAFT',
+]);
+export const aiCandidateStatusSchema = z.enum(['PENDING', 'APPLIED', 'DISCARDED']);
+export const aiJobStatusSchema = z.enum([
+  'PENDING',
+  'QUEUED',
+  'RUNNING',
+  'SUCCESS',
+  'FAILED',
+  'CANCELED',
+  'PARTIAL_SUCCESS',
+]);
+
+export const aiContextSourceItemSchema = z.object({
+  sourceType: z.string(),
+  sourceId: z.union([z.string(), z.number()]).nullable().optional(),
+  sourceName: z.string(),
+  included: z.boolean(),
+  reason: z.string(),
+  contentPreview: z.string().nullable().optional(),
+});
+
+export const aiEffectiveConfigSchema = z.object({
+  provider: z.string(),
+  model: z.string(),
+  temperature: z.number(),
+  maxTokens: z.number(),
+  contextLengthStrategy: z.enum(['COMPACT', 'BALANCED', 'EXPANDED']),
+  resultApplyStrategy: z.enum(['CANDIDATE', 'DIRECT_INSERT']),
+  defaultPresetId: z.number().nullable().optional(),
+});
+
+export const aiTaskOverrideConfigSchema = z
+  .object({
+    provider: z.string().optional(),
+    model: z.string().optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    maxTokens: z.number().int().positive().optional(),
+    contextLengthStrategy: z.enum(['COMPACT', 'BALANCED', 'EXPANDED']).optional(),
+    defaultPresetId: z.number().int().positive().optional(),
+  })
+  .strict();
+
+export const aiPromptPresetVersionSchema = z.object({
+  id: z.number(),
+  presetId: z.number(),
+  version: z.number(),
+  systemPrompt: z.string(),
+  userPromptTemplate: z.string(),
+  outputFormat: z.string().nullable().optional(),
+  parameterSchema: z.unknown().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  createdBy: z.number().nullable().optional(),
+  createdAt: z.string(),
+});
+
+export const aiPromptPresetSchema = z.object({
+  id: z.number(),
+  code: z.string(),
+  name: z.string(),
+  taskType: aiTaskTypeSchema,
+  scope: aiPromptPresetScopeSchema,
+  projectId: z.number().nullable().optional(),
+  description: z.string().nullable().optional(),
+  isSystemPreset: z.boolean(),
+  isEnabled: z.boolean(),
+  latestVersion: z.number(),
+  createdBy: z.number().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  versions: z.array(aiPromptPresetVersionSchema).optional(),
+});
+
+export const aiGenerationRecordSchema = z.object({
+  id: z.number(),
+  jobId: z.number().nullable().optional(),
+  projectId: z.number().nullable().optional(),
+  taskType: aiTaskTypeSchema,
+  provider: z.string(),
+  model: z.string(),
+  presetId: z.number().nullable().optional(),
+  presetVersion: z.number().nullable().optional(),
+  requestPayload: z.unknown().nullable().optional(),
+  contextSnapshot: z.unknown().nullable().optional(),
+  outputText: z.string().nullable().optional(),
+  tokenUsage: z.unknown().nullable().optional(),
+  latencyMs: z.number().nullable().optional(),
+  status: z.string(),
+  errorMessage: z.string().nullable().optional(),
+  createdAt: z.string(),
+});
+
+export const aiJobEventSchema = z.object({
+  id: z.number(),
+  jobId: z.number(),
+  eventType: z.string(),
+  message: z.string().nullable().optional(),
+  payload: z.unknown().nullable().optional(),
+  createdAt: z.string(),
+});
+
+export const aiJobSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  projectId: z.number().nullable().optional(),
+  outlineId: z.number().nullable().optional(),
+  manuscriptId: z.number().nullable().optional(),
+  chapterId: z.number().nullable().optional(),
+  taskType: aiTaskTypeSchema,
+  status: aiJobStatusSchema,
+  priority: z.number(),
+  provider: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  presetId: z.number().nullable().optional(),
+  presetVersion: z.number().nullable().optional(),
+  inputPayload: z.unknown().nullable().optional(),
+  contextMeta: z.unknown().nullable().optional(),
+  resultSummary: z.unknown().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  retryCount: z.number(),
+  maxRetries: z.number(),
+  nextRetryAt: z.string().nullable().optional(),
+  lockedAt: z.string().nullable().optional(),
+  lockedBy: z.string().nullable().optional(),
+  heartbeatAt: z.string().nullable().optional(),
+  startedAt: z.string().nullable().optional(),
+  finishedAt: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  events: z.array(aiJobEventSchema).optional(),
+});
+
+export const aiGenerationCandidateSchema = z.object({
+  id: z.number(),
+  generationRecordId: z.number(),
+  projectId: z.number().nullable().optional(),
+  outlineId: z.number().nullable().optional(),
+  manuscriptId: z.number().nullable().optional(),
+  chapterId: z.number().nullable().optional(),
+  candidateType: aiCandidateTypeSchema,
+  targetType: z.string(),
+  targetId: z.number().nullable().optional(),
+  targetContentVersion: z.number().nullable().optional(),
+  expectedContentHash: z.string().nullable().optional(),
+  content: z.string(),
+  diffMeta: z.unknown().nullable().optional(),
+  applyStatus: aiCandidateStatusSchema,
+  appliedBy: z.number().nullable().optional(),
+  appliedAt: z.string().nullable().optional(),
+  applyMode: aiCandidateApplyModeSchema.nullable().optional(),
+  appliedContentVersion: z.number().nullable().optional(),
+  createdAt: z.string(),
+});
+
+export const aiGenerationResponseSchema = z.object({
+  generationRecord: aiGenerationRecordSchema,
+  candidate: aiGenerationCandidateSchema,
+  effectiveConfig: aiEffectiveConfigSchema,
+  contextSources: z.array(aiContextSourceItemSchema),
+});
+
+export const applyAiCandidateSchema = z.object({
+  mode: aiCandidateApplyModeSchema,
+  selectedText: z.string().optional(),
+});
+
+export type AiTaskType = z.infer<typeof aiTaskTypeSchema>;
+export type AiPromptPresetScope = z.infer<typeof aiPromptPresetScopeSchema>;
+export type AiCandidateType = z.infer<typeof aiCandidateTypeSchema>;
+export type AiCandidateApplyMode = z.infer<typeof aiCandidateApplyModeSchema>;
+export type AiCandidateStatus = z.infer<typeof aiCandidateStatusSchema>;
+export type AiJobStatus = z.infer<typeof aiJobStatusSchema>;
+export type AiContextSourceItem = z.infer<typeof aiContextSourceItemSchema>;
+export type AiEffectiveConfig = z.infer<typeof aiEffectiveConfigSchema>;
+export type AiTaskOverrideConfig = z.infer<typeof aiTaskOverrideConfigSchema>;
+export type AiPromptPresetVersion = z.infer<typeof aiPromptPresetVersionSchema>;
+export type AiPromptPreset = z.infer<typeof aiPromptPresetSchema>;
+export type AiJobEvent = z.infer<typeof aiJobEventSchema>;
+export type AiJob = z.infer<typeof aiJobSchema>;
+export type AiGenerationRecord = z.infer<typeof aiGenerationRecordSchema>;
+export type AiGenerationCandidate = z.infer<typeof aiGenerationCandidateSchema>;
+export type AiGenerationResponse = z.infer<typeof aiGenerationResponseSchema>;
+export type ApplyAiCandidateValues = z.infer<typeof applyAiCandidateSchema>;

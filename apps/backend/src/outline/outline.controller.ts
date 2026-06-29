@@ -325,6 +325,18 @@ export class OutlineController {
     return this.outlineService.generateContentStream(id, userId);
   }
 
+  @Post(':id/generate-job')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '创建大纲后台生成任务' })
+  @ApiParam({ name: 'id', description: '大纲ID' })
+  @ApiResponse({ status: 201, description: '任务创建成功' })
+  @ApiUnauthorizedResponse({ description: '未授权' })
+  @ApiResponse({ status: 404, description: '大纲不存在' })
+  createGenerateJob(@Param('id', ParseIntPipe) id: number, @Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.outlineService.createOutlineGenerateJob(id, userId);
+  }
+
   /**
    * 获取大纲关联的所有设定
    */

@@ -13,6 +13,9 @@ import { ManuscriptsModule } from './manuscripts/manuscripts.module';
 import { SearchModule } from './search/search.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { ExportModule } from './export/export.module';
+import { AiJobsModule } from './ai-jobs/ai-jobs.module';
+import { AI_JOB_PROCESSORS, AiJobsWorkerService } from './ai-jobs/ai-jobs-worker.service';
+import { AppAiJobProcessorsService } from './ai-jobs/app-ai-job-processors.service';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RateLimitMiddleware } from './common/rate-limit.middleware';
@@ -40,9 +43,16 @@ import { SecurityHeadersMiddleware } from './common/security-headers.middleware'
     SearchModule,
     WorkspaceModule,
     ExportModule,
+    AiJobsModule,
   ],
   controllers: [AppController],
   providers: [
+    AppAiJobProcessorsService,
+    {
+      provide: AI_JOB_PROCESSORS,
+      useExisting: AppAiJobProcessorsService,
+    },
+    AiJobsWorkerService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

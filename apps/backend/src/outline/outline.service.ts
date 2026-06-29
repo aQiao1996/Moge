@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CreateOutlineValues, UpdateOutlineValues, Outline } from '@moge/types';
 import { BaseService } from '../base/base.service';
 import { AIService } from '../ai/ai.service';
-import type { AIStreamingDebugInfo } from '../ai/ai.service';
+import type { AIModelRuntimeConfig, AIProvider, AIStreamingDebugInfo } from '../ai/ai.service';
 import { Observable, Subject } from 'rxjs';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
@@ -19,7 +19,8 @@ import { SensitiveFilterService, FilterLevel } from '../sensitive-filter/sensiti
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompts/outline.prompt';
 import { MarkdownParserService, ParsedOutlineStructure } from './markdown-parser.service';
 import type { OutlineChapterInput, OutlineVolumeInput } from './outline.schemas';
-import { Prisma } from '../../generated/prisma';
+import { AiTaskType, Prisma } from '../../generated/prisma';
+import { AiJobsService } from '../ai-jobs/ai-jobs.service';
 
 interface FindAllOptions {
   pageNum?: number;
@@ -56,12 +57,49 @@ interface NormalizedOutlineStreamError {
 
 type OutlineDbClient = PrismaService | Prisma.TransactionClient;
 
+interface OutlineAiConfig {
+  provider: AIProvider;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  defaultOutlinePresetId?: number | null;
+}
+
+interface OutlinePromptInput extends Record<string, string> {
+  project_name: string;
+  name: string;
+  type: string;
+  era: string;
+  tags: string;
+  remark: string;
+  volumes: string;
+  chaptersPerVolume: string;
+  scenesPerChapter: string;
+  settingsContext: string;
+  settings_context: string;
+}
+
+interface ResolvedOutlinePrompt {
+  presetId: number | null;
+  presetVersion: number | null;
+  systemPrompt: string;
+  userPrompt: string;
+}
+
 interface TransactionLock {
   namespace: number;
   scopeId: number;
 }
 
 const OUTLINE_LOCK_NAMESPACE = 2001;
+const DEFAULT_OUTLINE_AI_CONFIG: OutlineAiConfig = {
+  provider: 'openai_compatible',
+  model: 'gpt-5.2',
+  temperature: 0.6,
+  maxTokens: 2000,
+  defaultOutlinePresetId: null,
+};
+const SYSTEM_DEFAULT_OUTLINE_PROMPT_CODE = 'system-default-outline-generate';
 
 @Injectable()
 export class OutlineService extends BaseService {
@@ -73,7 +111,8 @@ export class OutlineService extends BaseService {
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
     private readonly sensitiveFilter: SensitiveFilterService,
-    private readonly markdownParser: MarkdownParserService
+    private readonly markdownParser: MarkdownParserService,
+    private readonly aiJobsService: AiJobsService
   ) {
     super();
   }
@@ -369,6 +408,30 @@ export class OutlineService extends BaseService {
     return normalizedIds;
   }
 
+  private async assertProjectAccessible(userId: string, projectId: number): Promise<void> {
+    const numericUserId = this.parseUserId(userId);
+    const ownedProject = await this.prisma.projects.findFirst({
+      where: { id: projectId, userId: numericUserId },
+    });
+
+    if (ownedProject) {
+      return;
+    }
+
+    const membership = await this.prisma.project_members.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId: numericUserId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('项目不存在或无权限访问');
+    }
+  }
+
   /**
    * 流式生成大纲内容
    * @param id 大纲 ID
@@ -622,6 +685,110 @@ export class OutlineService extends BaseService {
         subject.complete();
       }
     }
+  }
+
+  async generateContentForJob(outlineId: number, userId: string): Promise<string> {
+    this.logger.debug(`[后台生成开始] 大纲ID: ${outlineId}, 用户ID: ${userId}`);
+
+    const outline = await this.prisma.outline.findUnique({
+      where: { id: outlineId },
+      include: {
+        project: {
+          include: {
+            aiConfig: true,
+          },
+        },
+      },
+    });
+
+    if (!outline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    if (outline.userId !== this.parseUserId(userId)) {
+      throw new ForbiddenException('无权访问此大纲');
+    }
+
+    const settings = await this.getOutlineSettings(outlineId, userId);
+    const settingsContext = this.buildSettingsContext(settings);
+    const aiConfig = this.toOutlineAiConfig(outline.project?.aiConfig);
+    const promptInput = {
+      project_name: outline.project?.name ?? outline.name,
+      name: outline.name,
+      type: outline.type,
+      era: outline.era ?? '',
+      tags: outline.tags.join(', '),
+      remark: outline.remark ?? '',
+      volumes: '3',
+      chaptersPerVolume: '10',
+      scenesPerChapter: '3',
+      settingsContext,
+      settings_context: settingsContext,
+    };
+    const resolvedPrompt = await this.resolveOutlinePromptPreset({
+      aiConfig,
+      userId: this.parseUserId(userId),
+      projectId: outline.projectId,
+      input: promptInput,
+    });
+    const model = this.aiService.getConfiguredStreamingModel(this.toAiModelRuntimeConfig(aiConfig));
+    const prompt = this.createPromptTemplate(
+      resolvedPrompt.systemPrompt,
+      resolvedPrompt.userPrompt
+    );
+    const chain = prompt.pipe(model).pipe(new StringOutputParser());
+    const startedAt = Date.now();
+    const stream = await chain.stream({
+      ...promptInput,
+      volumes: Number(promptInput.volumes),
+      chaptersPerVolume: Number(promptInput.chaptersPerVolume),
+      scenesPerChapter: Number(promptInput.scenesPerChapter),
+    });
+
+    let content = '';
+    for await (const chunk of stream) {
+      content += chunk;
+    }
+
+    await this.autoSaveAndParseContent(outlineId, userId, content);
+    await this.prisma.ai_generation_records.create({
+      data: {
+        projectId: outline.projectId,
+        outlineId,
+        taskType: AiTaskType.OUTLINE_GENERATE,
+        provider: aiConfig.provider,
+        model: aiConfig.model,
+        presetId: resolvedPrompt.presetId,
+        presetVersion: resolvedPrompt.presetVersion,
+        requestPayload: {
+          outlineId,
+        },
+        contextSnapshot: {
+          settingsContext,
+          systemPrompt: resolvedPrompt.systemPrompt,
+          userPrompt: resolvedPrompt.userPrompt,
+        },
+        outputText: content,
+        latencyMs: Date.now() - startedAt,
+        status: 'SUCCESS',
+      },
+    });
+    this.logger.debug(`[后台生成完成] 大纲ID: ${outlineId}, 内容长度: ${content.length}`);
+
+    return content;
+  }
+
+  async processOutlineGenerateJob(job: { userId?: number; outlineId?: number | null }) {
+    if (!job.userId || !job.outlineId) {
+      throw new BadRequestException('大纲生成任务缺少必要参数');
+    }
+
+    const content = await this.generateContentForJob(job.outlineId, String(job.userId));
+
+    return {
+      outlineId: job.outlineId,
+      contentLength: content.length,
+    };
   }
 
   private buildStreamErrorPayload(
@@ -946,11 +1113,115 @@ export class OutlineService extends BaseService {
     return parts.length > 0 ? parts.join('\n') : '暂无关联设定，请根据基础信息自由发挥。';
   }
 
-  private createPromptTemplate() {
+  createPromptTemplate(systemPrompt = SYSTEM_PROMPT, userPrompt = USER_PROMPT) {
     return ChatPromptTemplate.fromMessages([
-      ['system', SYSTEM_PROMPT],
-      ['human', USER_PROMPT],
+      ['system', systemPrompt],
+      ['human', userPrompt],
     ]);
+  }
+
+  private renderPromptTemplate(template: string, values: Record<string, string>): string {
+    return template.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (_match, key: string) => {
+      return values[key] ?? '';
+    });
+  }
+
+  private toOutlineAiConfig(
+    config?: {
+      provider?: string | null;
+      model?: string | null;
+      temperature?: { toString(): string } | number | string | null;
+      maxTokens?: number | null;
+      defaultOutlinePresetId?: number | null;
+    } | null
+  ): OutlineAiConfig {
+    if (!config) {
+      return DEFAULT_OUTLINE_AI_CONFIG;
+    }
+
+    return {
+      provider: this.toAiProvider(config.provider),
+      model: config.model ?? DEFAULT_OUTLINE_AI_CONFIG.model,
+      temperature:
+        config.temperature === undefined || config.temperature === null
+          ? DEFAULT_OUTLINE_AI_CONFIG.temperature
+          : Number(config.temperature),
+      maxTokens: config.maxTokens ?? DEFAULT_OUTLINE_AI_CONFIG.maxTokens,
+      defaultOutlinePresetId: config.defaultOutlinePresetId ?? null,
+    };
+  }
+
+  private toAiProvider(provider?: string | null): AIProvider {
+    if (
+      provider === 'gemini' ||
+      provider === 'openai' ||
+      provider === 'moonshot' ||
+      provider === 'openai_compatible'
+    ) {
+      return provider;
+    }
+
+    return DEFAULT_OUTLINE_AI_CONFIG.provider;
+  }
+
+  private toAiModelRuntimeConfig(config: OutlineAiConfig): AIModelRuntimeConfig {
+    return {
+      provider: config.provider,
+      model: config.model,
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+    };
+  }
+
+  private async resolveOutlinePromptPreset(params: {
+    aiConfig: OutlineAiConfig;
+    userId: number;
+    projectId?: number | null;
+    input: OutlinePromptInput;
+  }): Promise<ResolvedOutlinePrompt> {
+    const defaultPresetId = params.aiConfig.defaultOutlinePresetId;
+    const preset = await this.prisma.ai_prompt_presets.findFirst({
+      where: defaultPresetId
+        ? {
+            id: defaultPresetId,
+            taskType: AiTaskType.OUTLINE_GENERATE,
+            isEnabled: true,
+            OR: [
+              { scope: 'SYSTEM' },
+              { scope: 'USER', createdBy: params.userId },
+              { scope: 'PROJECT', projectId: params.projectId ?? null },
+            ],
+          }
+        : {
+            code: SYSTEM_DEFAULT_OUTLINE_PROMPT_CODE,
+            taskType: AiTaskType.OUTLINE_GENERATE,
+            scope: 'SYSTEM',
+            isEnabled: true,
+          },
+      include: {
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
+      },
+    });
+    const version = preset?.versions[0];
+
+    if (!preset || !version) {
+      return {
+        presetId: null,
+        presetVersion: null,
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt: USER_PROMPT,
+      };
+    }
+
+    return {
+      presetId: preset.id,
+      presetVersion: version.version,
+      systemPrompt: this.renderPromptTemplate(version.systemPrompt, params.input),
+      userPrompt: this.renderPromptTemplate(version.userPromptTemplate, params.input),
+    };
   }
 
   /**
@@ -994,7 +1265,19 @@ export class OutlineService extends BaseService {
   }
 
   async create(userId: string, data: CreateOutlineValues) {
-    const { name, type, era, conflict, tags, remark, characters, systems, worlds, misc } = data;
+    const {
+      name,
+      type,
+      era,
+      conflict,
+      tags,
+      remark,
+      projectId,
+      characters,
+      systems,
+      worlds,
+      misc,
+    } = data;
 
     // 用户输入敏感词检查 - 使用创作模式，允许文学创��用词
     const inputText = `${name} ${type} ${era} ${conflict || ''} ${tags?.join(' ') || ''} ${remark || ''}`;
@@ -1008,6 +1291,10 @@ export class OutlineService extends BaseService {
       );
     }
 
+    if (projectId !== undefined) {
+      await this.assertProjectAccessible(userId, projectId);
+    }
+
     const outline = await this.prisma.outline.create({
       data: {
         name,
@@ -1016,6 +1303,15 @@ export class OutlineService extends BaseService {
         conflict,
         tags,
         remark,
+        ...(projectId !== undefined
+          ? {
+              project: {
+                connect: {
+                  id: projectId,
+                },
+              },
+            }
+          : {}),
         characters: characters || [],
         systems: systems || [],
         worlds: worlds || [],
@@ -1034,6 +1330,34 @@ export class OutlineService extends BaseService {
       id: outline.id.toString(),
       userId: outline.userId.toString(),
     };
+  }
+
+  async createOutlineGenerateJob(outlineId: number, userId: string) {
+    const outline = await this.prisma.outline.findUnique({
+      where: { id: outlineId },
+    });
+
+    if (!outline) {
+      throw new NotFoundException('大纲不存在');
+    }
+
+    const numericUserId = this.parseUserId(userId);
+    if (outline.userId !== numericUserId) {
+      throw new ForbiddenException('无权访问此大纲');
+    }
+
+    return this.aiJobsService.createJob(numericUserId, {
+      projectId: outline.projectId,
+      outlineId,
+      taskType: AiTaskType.OUTLINE_GENERATE,
+      inputPayload: {
+        outlineId,
+      },
+      contextMeta: {
+        source: 'outline.generate',
+      },
+      maxRetries: 2,
+    });
   }
 
   async findAll(userId: string, options: FindAllOptions = {}) {

@@ -12,14 +12,34 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Wand2, Sparkles, Expand, Loader2, Database } from 'lucide-react';
+import { Wand2, Sparkles, Expand, Loader2, Database, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import type {
+  AiCandidateApplyMode,
+  AiGenerationResponse,
+  AiPromptPreset,
+  AiTaskOverrideConfig,
+  AiTaskType,
+} from '@moge/types';
+import { getProjectPromptPresets, type ProjectAiConfig } from '@/api/projects.api';
 import {
   aiContinueChapter,
   aiPolishText,
   aiExpandText,
+  applyAiCandidate,
+  discardAiCandidate,
   getManuscriptSettings,
   type ManuscriptSettingsDetail,
 } from '../api/client';
@@ -33,6 +53,10 @@ export interface AIAssistPanelProps {
    * 当前文稿 ID
    */
   manuscriptId: number;
+  /**
+   * 当前项目 ID，用于加载项目 Prompt 预设
+   */
+  projectId?: number;
   /**
    * 当前章节内容
    */
@@ -55,9 +79,108 @@ export interface AIAssistPanelProps {
   onExpand?: (expandedText: string) => void;
 }
 
+type ManuscriptAiTab = 'continue' | 'polish' | 'expand';
+type OverrideForm = {
+  provider: ProjectAiConfig['provider'] | 'inherit';
+  model: string;
+  temperature: string;
+  maxTokens: string;
+  contextLengthStrategy: ProjectAiConfig['contextLengthStrategy'] | 'inherit';
+  defaultPresetId: string;
+};
+
+const defaultOverrideForm: OverrideForm = {
+  provider: 'inherit',
+  model: '',
+  temperature: '',
+  maxTokens: '',
+  contextLengthStrategy: 'inherit',
+  defaultPresetId: 'inherit',
+};
+
+const aiProviderOptions: Array<{ value: ProjectAiConfig['provider']; label: string }> = [
+  { value: 'openai_compatible', label: 'OpenAI 兼容' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'moonshot', label: 'Moonshot' },
+  { value: 'gemini', label: 'Gemini' },
+];
+
+const contextStrategyOptions: Array<{
+  value: ProjectAiConfig['contextLengthStrategy'];
+  label: string;
+}> = [
+  { value: 'COMPACT', label: '紧凑' },
+  { value: 'BALANCED', label: '均衡' },
+  { value: 'EXPANDED', label: '扩展' },
+];
+
+const tabTaskTypeMap: Record<ManuscriptAiTab, AiTaskType> = {
+  continue: 'MANUSCRIPT_CONTINUE',
+  polish: 'MANUSCRIPT_POLISH',
+  expand: 'MANUSCRIPT_EXPAND',
+};
+
+function buildOverrideConfig(form: OverrideForm): AiTaskOverrideConfig | undefined {
+  const overrideConfig: AiTaskOverrideConfig = {};
+  const model = form.model.trim();
+
+  if (form.provider !== 'inherit') {
+    overrideConfig.provider = form.provider;
+  }
+
+  if (model) {
+    overrideConfig.model = model;
+  }
+
+  if (form.temperature.trim()) {
+    overrideConfig.temperature = Number(form.temperature);
+  }
+
+  if (form.maxTokens.trim()) {
+    overrideConfig.maxTokens = Number(form.maxTokens);
+  }
+
+  if (form.contextLengthStrategy !== 'inherit') {
+    overrideConfig.contextLengthStrategy = form.contextLengthStrategy;
+  }
+
+  if (form.defaultPresetId !== 'inherit') {
+    overrideConfig.defaultPresetId = Number(form.defaultPresetId);
+  }
+
+  return Object.keys(overrideConfig).length > 0 ? overrideConfig : undefined;
+}
+
+function validateOverrideConfig(overrideConfig: AiTaskOverrideConfig | undefined): boolean {
+  if (!overrideConfig) {
+    return true;
+  }
+
+  if (
+    overrideConfig.temperature !== undefined &&
+    (!Number.isFinite(overrideConfig.temperature) ||
+      overrideConfig.temperature < 0 ||
+      overrideConfig.temperature > 2)
+  ) {
+    toast.error('温度需在 0 到 2 之间');
+    return false;
+  }
+
+  if (
+    overrideConfig.maxTokens !== undefined &&
+    (!Number.isInteger(overrideConfig.maxTokens) || overrideConfig.maxTokens <= 0)
+  ) {
+    toast.error('最大 token 必须是大于 0 的整数');
+    return false;
+  }
+
+  return true;
+}
+
 export default function AIAssistPanel({
   chapterId,
   manuscriptId,
+  projectId,
   content,
   selectedText,
   onContinue,
@@ -65,11 +188,20 @@ export default function AIAssistPanel({
   onExpand,
 }: AIAssistPanelProps) {
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [generatedText, setGeneratedText] = useState('');
+  const [candidateResponse, setCandidateResponse] = useState<AiGenerationResponse | null>(null);
   const [settings, setSettings] = useState<ManuscriptSettingsDetail | null>(null);
-  const [activeTab, setActiveTab] = useState<'continue' | 'polish' | 'expand'>('continue');
+  const [promptPresets, setPromptPresets] = useState<AiPromptPreset[]>([]);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideForm, setOverrideForm] = useState<OverrideForm>(defaultOverrideForm);
+  const [activeTab, setActiveTab] = useState<ManuscriptAiTab>('continue');
   const promptInputId = useId();
+  const candidate = candidateResponse?.candidate;
+  const effectiveConfig = candidateResponse?.effectiveConfig;
+  const contextSources = candidateResponse?.contextSources ?? [];
+  const generatedText = candidate?.content ?? '';
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -84,6 +216,31 @@ export default function AIAssistPanel({
     void loadSettings();
   }, [manuscriptId]);
 
+  useEffect(() => {
+    if (!projectId) {
+      setPromptPresets([]);
+      return;
+    }
+
+    const loadPromptPresets = async () => {
+      try {
+        const presets = await getProjectPromptPresets(projectId);
+        setPromptPresets(presets);
+      } catch (error) {
+        console.error('加载 Prompt 预设失败:', error);
+        setPromptPresets([]);
+      }
+    };
+
+    void loadPromptPresets();
+  }, [projectId]);
+
+  useEffect(() => {
+    setOverrideForm((current) =>
+      current.defaultPresetId === 'inherit' ? current : { ...current, defaultPresetId: 'inherit' }
+    );
+  }, [activeTab]);
+
   const contextSummary = useMemo(() => {
     if (!settings) {
       return null;
@@ -97,6 +254,31 @@ export default function AIAssistPanel({
     ];
   }, [settings]);
 
+  const promptPresetOptions = useMemo(
+    () =>
+      promptPresets.filter(
+        (preset) => preset.taskType === tabTaskTypeMap[activeTab] && preset.isEnabled
+      ),
+    [activeTab, promptPresets]
+  );
+
+  const activeOverrideCount = useMemo(() => {
+    return Object.values(overrideForm).filter((value) => value.trim() && value !== 'inherit')
+      .length;
+  }, [overrideForm]);
+
+  const updateOverrideFormField = <K extends keyof OverrideForm>(
+    key: K,
+    value: OverrideForm[K]
+  ) => {
+    setOverrideForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const getValidatedOverrideConfig = () => {
+    const overrideConfig = buildOverrideConfig(overrideForm);
+    return validateOverrideConfig(overrideConfig) ? overrideConfig : null;
+  };
+
   /**
    * 处理 AI 续写
    */
@@ -107,15 +289,17 @@ export default function AIAssistPanel({
     }
 
     setLoading(true);
-    setGeneratedText('');
+    setCandidateResponse(null);
 
     try {
-      const response = await aiContinueChapter(chapterId, prompt || undefined);
-      setGeneratedText(response.data.text);
-      if (onContinue) {
-        onContinue(response.data.text);
+      const overrideConfig = getValidatedOverrideConfig();
+      if (overrideConfig === null) {
+        return;
       }
-      toast.success('AI 续写完成');
+
+      const response = await aiContinueChapter(chapterId, prompt || undefined, overrideConfig);
+      setCandidateResponse(response.data);
+      toast.success('AI 续写已生成候选');
     } catch (error) {
       console.error('AI 续写失败:', error);
     } finally {
@@ -134,15 +318,22 @@ export default function AIAssistPanel({
     }
 
     setLoading(true);
-    setGeneratedText('');
+    setCandidateResponse(null);
 
     try {
-      const response = await aiPolishText(chapterId, textToPolish, prompt || undefined);
-      setGeneratedText(response.data.text);
-      if (onPolish) {
-        onPolish(response.data.text);
+      const overrideConfig = getValidatedOverrideConfig();
+      if (overrideConfig === null) {
+        return;
       }
-      toast.success('AI 润色完成');
+
+      const response = await aiPolishText(
+        chapterId,
+        textToPolish,
+        prompt || undefined,
+        overrideConfig
+      );
+      setCandidateResponse(response.data);
+      toast.success('AI 润色已生成候选');
     } catch (error) {
       console.error('AI 润色失败:', error);
     } finally {
@@ -161,15 +352,22 @@ export default function AIAssistPanel({
     }
 
     setLoading(true);
-    setGeneratedText('');
+    setCandidateResponse(null);
 
     try {
-      const response = await aiExpandText(chapterId, textToExpand, prompt || undefined);
-      setGeneratedText(response.data.text);
-      if (onExpand) {
-        onExpand(response.data.text);
+      const overrideConfig = getValidatedOverrideConfig();
+      if (overrideConfig === null) {
+        return;
       }
-      toast.success('AI 扩写完成');
+
+      const response = await aiExpandText(
+        chapterId,
+        textToExpand,
+        prompt || undefined,
+        overrideConfig
+      );
+      setCandidateResponse(response.data);
+      toast.success('AI 扩写已生成候选');
     } catch (error) {
       console.error('AI 扩写失败:', error);
     } finally {
@@ -180,29 +378,71 @@ export default function AIAssistPanel({
   /**
    * 插入生成的文本到编辑器
    */
-  const handleInsert = () => {
-    if (!generatedText) return;
+  const handleInsert = async () => {
+    const candidateId = candidate?.id;
+    const candidateContent = generatedText;
+    if (candidateId === undefined || !candidateContent) return;
 
-    switch (activeTab) {
-      case 'continue':
-        if (onContinue) {
-          onContinue(generatedText);
-        }
-        break;
-      case 'polish':
-        if (onPolish) {
-          onPolish(generatedText);
-        }
-        break;
-      case 'expand':
-        if (onExpand) {
-          onExpand(generatedText);
-        }
-        break;
+    setApplying(true);
+
+    try {
+      const hasSelection = Boolean(selectedText?.trim());
+      const applyMode: AiCandidateApplyMode =
+        activeTab === 'continue'
+          ? 'INSERT_TAIL'
+          : hasSelection
+            ? 'REPLACE_SELECTION'
+            : 'OVERWRITE_DRAFT';
+      await applyAiCandidate(candidateId, {
+        mode: applyMode,
+        selectedText: applyMode === 'REPLACE_SELECTION' ? selectedText : undefined,
+      });
+
+      switch (activeTab) {
+        case 'continue':
+          if (onContinue) {
+            onContinue(candidateContent);
+          }
+          break;
+        case 'polish':
+          if (onPolish) {
+            onPolish(candidateContent);
+          }
+          break;
+        case 'expand':
+          if (onExpand) {
+            onExpand(candidateContent);
+          }
+          break;
+      }
+
+      setCandidateResponse(null);
+      toast.success('已采纳到编辑器');
+    } catch (error) {
+      console.error('采纳 AI 候选失败:', error);
+    } finally {
+      setApplying(false);
     }
+  };
 
-    setGeneratedText('');
-    toast.success('已插入到编辑器');
+  /**
+   * 丢弃当前 AI 候选
+   */
+  const handleDiscard = async () => {
+    const candidateId = candidate?.id;
+    if (candidateId === undefined) return;
+
+    setDiscarding(true);
+
+    try {
+      await discardAiCandidate(candidateId);
+      setCandidateResponse(null);
+      toast.success('候选已丢弃');
+    } catch (error) {
+      console.error('丢弃 AI 候选失败:', error);
+    } finally {
+      setDiscarding(false);
+    }
   };
 
   return (
@@ -288,6 +528,142 @@ export default function AIAssistPanel({
         />
       </div>
 
+      <Collapsible open={overrideOpen} onOpenChange={setOverrideOpen} className="mb-4">
+        <CollapsibleTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="w-full justify-between">
+            <span className="flex min-w-0 items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">本次覆盖</span>
+            </span>
+            {activeOverrideCount > 0 && (
+              <Badge variant="secondary" className="ml-2 flex-shrink-0 text-xs">
+                {activeOverrideCount}
+              </Badge>
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-3 space-y-3 rounded-md border border-[var(--moge-card-border)] p-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs text-[var(--moge-text-sub)]">供应商</Label>
+                <Select
+                  value={overrideForm.provider}
+                  onValueChange={(value: OverrideForm['provider']) =>
+                    updateOverrideFormField('provider', value)
+                  }
+                >
+                  <SelectTrigger size="sm" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inherit">继承项目</SelectItem>
+                    {aiProviderOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-[var(--moge-text-sub)]">模型</Label>
+                <Input
+                  value={overrideForm.model}
+                  onChange={(event) => updateOverrideFormField('model', event.target.value)}
+                  placeholder="继承项目模型"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-[var(--moge-text-sub)]">温度</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.01"
+                  value={overrideForm.temperature}
+                  onChange={(event) => updateOverrideFormField('temperature', event.target.value)}
+                  placeholder="继承"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-[var(--moge-text-sub)]">最大 token</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={overrideForm.maxTokens}
+                  onChange={(event) => updateOverrideFormField('maxTokens', event.target.value)}
+                  placeholder="继承"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-[var(--moge-text-sub)]">上下文</Label>
+                <Select
+                  value={overrideForm.contextLengthStrategy}
+                  onValueChange={(value: OverrideForm['contextLengthStrategy']) =>
+                    updateOverrideFormField('contextLengthStrategy', value)
+                  }
+                >
+                  <SelectTrigger size="sm" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inherit">继承项目</SelectItem>
+                    {contextStrategyOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {projectId && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-[var(--moge-text-sub)]">Prompt 预设</Label>
+                  <Select
+                    value={overrideForm.defaultPresetId}
+                    onValueChange={(value) => updateOverrideFormField('defaultPresetId', value)}
+                  >
+                    <SelectTrigger size="sm" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="inherit">继承项目</SelectItem>
+                      {promptPresetOptions.map((preset) => (
+                        <SelectItem key={preset.id} value={String(preset.id)}>
+                          {preset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {activeOverrideCount > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs"
+                onClick={() => setOverrideForm(defaultOverrideForm)}
+              >
+                清除覆盖
+              </Button>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
       {/* 选中文本提示 */}
       {selectedText && (
         <div className="mb-4">
@@ -328,10 +704,38 @@ export default function AIAssistPanel({
       {generatedText && (
         <div className="flex-1 overflow-hidden">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--moge-text-sub)]">生成结果</span>
-            <Button size="sm" onClick={handleInsert}>
-              插入到编辑器
-            </Button>
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-[var(--moge-text-sub)]">AI 候选</span>
+              {effectiveConfig && (
+                <p className="truncate text-xs text-[var(--moge-text-muted)]">
+                  {effectiveConfig.model} · {contextSources.filter((item) => item.included).length}{' '}
+                  个上下文来源
+                </p>
+              )}
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void handleDiscard();
+                }}
+                disabled={discarding || applying}
+              >
+                {discarding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                丢弃
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  void handleInsert();
+                }}
+                disabled={applying || discarding}
+              >
+                {applying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                采纳到编辑器
+              </Button>
+            </div>
           </div>
           <div className="h-full overflow-y-auto rounded-md border border-[var(--moge-card-border)] bg-[var(--moge-input-bg)] p-3">
             <p className="whitespace-pre-wrap text-sm text-[var(--moge-text-main)]">

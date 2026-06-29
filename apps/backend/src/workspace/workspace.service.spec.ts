@@ -14,6 +14,26 @@ interface MockPrismaService extends PrismaService {
   manuscript_chapter_content_version: PrismaService['manuscript_chapter_content_version'] & {
     findMany: jest.Mock<Promise<[]>, []>;
   };
+  projects: PrismaService['projects'] & {
+    findMany: jest.Mock;
+    count: jest.Mock;
+  };
+  outline: PrismaService['outline'] & {
+    findMany: jest.Mock;
+  };
+  manuscripts: PrismaService['manuscripts'] & {
+    findMany: jest.Mock;
+    aggregate: jest.Mock;
+    count: jest.Mock;
+  };
+  ai_generation_records: PrismaService['ai_generation_records'] & {
+    findMany: jest.Mock;
+    count: jest.Mock;
+    aggregate: jest.Mock;
+  };
+  ai_generation_candidates: PrismaService['ai_generation_candidates'] & {
+    count: jest.Mock;
+  };
 }
 
 interface WorkspaceRecord {
@@ -87,6 +107,49 @@ describe('WorkspaceService', () => {
       manuscript_chapter_content_version: {
         findMany: jest.fn(() => Promise.resolve([])),
       },
+      projects: {
+        findMany: jest.fn((args?: { select?: { id?: boolean; name?: boolean } }) => {
+          if (args?.select?.name) {
+            return Promise.resolve([{ id: 12, name: '长夜项目' }]);
+          }
+
+          return Promise.resolve([]);
+        }),
+        count: jest.fn(() => Promise.resolve(0)),
+      },
+      outline: {
+        findMany: jest.fn(() => Promise.resolve([])),
+      },
+      manuscripts: {
+        findMany: jest.fn(() => Promise.resolve([])),
+        aggregate: jest.fn(() => Promise.resolve({ _sum: { totalWords: 0 } })),
+        count: jest.fn(() => Promise.resolve(0)),
+      },
+      ai_generation_records: {
+        findMany: jest.fn(() =>
+          Promise.resolve([
+            {
+              id: 31,
+              projectId: 12,
+              taskType: 'MANUSCRIPT_CONTINUE',
+              provider: 'moonshot',
+              model: 'moonshot-v1-32k',
+              status: 'SUCCESS',
+              latencyMs: 1200,
+              createdAt: new Date('2026-06-26T01:00:00.000Z'),
+            },
+          ])
+        ),
+        count: jest.fn((args?: { where?: { status?: string } }) =>
+          Promise.resolve(args?.where?.status === 'FAILED' ? 1 : 4)
+        ),
+        aggregate: jest.fn(() => Promise.resolve({ _avg: { latencyMs: 900 } })),
+      },
+      ai_generation_candidates: {
+        count: jest.fn((args?: { where?: { applyStatus?: string } }) =>
+          Promise.resolve(args?.where?.applyStatus === 'APPLIED' ? 2 : 5)
+        ),
+      },
     } as unknown as MockPrismaService;
 
     service = new WorkspaceService(prisma);
@@ -123,5 +186,48 @@ describe('WorkspaceService', () => {
 
     const deleted = await service.deleteIdea(userId, idea.id);
     expect(deleted.ideas).toEqual([]);
+  });
+
+  it('includes AI usage overview in workspace summary', async () => {
+    const summary = await service.getWorkspaceSummary(userId);
+
+    expect(summary.aiUsage).toEqual({
+      totalCalls: 4,
+      successCount: 4,
+      failedCount: 1,
+      averageLatencyMs: 900,
+      candidateCount: 5,
+      appliedCandidateCount: 2,
+      recentRecords: [
+        {
+          id: 31,
+          projectId: 12,
+          projectName: '长夜项目',
+          taskType: 'MANUSCRIPT_CONTINUE',
+          provider: 'moonshot',
+          model: 'moonshot-v1-32k',
+          status: 'SUCCESS',
+          latencyMs: 1200,
+          createdAt: '2026-06-26T01:00:00.000Z',
+        },
+      ],
+    });
+    expect(prisma.ai_generation_records.findMany).toHaveBeenCalledWith({
+      where: {
+        projectId: { in: [12] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        projectId: true,
+        taskType: true,
+        provider: true,
+        model: true,
+        status: true,
+        latencyMs: true,
+        createdAt: true,
+      },
+    });
   });
 });

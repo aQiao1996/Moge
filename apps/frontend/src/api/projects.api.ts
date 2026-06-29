@@ -6,6 +6,8 @@ import { get, post, put, del } from '@/lib/request';
 import type {
   AIProviderValue,
   AiContextLengthStrategyValue,
+  AiPromptPreset,
+  AiTaskType,
   AiResultApplyStrategyValue,
   ProjectMemberRoleValue,
   UpdateProjectAiConfigValues,
@@ -109,6 +111,87 @@ export interface ProjectMember {
   updatedAt: string;
 }
 
+export interface ProjectMemoryItem {
+  id: number;
+  projectId: number;
+  category: string;
+  title: string;
+  content: string;
+  priority: number;
+  sourceType: string;
+  sourceId?: number | null;
+  status: 'ACTIVE' | 'ARCHIVED';
+  createdBy?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectKnowledgeDocument {
+  id: number;
+  projectId: number;
+  title: string;
+  documentType: string;
+  content: string;
+  source: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  createdBy?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type UpdateProjectAiConfigPayload = Omit<
+  UpdateProjectAiConfigValues,
+  | 'defaultContinuePresetId'
+  | 'defaultPolishPresetId'
+  | 'defaultExpandPresetId'
+  | 'defaultOutlinePresetId'
+> & {
+  defaultContinuePresetId?: number | null;
+  defaultPolishPresetId?: number | null;
+  defaultExpandPresetId?: number | null;
+  defaultOutlinePresetId?: number | null;
+};
+
+export interface CreateProjectPromptPresetPayload {
+  code: string;
+  name: string;
+  taskType: AiTaskType;
+  description?: string;
+  systemPrompt: string;
+  userPromptTemplate: string;
+  outputFormat?: string;
+  notes?: string;
+}
+
+export interface UpdateProjectPromptPresetPayload {
+  code?: string;
+  name?: string;
+  description?: string;
+}
+
+export interface AppendProjectPromptPresetVersionPayload {
+  systemPrompt: string;
+  userPromptTemplate: string;
+  outputFormat?: string;
+  notes?: string;
+}
+
+export interface ProjectMemoryItemPayload {
+  category: string;
+  title: string;
+  content: string;
+  priority?: number;
+  sourceType?: string;
+  sourceId?: number | null;
+}
+
+export interface ProjectKnowledgeDocumentPayload {
+  title: string;
+  documentType: string;
+  content: string;
+  source?: string;
+}
+
 /**
  * 获取用户的所有项目
  * @returns 项目列表
@@ -196,11 +279,173 @@ export const getProjectAiConfig = async (id: number): Promise<ProjectAiConfig> =
   return response.data;
 };
 
+export const getProjectPromptPresets = async (id: number): Promise<AiPromptPreset[]> => {
+  const response = await get<AiPromptPreset[]>(`/projects/${id}/ai-prompt-presets`);
+  return response.data || [];
+};
+
+export const createProjectPromptPreset = async (
+  id: number,
+  data: CreateProjectPromptPresetPayload
+): Promise<AiPromptPreset> => {
+  const response = await post<AiPromptPreset>(`/projects/${id}/ai-prompt-presets`, data);
+  return response.data;
+};
+
+export const createUserPromptPreset = async (
+  id: number,
+  data: CreateProjectPromptPresetPayload
+): Promise<AiPromptPreset> => {
+  const response = await post<AiPromptPreset>(`/projects/${id}/ai-prompt-presets/user`, data);
+  return response.data;
+};
+
+export const updateProjectPromptPreset = async (
+  id: number,
+  presetId: number,
+  data: UpdateProjectPromptPresetPayload
+): Promise<AiPromptPreset> => {
+  const response = await put<AiPromptPreset>(`/projects/${id}/ai-prompt-presets/${presetId}`, data);
+  return response.data;
+};
+
+export const updateUserPromptPreset = async (
+  id: number,
+  presetId: number,
+  data: UpdateProjectPromptPresetPayload
+): Promise<AiPromptPreset> => {
+  const response = await put<AiPromptPreset>(
+    `/projects/${id}/ai-prompt-presets/user/${presetId}`,
+    data
+  );
+  return response.data;
+};
+
+export const appendProjectPromptPresetVersion = async (
+  id: number,
+  presetId: number,
+  data: AppendProjectPromptPresetVersionPayload
+): Promise<AiPromptPreset> => {
+  const response = await post<AiPromptPreset>(
+    `/projects/${id}/ai-prompt-presets/${presetId}/versions`,
+    data
+  );
+  return response.data;
+};
+
+export const appendUserPromptPresetVersion = async (
+  id: number,
+  presetId: number,
+  data: AppendProjectPromptPresetVersionPayload
+): Promise<AiPromptPreset> => {
+  const response = await post<AiPromptPreset>(
+    `/projects/${id}/ai-prompt-presets/user/${presetId}/versions`,
+    data
+  );
+  return response.data;
+};
+
+export const cloneProjectPromptPreset = async (
+  id: number,
+  presetId: number
+): Promise<AiPromptPreset> => {
+  const response = await post<AiPromptPreset>(
+    `/projects/${id}/ai-prompt-presets/${presetId}/clone`
+  );
+  return response.data;
+};
+
+export const disableProjectPromptPreset = async (
+  id: number,
+  presetId: number
+): Promise<AiPromptPreset> => {
+  const response = await del<AiPromptPreset>(`/projects/${id}/ai-prompt-presets/${presetId}`);
+  return response.data;
+};
+
+export const disableUserPromptPreset = async (
+  id: number,
+  presetId: number
+): Promise<AiPromptPreset> => {
+  const response = await del<AiPromptPreset>(`/projects/${id}/ai-prompt-presets/user/${presetId}`);
+  return response.data;
+};
+
 export const updateProjectAiConfig = async (
   id: number,
-  data: UpdateProjectAiConfigValues
+  data: UpdateProjectAiConfigPayload
 ): Promise<ProjectAiConfig> => {
   const response = await put<ProjectAiConfig>(`/projects/${id}/ai-config`, data);
+  return response.data;
+};
+
+export const getProjectMemoryItems = async (id: number): Promise<ProjectMemoryItem[]> => {
+  const response = await get<ProjectMemoryItem[]>(`/projects/${id}/memory`);
+  return response.data || [];
+};
+
+export const createProjectMemoryItem = async (
+  id: number,
+  data: ProjectMemoryItemPayload
+): Promise<ProjectMemoryItem> => {
+  const response = await post<ProjectMemoryItem>(`/projects/${id}/memory`, data);
+  return response.data;
+};
+
+export const updateProjectMemoryItem = async (
+  id: number,
+  memoryId: number,
+  data: Partial<ProjectMemoryItemPayload>
+): Promise<ProjectMemoryItem> => {
+  const response = await put<ProjectMemoryItem>(`/projects/${id}/memory/${memoryId}`, data);
+  return response.data;
+};
+
+export const deleteProjectMemoryItem = async (
+  id: number,
+  memoryId: number
+): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(`/projects/${id}/memory/${memoryId}`);
+  return response.data;
+};
+
+export const getProjectKnowledgeDocuments = async (
+  id: number
+): Promise<ProjectKnowledgeDocument[]> => {
+  const response = await get<ProjectKnowledgeDocument[]>(`/projects/${id}/knowledge-documents`);
+  return response.data || [];
+};
+
+export const createProjectKnowledgeDocument = async (
+  id: number,
+  data: ProjectKnowledgeDocumentPayload
+): Promise<ProjectKnowledgeDocument> => {
+  const response = await post<ProjectKnowledgeDocument>(
+    `/projects/${id}/knowledge-documents`,
+    data
+  );
+  return response.data;
+};
+
+export const updateProjectKnowledgeDocument = async (
+  id: number,
+  documentId: number,
+  data: Partial<ProjectKnowledgeDocumentPayload>
+): Promise<ProjectKnowledgeDocument> => {
+  const response = await put<ProjectKnowledgeDocument>(
+    `/projects/${id}/knowledge-documents/${documentId}`,
+    data
+  );
+  return response.data;
+};
+
+export const deleteProjectKnowledgeDocument = async (
+  id: number,
+  documentId: number
+): Promise<{ message: string }> => {
+  const response = await del<{ message: string }>(
+    `/projects/${id}/knowledge-documents/${documentId}`
+  );
   return response.data;
 };
 

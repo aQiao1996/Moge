@@ -1,6 +1,57 @@
-import { IsString, IsOptional, IsArray, IsInt, IsEnum, Min, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsInt,
+  IsEnum,
+  Min,
+  IsDateString,
+  IsNumber,
+  Max,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { ManuscriptStatus } from '../../generated/prisma';
+import {
+  AiCandidateApplyMode,
+  AiContextLengthStrategy,
+  ManuscriptStatus,
+} from '../../generated/prisma';
+import type { AIProvider } from '../ai/ai.service';
+
+const AI_PROVIDER_VALUES = ['gemini', 'openai', 'moonshot', 'openai_compatible'] as const;
+
+export class ManuscriptAiOverrideConfigDto {
+  @IsOptional()
+  @IsEnum(AI_PROVIDER_VALUES)
+  provider?: AIProvider;
+
+  @IsOptional()
+  @IsString()
+  model?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(2)
+  @Type(() => Number)
+  temperature?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  maxTokens?: number;
+
+  @IsOptional()
+  @IsEnum(AiContextLengthStrategy)
+  contextLengthStrategy?: AiContextLengthStrategy;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  defaultPresetId?: number;
+}
 
 /**
  * 创建文稿 DTO
@@ -189,12 +240,25 @@ export class SaveChapterContentDto {
 }
 
 /**
+ * 保存章节摘要 DTO
+ */
+export class SaveChapterSummaryDto {
+  @IsString()
+  summary: string;
+}
+
+/**
  * AI 续写 DTO
  */
 export class AIContinueDto {
   @IsOptional()
   @IsString()
   customPrompt?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ManuscriptAiOverrideConfigDto)
+  overrideConfig?: ManuscriptAiOverrideConfigDto;
 }
 
 /**
@@ -207,6 +271,11 @@ export class AIPolishDto {
   @IsOptional()
   @IsString()
   customPrompt?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ManuscriptAiOverrideConfigDto)
+  overrideConfig?: ManuscriptAiOverrideConfigDto;
 }
 
 /**
@@ -219,6 +288,23 @@ export class AIExpandDto {
   @IsOptional()
   @IsString()
   customPrompt?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ManuscriptAiOverrideConfigDto)
+  overrideConfig?: ManuscriptAiOverrideConfigDto;
+}
+
+/**
+ * AI 候选采纳 DTO
+ */
+export class ApplyAiCandidateDto {
+  @IsEnum(AiCandidateApplyMode)
+  mode: AiCandidateApplyMode;
+
+  @IsOptional()
+  @IsString()
+  selectedText?: string;
 }
 
 /**

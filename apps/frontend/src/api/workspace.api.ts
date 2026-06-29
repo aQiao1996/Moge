@@ -3,6 +3,7 @@
  */
 
 import request from '@/lib/request';
+import type { AiJob, AiJobStatus } from '@moge/types';
 
 /** 工作台汇总数据类型 */
 export interface WorkspaceSummary {
@@ -35,6 +36,29 @@ export interface WorkspaceSummary {
     projectCount: number;
     manuscriptCount: number;
   };
+  aiUsage: WorkspaceAiUsageOverview;
+}
+
+export interface WorkspaceAiUsageOverview {
+  totalCalls: number;
+  successCount: number;
+  failedCount: number;
+  averageLatencyMs: number | null;
+  candidateCount: number;
+  appliedCandidateCount: number;
+  recentRecords: WorkspaceAiUsageRecord[];
+}
+
+export interface WorkspaceAiUsageRecord {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  taskType: string;
+  provider: string;
+  model: string;
+  status: string;
+  latencyMs: number | null;
+  createdAt: string;
 }
 
 export interface WorkspaceTodo {
@@ -53,6 +77,13 @@ export interface WorkspaceIdea {
 export interface WorkspaceItems {
   todos: WorkspaceTodo[];
   ideas: WorkspaceIdea[];
+}
+
+export type WorkspaceAiJob = AiJob;
+
+export interface GetAiJobsParams {
+  status?: AiJobStatus;
+  limit?: number;
 }
 
 /** 写作统计数据类型 */
@@ -79,10 +110,52 @@ export async function getWritingStats(): Promise<WritingStats> {
 }
 
 /**
+ * 获取 AI 使用概览
+ */
+export async function getAiUsageOverview(): Promise<WorkspaceAiUsageOverview> {
+  const response = await request.get<WorkspaceAiUsageOverview>('/workspace/ai-usage');
+  return response.data;
+}
+
+/**
  * 获取工作台待办和灵感
  */
 export async function getWorkspaceItems(): Promise<WorkspaceItems> {
   const response = await request.get<WorkspaceItems>('/workspace/items');
+  return response.data;
+}
+
+/**
+ * 获取当前用户的 AI 任务列表
+ */
+export async function getAiJobs(params: GetAiJobsParams = {}): Promise<WorkspaceAiJob[]> {
+  const response = await request.get<WorkspaceAiJob[]>('/ai-jobs', {
+    params,
+  });
+  return response.data;
+}
+
+/**
+ * 获取单个 AI 任务
+ */
+export async function getAiJob(id: number): Promise<WorkspaceAiJob> {
+  const response = await request.get<WorkspaceAiJob>(`/ai-jobs/${id}`);
+  return response.data;
+}
+
+/**
+ * 取消 AI 任务
+ */
+export async function cancelAiJob(id: number): Promise<WorkspaceAiJob> {
+  const response = await request.post<WorkspaceAiJob>(`/ai-jobs/${id}/cancel`);
+  return response.data;
+}
+
+/**
+ * 重试 AI 任务
+ */
+export async function retryAiJob(id: number): Promise<WorkspaceAiJob> {
+  const response = await request.post<WorkspaceAiJob>(`/ai-jobs/${id}/retry`);
   return response.data;
 }
 

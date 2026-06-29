@@ -14,7 +14,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff, History } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Save, Clock, Sparkles, Eye, EyeOff, History, NotebookText } from 'lucide-react';
 import { toast } from 'sonner';
 import EnhancedMdEditor from '@/app/components/EnhancedMdEditor';
 import ManuscriptEditSidebar from '../../components/ManuscriptEditSidebar';
@@ -23,7 +24,10 @@ import ChapterVersionHistory from '@/components/ChapterVersionHistory';
 import {
   getManuscript,
   getChapterContent,
+  getChapterSummary,
+  createChapterSummaryJob,
   saveChapterContent,
+  saveChapterSummary,
   publishChapter,
   scheduleChapterPublish,
   cancelChapterSchedule,
@@ -53,6 +57,11 @@ export default function ManuscriptEditPage() {
   const [selectedText, setSelectedText] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
+  const [chapterSummary, setChapterSummary] = useState('');
+  const [savedChapterSummary, setSavedChapterSummary] = useState('');
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summarySaving, setSummarySaving] = useState(false);
+  const [summaryJobCreating, setSummaryJobCreating] = useState(false);
 
   // 自动保存定时器
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,6 +121,27 @@ export default function ManuscriptEditPage() {
     }
   }, [calculateWordCount, chapterId]);
 
+  /**
+   * 加载章节摘要
+   */
+  const loadChapterSummary = useCallback(async () => {
+    if (!chapterId) return;
+
+    try {
+      setSummaryLoading(true);
+      const response = await getChapterSummary(Number(chapterId));
+      const summary = response.data?.summary ?? '';
+      setChapterSummary(summary);
+      setSavedChapterSummary(summary);
+    } catch (error) {
+      console.error('Load chapter summary error:', error);
+      setChapterSummary('');
+      setSavedChapterSummary('');
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [chapterId]);
+
   useEffect(() => {
     void loadManuscript();
   }, [loadManuscript]);
@@ -119,8 +149,9 @@ export default function ManuscriptEditPage() {
   useEffect(() => {
     if (chapterId) {
       void loadChapterContent();
+      void loadChapterSummary();
     }
-  }, [chapterId, loadChapterContent]);
+  }, [chapterId, loadChapterContent, loadChapterSummary]);
 
   /**
    * 保存章节内容
@@ -151,6 +182,50 @@ export default function ManuscriptEditPage() {
     },
     [chapterId, saving]
   );
+
+  /**
+   * 保存章节摘要
+   */
+  const handleSaveChapterSummary = useCallback(async () => {
+    if (!chapterId || summarySaving) return;
+
+    const summary = chapterSummary.trim();
+    if (!summary) {
+      toast.error('章节摘要不能为空');
+      return;
+    }
+
+    try {
+      setSummarySaving(true);
+      const response = await saveChapterSummary(Number(chapterId), { summary });
+      const savedSummary = response.data.summary ?? '';
+      setChapterSummary(savedSummary);
+      setSavedChapterSummary(savedSummary);
+      toast.success('摘要已保存');
+    } catch (error) {
+      console.error('Save chapter summary error:', error);
+      toast.error(error instanceof Error ? error.message : '摘要保存失败');
+    } finally {
+      setSummarySaving(false);
+    }
+  }, [chapterId, chapterSummary, summarySaving]);
+
+  /**
+   * 创建章节摘要 AI 任务
+   */
+  const handleCreateChapterSummaryJob = useCallback(async () => {
+    if (!chapterId || summaryJobCreating) return;
+
+    try {
+      setSummaryJobCreating(true);
+      const response = await createChapterSummaryJob(Number(chapterId));
+      toast.success(`摘要生成任务已创建 #${response.data.id}`);
+    } catch (error) {
+      console.error('Create chapter summary job error:', error);
+    } finally {
+      setSummaryJobCreating(false);
+    }
+  }, [chapterId, summaryJobCreating]);
 
   const applyContentUpdate = useCallback(
     (newContent: string) => {
@@ -513,10 +588,56 @@ export default function ManuscriptEditPage() {
 
           {/* AI 辅助面板 */}
           {isAIPanelOpen && (
-            <div className="w-96 flex-shrink-0">
+            <div className="flex w-96 flex-shrink-0 flex-col gap-4">
+              <Card className="p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <NotebookText className="h-4 w-4 flex-shrink-0 text-[var(--moge-primary)]" />
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-medium text-[var(--moge-text-main)]">章节摘要</h2>
+                      <p className="text-xs text-[var(--moge-text-muted)]">
+                        {summaryLoading
+                          ? '加载中'
+                          : chapterSummary === savedChapterSummary
+                            ? '已同步到 AI 上下文'
+                            : '有未保存修改'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleCreateChapterSummaryJob()}
+                      disabled={summaryJobCreating || summaryLoading || !content.trim()}
+                    >
+                      <Sparkles className="mr-1 h-3.5 w-3.5" />
+                      {summaryJobCreating ? '创建中' : 'AI生成'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleSaveChapterSummary()}
+                      disabled={
+                        summarySaving || summaryLoading || chapterSummary === savedChapterSummary
+                      }
+                    >
+                      {summarySaving ? '保存中' : '保存'}
+                    </Button>
+                  </div>
+                </div>
+                <Textarea
+                  value={chapterSummary}
+                  onChange={(event) => setChapterSummary(event.target.value)}
+                  placeholder="记录本章关键事件、人物状态和伏笔变化..."
+                  className="min-h-28 resize-none"
+                  disabled={summaryLoading}
+                />
+              </Card>
               <AIAssistPanel
                 chapterId={Number(chapterId)}
                 manuscriptId={Number(id)}
+                projectId={manuscript.projectId ?? undefined}
                 content={content}
                 selectedText={selectedText}
                 onContinue={handleAIContinue}

@@ -101,6 +101,17 @@ export class WorkspaceController {
   }
 
   /**
+   * 获取 AI 使用概览
+   */
+  @Get('ai-usage')
+  @ApiOperation({ summary: '获取 AI 使用概览' })
+  async getAiUsageOverview(@Request() req: AuthRequest) {
+    const userId = this.getUserId(req);
+
+    return this.workspaceService.getAiUsageOverview(userId);
+  }
+
+  /**
    * 获取工作台待办和灵感
    */
   @Get('items')

@@ -18,9 +18,11 @@ import {
   CreateChapterDto,
   UpdateChapterDto,
   SaveChapterContentDto,
+  SaveChapterSummaryDto,
   AIContinueDto,
   AIPolishDto,
   AIExpandDto,
+  ApplyAiCandidateDto,
   ReorderVolumesDto,
   ReorderChaptersDto,
   BatchPublishChaptersDto,
@@ -221,6 +223,43 @@ export class ManuscriptsController {
   }
 
   /**
+   * 获取章节摘要
+   */
+  @Get('chapters/:chapterId/summary')
+  async getChapterSummary(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.getChapterSummary(chapterId, userId);
+  }
+
+  /**
+   * 保存章节摘要
+   */
+  @Post('chapters/:chapterId/summary')
+  async saveChapterSummary(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() dto: SaveChapterSummaryDto
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.saveChapterSummary(chapterId, dto, userId);
+  }
+
+  /**
+   * 创建章节摘要 AI 任务
+   */
+  @Post('chapters/:chapterId/summary-job')
+  async createChapterSummaryJob(
+    @Request() req: AuthenticatedRequest,
+    @Param('chapterId', ParseIntPipe) chapterId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.createChapterSummaryJob(chapterId, userId);
+  }
+
+  /**
    * 发布章节
    */
   @Post('chapters/:chapterId/publish')
@@ -316,12 +355,12 @@ export class ManuscriptsController {
     @Body() dto: AIContinueDto
   ) {
     const userId = Number(req.user.id);
-    const result = await this.manuscriptsService.continueChapter(
+    return this.manuscriptsService.continueChapter(
       chapterId,
       userId,
-      dto.customPrompt
+      dto.customPrompt,
+      dto.overrideConfig
     );
-    return { text: result };
   }
 
   /**
@@ -334,13 +373,13 @@ export class ManuscriptsController {
     @Body() dto: AIPolishDto
   ) {
     const userId = Number(req.user.id);
-    const result = await this.manuscriptsService.polishText(
+    return this.manuscriptsService.polishText(
       chapterId,
       userId,
       dto.text,
-      dto.customPrompt
+      dto.customPrompt,
+      dto.overrideConfig
     );
-    return { text: result };
   }
 
   /**
@@ -353,13 +392,38 @@ export class ManuscriptsController {
     @Body() dto: AIExpandDto
   ) {
     const userId = Number(req.user.id);
-    const result = await this.manuscriptsService.expandText(
+    return this.manuscriptsService.expandText(
       chapterId,
       userId,
       dto.text,
-      dto.customPrompt
+      dto.customPrompt,
+      dto.overrideConfig
     );
-    return { text: result };
+  }
+
+  /**
+   * 采纳 AI 候选结果
+   */
+  @Post('ai/candidates/:candidateId/apply')
+  async applyAiCandidate(
+    @Request() req: AuthenticatedRequest,
+    @Param('candidateId', ParseIntPipe) candidateId: number,
+    @Body() dto: ApplyAiCandidateDto
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.applyAiCandidate(candidateId, userId, dto);
+  }
+
+  /**
+   * 丢弃 AI 候选结果
+   */
+  @Post('ai/candidates/:candidateId/discard')
+  async discardAiCandidate(
+    @Request() req: AuthenticatedRequest,
+    @Param('candidateId', ParseIntPipe) candidateId: number
+  ) {
+    const userId = Number(req.user.id);
+    return this.manuscriptsService.discardAiCandidate(candidateId, userId);
   }
 
   /**

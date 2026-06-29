@@ -4,6 +4,7 @@ import type {
   ManuscriptVolume,
   ManuscriptChapter,
   ManuscriptChapterContent,
+  ManuscriptChapterSummary,
   CreateManuscriptValues,
   UpdateManuscriptValues,
   CreateVolumeValues,
@@ -11,6 +12,12 @@ import type {
   CreateChapterValues,
   UpdateChapterValues,
   SaveChapterContentValues,
+  SaveChapterSummaryValues,
+  AiGenerationResponse,
+  AiGenerationCandidate,
+  AiJob,
+  ApplyAiCandidateValues,
+  AiTaskOverrideConfig,
 } from '@moge/types';
 
 export interface ManuscriptSettingItem {
@@ -147,6 +154,27 @@ export async function saveChapterContent(chapterId: number, data: SaveChapterCon
 }
 
 /**
+ * 获取章节摘要
+ */
+export async function getChapterSummary(chapterId: number) {
+  return get<ManuscriptChapterSummary | null>(`/manuscripts/chapters/${chapterId}/summary`);
+}
+
+/**
+ * 保存章节摘要
+ */
+export async function saveChapterSummary(chapterId: number, data: SaveChapterSummaryValues) {
+  return post<ManuscriptChapterSummary>(`/manuscripts/chapters/${chapterId}/summary`, data);
+}
+
+/**
+ * 创建章节摘要 AI 任务
+ */
+export async function createChapterSummaryJob(chapterId: number) {
+  return post<AiJob>(`/manuscripts/chapters/${chapterId}/summary-job`);
+}
+
+/**
  * 发布章节
  */
 export async function publishChapter(chapterId: number) {
@@ -197,10 +225,14 @@ export async function reorderChapters(chapterIds: number[]) {
 /**
  * AI 续写章节
  */
-export async function aiContinueChapter(chapterId: number, customPrompt?: string) {
-  return post<{ text: string }>(
+export async function aiContinueChapter(
+  chapterId: number,
+  customPrompt?: string,
+  overrideConfig?: AiTaskOverrideConfig
+) {
+  return post<AiGenerationResponse>(
     `/manuscripts/chapters/${chapterId}/ai/continue`,
-    { customPrompt },
+    { customPrompt, overrideConfig },
     { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
   );
 }
@@ -208,10 +240,15 @@ export async function aiContinueChapter(chapterId: number, customPrompt?: string
 /**
  * AI 润色文本
  */
-export async function aiPolishText(chapterId: number, text: string, customPrompt?: string) {
-  return post<{ text: string }>(
+export async function aiPolishText(
+  chapterId: number,
+  text: string,
+  customPrompt?: string,
+  overrideConfig?: AiTaskOverrideConfig
+) {
+  return post<AiGenerationResponse>(
     `/manuscripts/chapters/${chapterId}/ai/polish`,
-    { text, customPrompt },
+    { text, customPrompt, overrideConfig },
     { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
   );
 }
@@ -219,12 +256,31 @@ export async function aiPolishText(chapterId: number, text: string, customPrompt
 /**
  * AI 扩写文本
  */
-export async function aiExpandText(chapterId: number, text: string, customPrompt?: string) {
-  return post<{ text: string }>(
+export async function aiExpandText(
+  chapterId: number,
+  text: string,
+  customPrompt?: string,
+  overrideConfig?: AiTaskOverrideConfig
+) {
+  return post<AiGenerationResponse>(
     `/manuscripts/chapters/${chapterId}/ai/expand`,
-    { text, customPrompt },
+    { text, customPrompt, overrideConfig },
     { timeout: 30000 } // 增加超时时间到 30 秒，因为 AI 生成需要更长时间
   );
+}
+
+/**
+ * 采纳 AI 候选结果
+ */
+export async function applyAiCandidate(candidateId: number, data: ApplyAiCandidateValues) {
+  return post<AiGenerationCandidate>(`/manuscripts/ai/candidates/${candidateId}/apply`, data);
+}
+
+/**
+ * 丢弃 AI 候选结果
+ */
+export async function discardAiCandidate(candidateId: number) {
+  return post<AiGenerationCandidate>(`/manuscripts/ai/candidates/${candidateId}/discard`);
 }
 
 // Re-export types for convenience
