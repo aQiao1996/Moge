@@ -469,7 +469,7 @@ export default function ProjectSettingsPage() {
       setPromptForm(defaultPromptForm);
       toast.success('Prompt 预设已创建');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Prompt 预设创建失败');
+      console.error('Create prompt preset error:', error);
     } finally {
       setCreatingPreset(false);
     }
@@ -506,7 +506,7 @@ export default function ProjectSettingsPage() {
       setPromptVersionForm(defaultPromptVersionForm);
       toast.success('Prompt 预设版本已追加');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Prompt 预设版本追加失败');
+      console.error('Append prompt preset version error:', error);
     } finally {
       setAppendingPresetVersion(false);
     }
@@ -523,7 +523,7 @@ export default function ProjectSettingsPage() {
       appendPromptPreset(clonedPreset);
       toast.success('Prompt 预设已克隆');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Prompt 预设克隆失败');
+      console.error('Clone prompt preset error:', error);
     } finally {
       setCloningPresetId(null);
     }
@@ -563,7 +563,7 @@ export default function ProjectSettingsPage() {
       resetPromptMetaForm();
       toast.success('Prompt 预设已更新');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Prompt 预设更新失败');
+      console.error('Save prompt preset meta error:', error);
     } finally {
       setSavingPromptMeta(false);
     }
@@ -607,7 +607,7 @@ export default function ProjectSettingsPage() {
       clearDefaultPresetReference(disabledPreset);
       toast.success('Prompt 预设已停用');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Prompt 预设停用失败');
+      console.error('Disable prompt preset error:', error);
     } finally {
       setDisablingPresetId(null);
     }
@@ -652,7 +652,7 @@ export default function ProjectSettingsPage() {
 
       resetMemoryForm();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '项目记忆保存失败');
+      console.error('Save project memory item error:', error);
     } finally {
       setSavingMemoryItem(false);
     }
@@ -667,7 +667,7 @@ export default function ProjectSettingsPage() {
         resetMemoryForm();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '项目记忆删除失败');
+      console.error('Delete project memory item error:', error);
     }
   };
 
@@ -709,7 +709,7 @@ export default function ProjectSettingsPage() {
 
       resetKnowledgeDocumentForm();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '项目资料保存失败');
+      console.error('Save knowledge document error:', error);
     } finally {
       setSavingKnowledgeDocument(false);
     }
@@ -724,7 +724,7 @@ export default function ProjectSettingsPage() {
         resetKnowledgeDocumentForm();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '项目资料删除失败');
+      console.error('Delete knowledge document error:', error);
     }
   };
 
@@ -756,7 +756,7 @@ export default function ProjectSettingsPage() {
       setAiConfig(savedConfig);
       toast.success('AI 配置已保存');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'AI 配置保存失败');
+      console.error('Save AI config error:', error);
     } finally {
       setSavingAiConfig(false);
     }

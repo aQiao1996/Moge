@@ -204,7 +204,6 @@ export default function ManuscriptEditPage() {
       toast.success('摘要已保存');
     } catch (error) {
       console.error('Save chapter summary error:', error);
-      toast.error(error instanceof Error ? error.message : '摘要保存失败');
     } finally {
       setSummarySaving(false);
     }
@@ -378,7 +377,6 @@ export default function ManuscriptEditPage() {
       setScheduledAt('');
       void loadManuscript();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '定时发布失败');
       console.error('Schedule publish error:', error);
     }
   };
@@ -394,7 +392,6 @@ export default function ManuscriptEditPage() {
       toast.success('已取消定时发布');
       void loadManuscript();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '取消定时发布失败');
       console.error('Cancel schedule error:', error);
     }
   };
