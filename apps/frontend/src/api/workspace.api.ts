@@ -81,10 +81,10 @@ export interface WorkspaceItems {
 
 export type WorkspaceAiJob = AiJob;
 
-export interface GetAiJobsParams {
+export type GetAiJobsParams = {
   status?: AiJobStatus;
   limit?: number;
-}
+};
 
 /** 写作统计数据类型 */
 export interface WritingStats {
@@ -129,9 +129,7 @@ export async function getWorkspaceItems(): Promise<WorkspaceItems> {
  * 获取当前用户的 AI 任务列表
  */
 export async function getAiJobs(params: GetAiJobsParams = {}): Promise<WorkspaceAiJob[]> {
-  const response = await request.get<WorkspaceAiJob[]>('/ai-jobs', {
-    params,
-  });
+  const response = await request.get<WorkspaceAiJob[]>('/ai-jobs', params);
   return response.data;
 }
 

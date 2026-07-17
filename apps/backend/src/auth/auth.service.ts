@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken';
 import type { User } from '@moge/types';
 
 /**
@@ -10,7 +10,10 @@ import type { User } from '@moge/types';
  */
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService
+  ) {}
 
   /**
    * 用户登录
@@ -44,9 +47,7 @@ export class AuthService {
     const { passwordHash, ...userInfo } = user;
     void passwordHash;
 
-    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = this.jwtService.sign({ userId: user.id, username: user.username });
 
     return {
       user: { ...userInfo, id: userInfo.id.toString() },
@@ -82,9 +83,7 @@ export class AuthService {
       select: { id: true, username: true, email: true, name: true, avatarUrl: true },
     });
 
-    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = this.jwtService.sign({ userId: user.id, username: user.username });
 
     return {
       user: { ...user, id: user.id.toString() },
@@ -122,11 +121,10 @@ export class AuthService {
 
     if (existingAccount) {
       // 如果存在, 直接返回用户信息和 token
-      const token = jwt.sign(
-        { userId: existingAccount.user.id, username: existingAccount.user.username },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-      );
+      const token = this.jwtService.sign({
+        userId: existingAccount.user.id,
+        username: existingAccount.user.username,
+      });
       return {
         user: { ...existingAccount.user, id: existingAccount.user.id.toString() },
         token,
@@ -176,9 +174,7 @@ export class AuthService {
     }
 
     // 返回用户信息和 token
-    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = this.jwtService.sign({ userId: user.id, username: user.username });
 
     return {
       user: { ...user, id: user.id.toString() },
@@ -193,10 +189,10 @@ export class AuthService {
    */
   async verifyToken(token: string): Promise<User> {
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET) as {
+      const payload = this.jwtService.verify<{
         userId: number;
         username: string;
-      };
+      }>(token);
 
       const user = await this.prisma.users.findUnique({
         where: { id: payload.userId },

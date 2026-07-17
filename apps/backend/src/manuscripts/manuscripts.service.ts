@@ -52,6 +52,7 @@ import {
   countWrittenWords,
   getDateKeyInTimeZone,
 } from '../common/writing-stats.util';
+import { buildProjectAccessWhere, type ProjectAccessMode } from '../projects/project-access';
 
 type ManuscriptDbClient = PrismaService | Prisma.TransactionClient;
 
@@ -92,6 +93,11 @@ interface ChapterForSummaryJob {
   content?: { content?: string | null; version: number } | null;
 }
 
+interface ManuscriptAccessSubject {
+  userId: number;
+  projectId?: number | null;
+}
+
 type ChapterSummaryJobTrigger = 'MANUAL' | 'CONTENT_SAVED' | 'PUBLISHED';
 
 const ACTIVE_CHAPTER_SUMMARY_JOB_STATUSES = [
@@ -110,8 +116,8 @@ export class ManuscriptsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
-    private readonly aiJobsService?: AiJobsService,
-    private readonly aiContextService = new ManuscriptAiContextService(prisma)
+    private readonly aiContextService: ManuscriptAiContextService,
+    private readonly aiJobsService?: AiJobsService
   ) {}
 
   /**
@@ -508,20 +514,22 @@ export class ManuscriptsService {
 
   private async assertProjectOwned(userId: number, projectId?: number) {
     if (projectId === undefined) {
-      return;
+      return undefined;
     }
 
     const project = await this.prisma.projects.findFirst({
       where: {
         id: projectId,
-        userId,
+        ...buildProjectAccessWhere(userId, 'write'),
       },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
     if (!project) {
       throw new BadRequestException('项目不存在或无权限访问');
     }
+
+    return project;
   }
 
   private async assertOutlineOwned(userId: number, outlineId?: number) {
@@ -532,7 +540,12 @@ export class ManuscriptsService {
     const outline = await this.prisma.outline.findFirst({
       where: {
         id: outlineId,
-        userId,
+        OR: [
+          { userId },
+          {
+            project: buildProjectAccessWhere(userId, 'write'),
+          },
+        ],
       },
       select: { id: true },
     });
@@ -633,16 +646,17 @@ export class ManuscriptsService {
       misc?: string[];
     }
   ) {
-    await Promise.all([
+    const [, project] = await Promise.all([
       this.assertOutlineOwned(userId, data.outlineId),
       this.assertProjectOwned(userId, data.projectId),
     ]);
+    const settingsOwnerId = project?.userId ?? userId;
 
     const [characters, systems, worlds, misc] = await Promise.all([
-      this.assertCharactersOwned(userId, data.characters),
-      this.assertSystemsOwned(userId, data.systems),
-      this.assertWorldsOwned(userId, data.worlds),
-      this.assertMiscOwned(userId, data.misc),
+      this.assertCharactersOwned(settingsOwnerId, data.characters),
+      this.assertSystemsOwned(settingsOwnerId, data.systems),
+      this.assertWorldsOwned(settingsOwnerId, data.worlds),
+      this.assertMiscOwned(settingsOwnerId, data.misc),
     ]);
 
     return { characters, systems, worlds, misc };
@@ -695,6 +709,57 @@ export class ManuscriptsService {
         content: includeContent,
       },
     });
+  }
+
+  private async hasManuscriptAccess(
+    prismaClient: ManuscriptDbClient,
+    manuscript: ManuscriptAccessSubject,
+    userId: number,
+    mode: ProjectAccessMode
+  ): Promise<boolean> {
+    if (!manuscript.projectId) {
+      return manuscript.userId === userId;
+    }
+
+    const project = await prismaClient.projects.findFirst({
+      where: {
+        id: manuscript.projectId,
+        ...buildProjectAccessWhere(userId, mode),
+      },
+      select: { id: true },
+    });
+
+    return Boolean(project);
+  }
+
+  private async assertManuscriptAccess(
+    prismaClient: ManuscriptDbClient,
+    manuscript: ManuscriptAccessSubject,
+    userId: number,
+    mode: ProjectAccessMode,
+    message: string
+  ): Promise<void> {
+    if (!(await this.hasManuscriptAccess(prismaClient, manuscript, userId, mode))) {
+      throw new ForbiddenException(message);
+    }
+  }
+
+  private async findManuscriptForAccess(id: number, userId: number, mode: ProjectAccessMode) {
+    const manuscript = await this.prisma.manuscripts.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: this.getManuscriptInclude(),
+    });
+
+    if (!manuscript) {
+      throw new NotFoundException(`Manuscript with id ${id} not found`);
+    }
+
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, mode, '无权访问该文稿');
+
+    return manuscript;
   }
 
   /**
@@ -756,9 +821,7 @@ export class ManuscriptsService {
       throw new NotFoundException(`Outline with id ${outlineId} not found`);
     }
 
-    if (outline.userId !== userId) {
-      throw new ForbiddenException('无权访问该大纲');
-    }
+    await this.assertOutlineOwned(userId, outlineId);
     const relations = await this.validateManuscriptAssociations(userId, {
       projectId: dto.projectId,
       characters: dto.characters ?? outline.characters,
@@ -827,10 +890,18 @@ export class ManuscriptsService {
    * 获取用户的所有文稿列表（未删除）
    */
   async findAll(userId: number) {
+    const accessibleProjects = await this.prisma.projects.findMany({
+      where: buildProjectAccessWhere(userId, 'read'),
+      select: { id: true },
+    });
+
     return this.prisma.manuscripts.findMany({
       where: {
-        userId,
         deletedAt: null,
+        OR: [
+          { userId, projectId: null },
+          { projectId: { in: accessibleProjects.map((project) => project.id) } },
+        ],
       },
       include: this.getManuscriptInclude(),
       orderBy: { updatedAt: 'desc' },
@@ -841,28 +912,35 @@ export class ManuscriptsService {
    * 获取单个文稿详情
    */
   async findOne(id: number, userId: number) {
-    const manuscript = await this.prisma.manuscripts.findFirst({
-      where: {
-        id,
-        userId,
-        deletedAt: null,
-      },
-      include: this.getManuscriptInclude(),
-    });
-
-    if (!manuscript) {
-      throw new NotFoundException(`Manuscript with id ${id} not found`);
-    }
-
-    return manuscript;
+    return this.findManuscriptForAccess(id, userId, 'read');
   }
 
   /**
    * 更新文稿
    */
   async updateManuscript(id: number, userId: number, dto: UpdateManuscriptDto) {
-    await this.findOne(id, userId);
-    const relations = await this.validateManuscriptAssociations(userId, dto);
+    const manuscript = await this.findManuscriptForAccess(id, userId, 'write');
+
+    if (dto.projectId !== undefined && dto.projectId !== manuscript.projectId) {
+      const canChangeProject = manuscript.projectId
+        ? await this.prisma.projects.findFirst({
+            where: {
+              id: manuscript.projectId,
+              ...buildProjectAccessWhere(userId, 'owner'),
+            },
+            select: { id: true },
+          })
+        : manuscript.userId === userId;
+
+      if (!canChangeProject) {
+        throw new ForbiddenException('只有当前项目创建者可以变更文稿所属项目');
+      }
+    }
+
+    const relations = await this.validateManuscriptAssociations(userId, {
+      ...dto,
+      projectId: dto.projectId ?? manuscript.projectId ?? undefined,
+    });
     const updateData: Partial<UpdateManuscriptDto> & {
       characters?: string[];
       systems?: string[];
@@ -918,7 +996,7 @@ export class ManuscriptsService {
    * 软删除文稿
    */
   async deleteManuscript(id: number, userId: number) {
-    await this.findOne(id, userId);
+    await this.findManuscriptForAccess(id, userId, 'write');
 
     return this.prisma.manuscripts.update({
       where: { id },
@@ -931,7 +1009,7 @@ export class ManuscriptsService {
    */
   async createVolume(dto: CreateVolumeDto, userId: number) {
     // 验证文稿权限
-    await this.findOne(dto.manuscriptId, userId);
+    await this.findManuscriptForAccess(dto.manuscriptId, userId, 'write');
 
     return this.runLockedTransaction([this.getManuscriptLock(dto.manuscriptId)], async (tx) => {
       const lastVolume = await tx.manuscript_volume.findFirst({
@@ -970,9 +1048,13 @@ export class ManuscriptsService {
       throw new NotFoundException(`Volume with id ${volumeId} not found`);
     }
 
-    if (volume.manuscript.userId !== userId) {
-      throw new ForbiddenException('无权访问该卷');
-    }
+    await this.assertManuscriptAccess(
+      this.prisma,
+      volume.manuscript,
+      userId,
+      'write',
+      '无权访问该卷'
+    );
 
     return this.prisma.manuscript_volume.update({
       where: { id: volumeId },
@@ -996,9 +1078,13 @@ export class ManuscriptsService {
       throw new NotFoundException(`Volume with id ${volumeId} not found`);
     }
 
-    if (volume.manuscript.userId !== userId) {
-      throw new ForbiddenException('无权访问该卷');
-    }
+    await this.assertManuscriptAccess(
+      this.prisma,
+      volume.manuscript,
+      userId,
+      'write',
+      '无权访问该卷'
+    );
 
     return this.runLockedTransaction([this.getManuscriptLock(volume.manuscript.id)], async (tx) => {
       const deletedVolume = await tx.manuscript_volume.delete({
@@ -1038,9 +1124,13 @@ export class ManuscriptsService {
         throw new NotFoundException(`Volume with id ${dto.volumeId} not found`);
       }
 
-      if (volume.manuscript.userId !== userId) {
-        throw new ForbiddenException('无权访问该卷');
-      }
+      await this.assertManuscriptAccess(
+        this.prisma,
+        volume.manuscript,
+        userId,
+        'write',
+        '无权访问该卷'
+      );
 
       locks = [this.getVolumeLock(dto.volumeId)];
     } else {
@@ -1087,9 +1177,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     return this.prisma.manuscript_chapter.update({
       where: { id: chapterId },
@@ -1108,9 +1199,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
       await tx.manuscript_chapter.delete({
@@ -1139,9 +1231,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'read', '无权访问该章节');
 
     return chapter.content;
   }
@@ -1157,9 +1250,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     await this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
       const currentChapter = await this.getChapterWithManuscript(tx, chapterId, true);
@@ -1228,9 +1322,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'read', '无权访问该章节');
 
     return this.prisma.chapter_summaries.findUnique({
       where: { chapterId },
@@ -1248,9 +1343,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     const summary = dto.summary.trim();
     if (!summary) {
@@ -1288,9 +1384,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     if (!chapter.content?.content?.trim()) {
       throw new BadRequestException('章节正文为空，无法生成摘要');
@@ -1349,7 +1446,6 @@ export class ManuscriptsService {
     const project = await this.prisma.projects.findFirst({
       where: {
         id: projectId,
-        userId: manuscript.userId,
       },
       select: {
         aiConfig: {
@@ -1414,9 +1510,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     const publishedChapter = await this.runLockedTransaction(
       [this.getManuscriptLock(manuscript.id)],
@@ -1466,9 +1563,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
       const updatedChapter = await tx.manuscript_chapter.update({
@@ -1497,9 +1595,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
       const updatedChapter = await tx.manuscript_chapter.update({
@@ -1520,6 +1619,11 @@ export class ManuscriptsService {
    * 发布当前用户已到定时时间的章节。
    */
   async publishDueScheduledChapters(userId: number, now = new Date()) {
+    const writableProjects = await this.prisma.projects.findMany({
+      where: buildProjectAccessWhere(userId, 'write'),
+      select: { id: true },
+    });
+    const writableProjectIds = writableProjects.map((project) => project.id);
     const chapters = await this.prisma.manuscript_chapter.findMany({
       where: {
         status: 'SCHEDULED',
@@ -1529,13 +1633,13 @@ export class ManuscriptsService {
         OR: [
           {
             manuscript: {
-              userId,
+              OR: [{ userId }, { projectId: { in: writableProjectIds } }],
             },
           },
           {
             volume: {
               manuscript: {
-                userId,
+                OR: [{ userId }, { projectId: { in: writableProjectIds } }],
               },
             },
           },
@@ -1645,9 +1749,10 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     return this.runLockedTransaction([this.getManuscriptLock(manuscript.id)], async (tx) => {
       const updatedChapter = await tx.manuscript_chapter.update({
@@ -1695,9 +1800,16 @@ export class ManuscriptsService {
     const manuscriptIds = new Set<number>();
     for (const chapter of chapters) {
       const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-      if (!manuscript || manuscript.userId !== userId) {
+      if (!manuscript) {
         throw new ForbiddenException('无权发布这些章节');
       }
+      await this.assertManuscriptAccess(
+        this.prisma,
+        manuscript,
+        userId,
+        'write',
+        '无权发布这些章节'
+      );
       manuscriptIds.add(manuscript.id);
     }
 
@@ -1904,9 +2016,16 @@ export class ManuscriptsService {
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== params.userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(
+      this.prisma,
+      manuscript,
+      params.userId,
+      'write',
+      '无权访问该章节'
+    );
 
     const settings = await this.aiContextService.loadManuscriptContext(manuscript, params.userId, {
       chapterId: params.chapterId,
@@ -2122,9 +2241,16 @@ ${settingsContext}`;
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== job.userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(
+      this.prisma,
+      manuscript,
+      job.userId,
+      'write',
+      '无权访问该章节'
+    );
 
     const currentContent = chapter.content?.content?.trim();
     if (!currentContent) {
@@ -2248,13 +2374,10 @@ ${currentContent}`,
         }
 
         const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-        if (
-          !manuscript ||
-          manuscript.userId !== userId ||
-          manuscript.id !== candidate.manuscriptId
-        ) {
+        if (!manuscript || manuscript.id !== candidate.manuscriptId) {
           throw new ForbiddenException('无权采纳该候选结果');
         }
+        await this.assertManuscriptAccess(tx, manuscript, userId, 'write', '无权采纳该候选结果');
 
         const currentVersion = chapter.content?.version ?? null;
         if (
@@ -2345,14 +2468,20 @@ ${currentContent}`,
     const manuscript = await this.prisma.manuscripts.findFirst({
       where: {
         id: candidate.manuscriptId,
-        userId,
       },
-      select: { id: true },
+      select: { id: true, userId: true, projectId: true },
     });
 
     if (!manuscript) {
       throw new ForbiddenException('无权丢弃该候选结果');
     }
+    await this.assertManuscriptAccess(
+      this.prisma,
+      manuscript,
+      userId,
+      'write',
+      '无权丢弃该候选结果'
+    );
 
     if (candidate.applyStatus !== AiCandidateApplyStatus.PENDING) {
       throw new BadRequestException('该候选结果已处理');
@@ -2388,9 +2517,10 @@ ${currentContent}`,
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'read', '无权访问该章节');
 
     if (!chapter.content) {
       return [];
@@ -2420,9 +2550,10 @@ ${currentContent}`,
     }
 
     const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-    if (!manuscript || manuscript.userId !== userId) {
+    if (!manuscript) {
       throw new ForbiddenException('无权访问该章节');
     }
+    await this.assertManuscriptAccess(this.prisma, manuscript, userId, 'write', '无权访问该章节');
 
     if (!chapter.content) {
       throw new NotFoundException('Chapter content not found');
@@ -2436,9 +2567,10 @@ ${currentContent}`,
       }
 
       const currentManuscript = currentChapter.manuscript || currentChapter.volume?.manuscript;
-      if (!currentManuscript || currentManuscript.userId !== userId) {
+      if (!currentManuscript) {
         throw new ForbiddenException('无权访问该章节');
       }
+      await this.assertManuscriptAccess(tx, currentManuscript, userId, 'write', '无权访问该章节');
 
       if (!currentChapter.content) {
         throw new NotFoundException('Chapter content not found');
@@ -2648,9 +2780,13 @@ ${currentContent}`,
 
     // 验证权限
     for (const volume of volumes) {
-      if (volume.manuscript.userId !== userId) {
-        throw new ForbiddenException('无权排序这些卷');
-      }
+      await this.assertManuscriptAccess(
+        this.prisma,
+        volume.manuscript,
+        userId,
+        'write',
+        '无权排序这些卷'
+      );
     }
 
     const manuscriptIds = Array.from(new Set(volumes.map((volume) => volume.manuscriptId)));
@@ -2739,9 +2875,16 @@ ${currentContent}`,
     // 验证权限
     for (const chapter of chapters) {
       const manuscript = chapter.manuscript || chapter.volume?.manuscript;
-      if (!manuscript || manuscript.userId !== userId) {
+      if (!manuscript) {
         throw new ForbiddenException('无权排序这些章节');
       }
+      await this.assertManuscriptAccess(
+        this.prisma,
+        manuscript,
+        userId,
+        'write',
+        '无权排序这些章节'
+      );
     }
 
     const firstChapter = chapters[0];

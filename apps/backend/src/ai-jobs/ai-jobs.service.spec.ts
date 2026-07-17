@@ -323,6 +323,9 @@ describe('AiJobsService', () => {
       },
       data: {
         status: AiJobStatus.CANCELED,
+        lockedAt: null,
+        lockedBy: null,
+        heartbeatAt: null,
         finishedAt: expect.any(Date) as Date,
         events: {
           create: {
@@ -537,6 +540,149 @@ describe('AiJobsService', () => {
     });
   });
 
+  it('refreshes the heartbeat only for the running job owned by the worker', async () => {
+    const prisma = {
+      ai_jobs: {
+        update: jest.fn().mockResolvedValue({ id: 704 }),
+      },
+    };
+    const service = createService(prisma);
+
+    await service.touchHeartbeat('worker-a', 704);
+
+    expect(prisma.ai_jobs.update).toHaveBeenCalledWith({
+      where: {
+        id: 704,
+        lockedBy: 'worker-a',
+        status: AiJobStatus.RUNNING,
+      },
+      data: {
+        heartbeatAt: expect.any(Date) as Date,
+      },
+      select: { id: true },
+    });
+  });
+
+  it('requeues a stale running job when retries remain', async () => {
+    const staleBefore = new Date('2026-06-26T05:10:00.000Z');
+    const tx = {
+      ai_jobs: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      ai_job_events: {
+        create: jest.fn().mockResolvedValue({ id: 810 }),
+      },
+    };
+    const prisma = {
+      ai_jobs: {
+        findMany: jest.fn().mockResolvedValue([{ id: 710, retryCount: 0, maxRetries: 2 }]),
+      },
+      $transaction: jest.fn((callback: (transaction: typeof tx) => Promise<unknown>) =>
+        callback(tx)
+      ),
+    };
+    const service = createService(prisma);
+
+    const recovered = await service.recoverStaleJobs(staleBefore);
+
+    expect(prisma.ai_jobs.findMany).toHaveBeenCalledWith({
+      where: {
+        status: AiJobStatus.RUNNING,
+        OR: [
+          { heartbeatAt: { lte: staleBefore } },
+          { heartbeatAt: null, lockedAt: { lte: staleBefore } },
+        ],
+      },
+      select: { id: true, retryCount: true, maxRetries: true },
+      take: 100,
+    });
+    expect(tx.ai_jobs.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 710,
+        status: AiJobStatus.RUNNING,
+        OR: [
+          { heartbeatAt: { lte: staleBefore } },
+          { heartbeatAt: null, lockedAt: { lte: staleBefore } },
+        ],
+      },
+      data: {
+        status: AiJobStatus.QUEUED,
+        retryCount: { increment: 1 },
+        errorMessage: '任务心跳超时，已自动恢复',
+        nextRetryAt: expect.any(Date) as Date,
+        lockedAt: null,
+        lockedBy: null,
+        heartbeatAt: null,
+      },
+    });
+    expect(tx.ai_job_events.create).toHaveBeenCalledWith({
+      data: {
+        jobId: 710,
+        eventType: 'RETRY_SCHEDULED',
+        message: '任务心跳超时，已重新入队',
+        payload: {
+          errorMessage: '任务心跳超时，已自动恢复',
+          retryCount: 1,
+        },
+      },
+    });
+    expect(recovered).toBe(1);
+  });
+
+  it('marks a stale running job as failed when retries are exhausted', async () => {
+    const staleBefore = new Date('2026-06-26T05:20:00.000Z');
+    const tx = {
+      ai_jobs: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      ai_job_events: {
+        create: jest.fn().mockResolvedValue({ id: 811 }),
+      },
+    };
+    const prisma = {
+      ai_jobs: {
+        findMany: jest.fn().mockResolvedValue([{ id: 711, retryCount: 2, maxRetries: 2 }]),
+      },
+      $transaction: jest.fn((callback: (transaction: typeof tx) => Promise<unknown>) =>
+        callback(tx)
+      ),
+    };
+    const service = createService(prisma);
+
+    const recovered = await service.recoverStaleJobs(staleBefore);
+
+    expect(tx.ai_jobs.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 711,
+        status: AiJobStatus.RUNNING,
+        OR: [
+          { heartbeatAt: { lte: staleBefore } },
+          { heartbeatAt: null, lockedAt: { lte: staleBefore } },
+        ],
+      },
+      data: {
+        status: AiJobStatus.FAILED,
+        errorMessage: '任务心跳超时，已自动恢复',
+        nextRetryAt: null,
+        lockedAt: null,
+        lockedBy: null,
+        heartbeatAt: null,
+        finishedAt: expect.any(Date) as Date,
+      },
+    });
+    expect(tx.ai_job_events.create).toHaveBeenCalledWith({
+      data: {
+        jobId: 711,
+        eventType: 'FAILED',
+        message: '任务心跳超时，执行失败',
+        payload: {
+          errorMessage: '任务心跳超时，已自动恢复',
+        },
+      },
+    });
+    expect(recovered).toBe(1);
+  });
+
   it('marks a running job as successful and clears worker lock fields', async () => {
     const createdAt = new Date('2026-06-26T06:00:00.000Z');
     const finishedAt = new Date('2026-06-26T06:03:00.000Z');
@@ -690,7 +836,11 @@ describe('AiJobsService', () => {
       },
     });
     expect(prisma.ai_jobs.update).toHaveBeenCalledWith({
-      where: { id: 706 },
+      where: {
+        id: 706,
+        lockedBy: 'worker-a',
+        status: AiJobStatus.RUNNING,
+      },
       data: {
         status: AiJobStatus.QUEUED,
         retryCount: { increment: 1 },
@@ -779,7 +929,11 @@ describe('AiJobsService', () => {
     const job = await service.failJob('worker-a', 707, '连续失败');
 
     expect(prisma.ai_jobs.update).toHaveBeenCalledWith({
-      where: { id: 707 },
+      where: {
+        id: 707,
+        lockedBy: 'worker-a',
+        status: AiJobStatus.RUNNING,
+      },
       data: {
         status: AiJobStatus.FAILED,
         errorMessage: '连续失败',

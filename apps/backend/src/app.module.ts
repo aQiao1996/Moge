@@ -20,6 +20,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RateLimitMiddleware } from './common/rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './common/security-headers.middleware';
+import { validateEnvironment } from './config/environment';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SecurityHeadersMiddleware } from './common/security-headers.middleware'
         `.env.${process.env.NODE_ENV || 'development'}`,
       ],
       isGlobal: true,
+      validate: validateEnvironment,
     }),
     ScheduleModule.forRoot(),
     PrismaModule,

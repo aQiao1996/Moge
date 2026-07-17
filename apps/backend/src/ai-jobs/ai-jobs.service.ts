@@ -135,6 +135,9 @@ export class AiJobsService {
       },
       data: {
         status: AiJobStatus.CANCELED,
+        lockedAt: null,
+        lockedBy: null,
+        heartbeatAt: null,
         finishedAt: new Date(),
         events: {
           create: {
@@ -235,6 +238,117 @@ export class AiJobsService {
     return job ? this.serializeJob(job) : null;
   }
 
+  /**
+   * 刷新当前 Worker 所持任务的心跳时间。
+   *
+   * @param workerId Worker 标识
+   * @param jobId 任务 ID
+   */
+  async touchHeartbeat(workerId: string, jobId: number): Promise<void> {
+    await this.prisma.ai_jobs.update({
+      where: {
+        id: jobId,
+        lockedBy: workerId,
+        status: AiJobStatus.RUNNING,
+      },
+      data: {
+        heartbeatAt: new Date(),
+      },
+      select: { id: true },
+    });
+  }
+
+  /**
+   * 恢复心跳超时的运行中任务，并沿用任务原有的重试策略。
+   *
+   * @param staleBefore 判定为过期的最晚心跳时间
+   * @returns 实际恢复的任务数量
+   */
+  async recoverStaleJobs(staleBefore: Date): Promise<number> {
+    const staleJobs = await this.prisma.ai_jobs.findMany({
+      where: {
+        status: AiJobStatus.RUNNING,
+        OR: [
+          { heartbeatAt: { lte: staleBefore } },
+          { heartbeatAt: null, lockedAt: { lte: staleBefore } },
+        ],
+      },
+      select: { id: true, retryCount: true, maxRetries: true },
+      take: 100,
+    });
+    let recoveredCount = 0;
+
+    for (const staleJob of staleJobs) {
+      const recovered = await this.prisma.$transaction(async (tx) => {
+        const staleWhere: Prisma.ai_jobsWhereInput = {
+          id: staleJob.id,
+          status: AiJobStatus.RUNNING,
+          OR: [
+            { heartbeatAt: { lte: staleBefore } },
+            { heartbeatAt: null, lockedAt: { lte: staleBefore } },
+          ],
+        };
+        const errorMessage = '任务心跳超时，已自动恢复';
+        const nextRetryCount = staleJob.retryCount + 1;
+        const canRetry = staleJob.retryCount < staleJob.maxRetries;
+
+        const updateResult = await tx.ai_jobs.updateMany({
+          where: staleWhere,
+          data: canRetry
+            ? {
+                status: AiJobStatus.QUEUED,
+                retryCount: { increment: 1 },
+                errorMessage,
+                nextRetryAt: this.getNextRetryAt(nextRetryCount),
+                lockedAt: null,
+                lockedBy: null,
+                heartbeatAt: null,
+              }
+            : {
+                status: AiJobStatus.FAILED,
+                errorMessage,
+                nextRetryAt: null,
+                lockedAt: null,
+                lockedBy: null,
+                heartbeatAt: null,
+                finishedAt: new Date(),
+              },
+        });
+
+        if (updateResult.count === 0) {
+          return false;
+        }
+
+        await tx.ai_job_events.create({
+          data: canRetry
+            ? {
+                jobId: staleJob.id,
+                eventType: 'RETRY_SCHEDULED',
+                message: '任务心跳超时，已重新入队',
+                payload: {
+                  errorMessage,
+                  retryCount: nextRetryCount,
+                },
+              }
+            : {
+                jobId: staleJob.id,
+                eventType: 'FAILED',
+                message: '任务心跳超时，执行失败',
+                payload: { errorMessage },
+              },
+        });
+
+        return true;
+      });
+
+      if (recovered) {
+        recoveredCount += 1;
+      }
+    }
+
+    return recoveredCount;
+  }
+
   async completeJob(
     workerId: string,
     jobId: number,
@@ -290,7 +404,11 @@ export class AiJobsService {
 
     if (canRetry) {
       const updated = await this.prisma.ai_jobs.update({
-        where: { id: job.id },
+        where: {
+          id: job.id,
+          lockedBy: workerId,
+          status: AiJobStatus.RUNNING,
+        },
         data: {
           status: AiJobStatus.QUEUED,
           retryCount: { increment: 1 },
@@ -321,7 +439,11 @@ export class AiJobsService {
     }
 
     const updated = await this.prisma.ai_jobs.update({
-      where: { id: job.id },
+      where: {
+        id: job.id,
+        lockedBy: workerId,
+        status: AiJobStatus.RUNNING,
+      },
       data: {
         status: AiJobStatus.FAILED,
         errorMessage,

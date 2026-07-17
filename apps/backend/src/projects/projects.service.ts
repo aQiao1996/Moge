@@ -27,6 +27,7 @@ import type {
   CreateProjectKnowledgeDocumentInput,
   UpdateProjectKnowledgeDocumentInput,
 } from './projects.schemas';
+import { buildProjectAccessWhere } from './project-access';
 
 type ProjectAiConfigResponse = Omit<project_ai_configs, 'temperature'> & {
   temperature: string;
@@ -456,7 +457,7 @@ export class ProjectsService {
    */
   async getProjects(userId: number): Promise<projects[]> {
     return this.prisma.projects.findMany({
-      where: { userId },
+      where: buildProjectAccessWhere(userId, 'read'),
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -1269,16 +1270,8 @@ export class ProjectsService {
    * @returns 更新后的项目
    */
   async updateProject(userId: number, id: number, data: UpdateProjectRequest): Promise<projects> {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
-
-    const relations = await this.validateProjectAssociations(userId, data);
+    const project = await this.getProjectForAccess(userId, id, 'write');
+    const relations = await this.validateProjectAssociations(project.userId, data);
     const updateData: Partial<projects> = {};
 
     if (data.name !== undefined) {
@@ -1343,19 +1336,13 @@ export class ProjectsService {
    * @returns 包含所有关联设定的详细数据
    */
   async getProjectSettings(userId: number, id: number) {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
+    const project = await this.getProjectForAccess(userId, id, 'read');
+    const settingsOwnerId = project.userId;
 
     // 获取关联的角色设定
     const characters = await this.prisma.character_settings.findMany({
       where: {
-        userId,
+        userId: settingsOwnerId,
         id: {
           in: project.characters.map((id) => Number(id)),
         },
@@ -1375,7 +1362,7 @@ export class ProjectsService {
     // 获取关联的系统设定
     const systems = await this.prisma.system_settings.findMany({
       where: {
-        userId,
+        userId: settingsOwnerId,
         id: {
           in: project.systems.map((id) => Number(id)),
         },
@@ -1394,7 +1381,7 @@ export class ProjectsService {
     // 获取关联的世界设定
     const worlds = await this.prisma.world_settings.findMany({
       where: {
-        userId,
+        userId: settingsOwnerId,
         id: {
           in: project.worlds.map((id) => Number(id)),
         },
@@ -1414,7 +1401,7 @@ export class ProjectsService {
     // 获取关联的辅助设定
     const misc = await this.prisma.misc_settings.findMany({
       where: {
-        userId,
+        userId: settingsOwnerId,
         id: {
           in: project.misc.map((id) => Number(id)),
         },
@@ -1450,19 +1437,12 @@ export class ProjectsService {
     id: number,
     characterIds: number[]
   ): Promise<projects> {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
+    const project = await this.getProjectForAccess(userId, id, 'write');
 
     const normalizedIds = this.normalizeNumericSettingIds(characterIds);
     const characters = await this.prisma.character_settings.count({
       where: {
-        userId,
+        userId: project.userId,
         id: { in: normalizedIds },
       },
     });
@@ -1488,20 +1468,13 @@ export class ProjectsService {
    * @returns 更新后的项目
    */
   async updateProjectSystems(userId: number, id: number, systemIds: number[]): Promise<projects> {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
+    const project = await this.getProjectForAccess(userId, id, 'write');
 
     // 验证所有系统设定是否存在且属于当前用户
     const normalizedIds = this.normalizeNumericSettingIds(systemIds);
     const systems = await this.prisma.system_settings.count({
       where: {
-        userId,
+        userId: project.userId,
         id: { in: normalizedIds },
       },
     });
@@ -1527,20 +1500,13 @@ export class ProjectsService {
    * @returns 更新后的项目
    */
   async updateProjectWorlds(userId: number, id: number, worldIds: number[]): Promise<projects> {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
+    const project = await this.getProjectForAccess(userId, id, 'write');
 
     // 验证所有世界设定是否存在且属于当前用户
     const normalizedIds = this.normalizeNumericSettingIds(worldIds);
     const worlds = await this.prisma.world_settings.count({
       where: {
-        userId,
+        userId: project.userId,
         id: { in: normalizedIds },
       },
     });
@@ -1566,20 +1532,13 @@ export class ProjectsService {
    * @returns 更新后的项目
    */
   async updateProjectMisc(userId: number, id: number, miscIds: number[]): Promise<projects> {
-    // 检查项目是否存在且属于当前用户
-    const project = await this.prisma.projects.findFirst({
-      where: { id, userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('项目不存在或无权限访问');
-    }
+    const project = await this.getProjectForAccess(userId, id, 'write');
 
     // 验证所有辅助设定是否存在且属于当前用户
     const normalizedIds = this.normalizeNumericSettingIds(miscIds);
     const misc = await this.prisma.misc_settings.count({
       where: {
-        userId,
+        userId: project.userId,
         id: { in: normalizedIds },
       },
     });

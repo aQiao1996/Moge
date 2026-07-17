@@ -1,8 +1,10 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { AIService } from '../ai/ai.service';
 import type { AiJobsService } from '../ai-jobs/ai-jobs.service';
+import { ManuscriptAiContextService } from './manuscript-ai-context.service';
 import { ManuscriptsService } from './manuscripts.service';
 
 describe('ManuscriptsService project AI config and scheduling', () => {
@@ -18,9 +20,180 @@ describe('ManuscriptsService project AI config and scheduling', () => {
         getDefaultStreamingModel: jest.fn(),
         ...aiService,
       } as unknown as AIService,
+      new ManuscriptAiContextService(prisma as PrismaService),
       aiJobsService as AiJobsService | undefined
     );
   }
+
+  it('allows a project viewer to read a shared manuscript', async () => {
+    const manuscript = {
+      id: 3,
+      userId: 200,
+      projectId: 9,
+      deletedAt: null,
+      volumes: [],
+      chapters: [],
+    };
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue(manuscript),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.findOne(3, 100)).resolves.toBe(manuscript);
+    expect(prisma.projects.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 9,
+        OR: [{ userId: 100 }, { members: { some: { userId: 100 } } }],
+      },
+      select: { id: true },
+    });
+  });
+
+  it('allows a project editor to update a shared manuscript', async () => {
+    const manuscript = {
+      id: 3,
+      userId: 200,
+      projectId: 9,
+      deletedAt: null,
+      volumes: [],
+      chapters: [],
+    };
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue(manuscript),
+        update: jest.fn().mockResolvedValue({ ...manuscript, name: '协作文稿' }),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.updateManuscript(3, 100, { name: '协作文稿' })).resolves.toMatchObject({
+      name: '协作文稿',
+    });
+    expect(prisma.projects.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 9,
+        OR: [
+          { userId: 100 },
+          {
+            members: {
+              some: {
+                userId: 100,
+                role: { in: ['OWNER', 'EDITOR'] },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+  });
+
+  it('rejects shared manuscript writes without editor access', async () => {
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 3,
+          userId: 200,
+          projectId: 9,
+          deletedAt: null,
+          volumes: [],
+          chapters: [],
+        }),
+        update: jest.fn(),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.updateManuscript(3, 100, { name: '越权修改' })).rejects.toThrow(
+      ForbiddenException
+    );
+    expect(prisma.manuscripts.update).not.toHaveBeenCalled();
+  });
+
+  it('revokes manuscript creator access after removal from its project', async () => {
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 3,
+          userId: 100,
+          projectId: 9,
+          deletedAt: null,
+          volumes: [],
+          chapters: [],
+        }),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.findOne(3, 100)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('does not let an editor move a shared manuscript to another project', async () => {
+    const prisma = {
+      manuscripts: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 3,
+          userId: 200,
+          projectId: 9,
+          deletedAt: null,
+          volumes: [],
+          chapters: [],
+        }),
+        update: jest.fn(),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValueOnce({ id: 9 }).mockResolvedValueOnce(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.updateManuscript(3, 100, { projectId: 10 })).rejects.toThrow(
+      ForbiddenException
+    );
+    expect(prisma.manuscripts.update).not.toHaveBeenCalled();
+  });
+
+  it('validates shared project settings against the project owner', async () => {
+    const prisma = {
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9, userId: 200 }),
+      },
+      character_settings: {
+        count: jest.fn().mockResolvedValue(1),
+      },
+      manuscripts: {
+        create: jest.fn().mockResolvedValue({ id: 3, userId: 100, projectId: 9 }),
+      },
+    };
+    const service = createService(prisma);
+
+    await service.createManuscript(100, {
+      name: '共享项目文稿',
+      projectId: 9,
+      characters: ['1'],
+    });
+
+    expect(prisma.character_settings.count).toHaveBeenCalledWith({
+      where: {
+        userId: 200,
+        id: { in: [1] },
+      },
+    });
+  });
 
   it('returns an AI candidate response and persists generation metadata', async () => {
     const invoke = jest.fn().mockResolvedValue('生成结果');
@@ -447,7 +620,7 @@ describe('ManuscriptsService project AI config and scheduling', () => {
   });
 
   it('schedules a draft chapter without publishing it immediately', async () => {
-    const scheduledAt = new Date('2026-07-01T12:00:00.000Z');
+    const scheduledAt = new Date(Date.now() + 60_000);
     const prisma = {
       manuscript_chapter: {
         findUnique: jest.fn().mockResolvedValue({
@@ -1397,7 +1570,12 @@ describe('ManuscriptsService project AI config and scheduling', () => {
       manuscripts: {
         findFirst: jest.fn().mockResolvedValue({
           id: 3,
+          userId: 100,
+          projectId: 9,
         }),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
       },
     };
     const service = createService(prisma);
@@ -1449,6 +1627,9 @@ describe('ManuscriptsService project AI config and scheduling', () => {
           updatedAt: new Date('2026-06-26T09:00:00.000Z'),
         }),
       },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
+      },
     };
     const service = createService(prisma);
 
@@ -1491,6 +1672,9 @@ describe('ManuscriptsService project AI config and scheduling', () => {
           createdAt: new Date('2026-06-26T09:10:00.000Z'),
           updatedAt: new Date('2026-06-26T09:10:00.000Z'),
         }),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
       },
     };
     const service = createService(prisma);
@@ -1548,6 +1732,9 @@ describe('ManuscriptsService project AI config and scheduling', () => {
             version: 4,
           },
         }),
+      },
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({ id: 9 }),
       },
     };
     const aiJobsService = {

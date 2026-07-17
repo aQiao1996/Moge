@@ -107,6 +107,21 @@ describe('ProjectsService AI config', () => {
   const userId = 100;
   const projectId = 9;
 
+  it('lists projects owned by or shared with the current user', async () => {
+    const prisma = createBasePrisma();
+    prisma.projects.findMany.mockResolvedValue([]);
+    const service = createService(prisma);
+
+    await service.getProjects(userId);
+
+    expect(prisma.projects.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ userId }, { members: { some: { userId } } }],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
   it('returns default AI config when the project has no saved config', async () => {
     const prisma = createBasePrisma();
     prisma.projects.findFirst.mockResolvedValue({ id: projectId, userId });
@@ -1057,6 +1072,73 @@ describe('ProjectsService AI config', () => {
       select: {
         role: true,
       },
+    });
+  });
+
+  it('loads project owner settings for a project viewer', async () => {
+    const project = {
+      id: projectId,
+      userId: 200,
+      characters: ['1'],
+      systems: [],
+      worlds: [],
+      misc: [],
+    };
+    const prisma = {
+      projects: {
+        findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(project),
+      },
+      project_members: {
+        findUnique: jest.fn().mockResolvedValue({ role: 'VIEWER' }),
+      },
+      character_settings: {
+        findMany: jest.fn().mockResolvedValue([{ id: 1, name: '项目角色' }]),
+      },
+      system_settings: { findMany: jest.fn().mockResolvedValue([]) },
+      world_settings: { findMany: jest.fn().mockResolvedValue([]) },
+      misc_settings: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = createService(prisma as unknown as MockPrismaService);
+
+    await expect(service.getProjectSettings(userId, projectId)).resolves.toMatchObject({
+      characters: [{ id: 1, name: '项目角色' }],
+    });
+    expect(prisma.character_settings.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 200,
+          id: { in: [1] },
+        },
+      })
+    );
+  });
+
+  it('allows a project editor to update shared project metadata', async () => {
+    const project = {
+      id: projectId,
+      userId: 200,
+      characters: [],
+      systems: [],
+      worlds: [],
+      misc: [],
+    };
+    const prisma = {
+      projects: {
+        findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(project),
+        update: jest.fn().mockResolvedValue({ ...project, name: '协作项目新版' }),
+      },
+      project_members: {
+        findUnique: jest.fn().mockResolvedValue({ role: 'EDITOR' }),
+      },
+    };
+    const service = createService(prisma as unknown as MockPrismaService);
+
+    await expect(
+      service.updateProject(userId, projectId, { name: '协作项目新版' })
+    ).resolves.toMatchObject({ name: '协作项目新版' });
+    expect(prisma.projects.update).toHaveBeenCalledWith({
+      where: { id: projectId },
+      data: { name: '协作项目新版' },
     });
   });
 

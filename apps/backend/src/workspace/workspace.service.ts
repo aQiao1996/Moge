@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Prisma } from '../../generated/prisma';
+import { Prisma } from '../../generated/prisma';
 import {
   buildRecentDateKeySet,
   buildWritingDeltaEvents,
@@ -50,6 +50,9 @@ export interface WorkspaceAiUsageOverview {
 
 const WORKSPACE_MISC_NAME = '__moge_workspace__';
 const WORKSPACE_MISC_TYPE = 'workspace_private';
+const WORKSPACE_LOCK_NAMESPACE = 1003;
+
+type WorkspaceDbClient = PrismaService | Prisma.TransactionClient;
 
 /**
  * 工作台服务
@@ -104,8 +107,8 @@ export class WorkspaceService {
     return value.filter((item) => this.isWorkspaceIdea(item));
   }
 
-  private async getWorkspaceRecord(userId: number) {
-    const existing = await this.prisma.misc_settings.findFirst({
+  private async getWorkspaceRecord(prismaClient: WorkspaceDbClient, userId: number) {
+    const existing = await prismaClient.misc_settings.findFirst({
       where: {
         userId,
         name: WORKSPACE_MISC_NAME,
@@ -117,7 +120,7 @@ export class WorkspaceService {
       return existing;
     }
 
-    return this.prisma.misc_settings.create({
+    return prismaClient.misc_settings.create({
       data: {
         userId,
         name: WORKSPACE_MISC_NAME,
@@ -130,10 +133,13 @@ export class WorkspaceService {
     });
   }
 
-  private async saveWorkspaceItems(userId: number, items: WorkspaceItems): Promise<WorkspaceItems> {
-    const record = await this.getWorkspaceRecord(userId);
-    await this.prisma.misc_settings.update({
-      where: { id: record.id },
+  private async saveWorkspaceItems(
+    prismaClient: WorkspaceDbClient,
+    recordId: number,
+    items: WorkspaceItems
+  ): Promise<WorkspaceItems> {
+    await prismaClient.misc_settings.update({
+      where: { id: recordId },
       data: {
         notes: items.todos,
         inspirations: items.ideas,
@@ -141,6 +147,32 @@ export class WorkspaceService {
     });
 
     return items;
+  }
+
+  private toWorkspaceItems(record: {
+    notes: Prisma.JsonValue | null;
+    inspirations: Prisma.JsonValue | null;
+  }): WorkspaceItems {
+    return {
+      todos: this.parseTodos(record.notes),
+      ideas: this.parseIdeas(record.inspirations),
+    };
+  }
+
+  private async runWorkspaceTransaction<T>(
+    userId: number,
+    operation: (
+      tx: Prisma.TransactionClient,
+      record: Awaited<ReturnType<WorkspaceService['getWorkspaceRecord']>>
+    ) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(CAST(${WORKSPACE_LOCK_NAMESPACE} AS integer), CAST(${userId} AS integer))`
+      );
+      const record = await this.getWorkspaceRecord(tx, userId);
+      return operation(tx, record);
+    });
   }
 
   private getWritingChapterScope(userId: number) {
@@ -204,12 +236,9 @@ export class WorkspaceService {
    * @returns 工作台待办和灵感列表
    */
   async getWorkspaceItems(userId: number): Promise<WorkspaceItems> {
-    const record = await this.getWorkspaceRecord(userId);
-
-    return {
-      todos: this.parseTodos(record.notes),
-      ideas: this.parseIdeas(record.inspirations),
-    };
+    return this.runWorkspaceTransaction(userId, (_tx, record) =>
+      Promise.resolve(this.toWorkspaceItems(record))
+    );
   }
 
   /**
@@ -219,7 +248,6 @@ export class WorkspaceService {
    * @returns 创建后的待办
    */
   async createTodo(userId: number, text: string): Promise<WorkspaceTodo> {
-    const items = await this.getWorkspaceItems(userId);
     const todo: WorkspaceTodo = {
       id: randomUUID(),
       text: text.trim(),
@@ -227,12 +255,15 @@ export class WorkspaceService {
       createdAt: new Date().toISOString(),
     };
 
-    await this.saveWorkspaceItems(userId, {
-      ...items,
-      todos: [todo, ...items.todos],
-    });
+    return this.runWorkspaceTransaction(userId, async (tx, record) => {
+      const items = this.toWorkspaceItems(record);
+      await this.saveWorkspaceItems(tx, record.id, {
+        ...items,
+        todos: [todo, ...items.todos],
+      });
 
-    return todo;
+      return todo;
+    });
   }
 
   /**
@@ -243,10 +274,12 @@ export class WorkspaceService {
    * @returns 更新后的工作台待办列表
    */
   async updateTodo(userId: number, id: string, done: boolean): Promise<WorkspaceItems> {
-    const items = await this.getWorkspaceItems(userId);
-    return this.saveWorkspaceItems(userId, {
-      ...items,
-      todos: items.todos.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
+    return this.runWorkspaceTransaction(userId, async (tx, record) => {
+      const items = this.toWorkspaceItems(record);
+      return this.saveWorkspaceItems(tx, record.id, {
+        ...items,
+        todos: items.todos.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
+      });
     });
   }
 
@@ -257,10 +290,12 @@ export class WorkspaceService {
    * @returns 更新后的工作台待办列表
    */
   async deleteTodo(userId: number, id: string): Promise<WorkspaceItems> {
-    const items = await this.getWorkspaceItems(userId);
-    return this.saveWorkspaceItems(userId, {
-      ...items,
-      todos: items.todos.filter((todo) => todo.id !== id),
+    return this.runWorkspaceTransaction(userId, async (tx, record) => {
+      const items = this.toWorkspaceItems(record);
+      return this.saveWorkspaceItems(tx, record.id, {
+        ...items,
+        todos: items.todos.filter((todo) => todo.id !== id),
+      });
     });
   }
 
@@ -271,19 +306,21 @@ export class WorkspaceService {
    * @returns 创建后的灵感
    */
   async createIdea(userId: number, content: string): Promise<WorkspaceIdea> {
-    const items = await this.getWorkspaceItems(userId);
     const idea: WorkspaceIdea = {
       id: randomUUID(),
       content: content.trim(),
       createdAt: new Date().toISOString(),
     };
 
-    await this.saveWorkspaceItems(userId, {
-      ...items,
-      ideas: [idea, ...items.ideas],
-    });
+    return this.runWorkspaceTransaction(userId, async (tx, record) => {
+      const items = this.toWorkspaceItems(record);
+      await this.saveWorkspaceItems(tx, record.id, {
+        ...items,
+        ideas: [idea, ...items.ideas],
+      });
 
-    return idea;
+      return idea;
+    });
   }
 
   /**
@@ -293,10 +330,12 @@ export class WorkspaceService {
    * @returns 更新后的工作台灵感列表
    */
   async deleteIdea(userId: number, id: string): Promise<WorkspaceItems> {
-    const items = await this.getWorkspaceItems(userId);
-    return this.saveWorkspaceItems(userId, {
-      ...items,
-      ideas: items.ideas.filter((idea) => idea.id !== id),
+    return this.runWorkspaceTransaction(userId, async (tx, record) => {
+      const items = this.toWorkspaceItems(record);
+      return this.saveWorkspaceItems(tx, record.id, {
+        ...items,
+        ideas: items.ideas.filter((idea) => idea.id !== id),
+      });
     });
   }
 

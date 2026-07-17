@@ -3,6 +3,7 @@ import type { AiContextSourceItem } from '@moge/types';
 import type { AIProvider } from '../ai/ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, type project_ai_configs } from '../../generated/prisma';
+import { buildProjectAccessWhere } from '../projects/project-access';
 
 interface ContextSettingItem {
   id?: number;
@@ -176,7 +177,7 @@ export class ManuscriptAiContextService {
       const project = await this.prisma.projects.findFirst({
         where: {
           id: manuscript.projectId,
-          userId,
+          ...buildProjectAccessWhere(userId, 'read'),
         },
         include: {
           aiConfig: true,
@@ -188,18 +189,19 @@ export class ManuscriptAiContextService {
       }
 
       const aiConfig = this.normalizeManuscriptAiConfig(project.aiConfig);
+      const settingsOwnerId = project.userId;
       const [characters, systems, worlds, misc] = await Promise.all([
         aiConfig.enableCharacterContext
-          ? this.getCharactersByIds(project.characters || [], userId)
+          ? this.getCharactersByIds(project.characters || [], settingsOwnerId)
           : Promise.resolve(EMPTY_CONTEXT_SETTINGS),
         aiConfig.enableSystemContext
-          ? this.getSystemsByIds(project.systems || [], userId)
+          ? this.getSystemsByIds(project.systems || [], settingsOwnerId)
           : Promise.resolve(EMPTY_CONTEXT_SETTINGS),
         aiConfig.enableWorldContext
-          ? this.getWorldsByIds(project.worlds || [], userId)
+          ? this.getWorldsByIds(project.worlds || [], settingsOwnerId)
           : Promise.resolve(EMPTY_CONTEXT_SETTINGS),
         aiConfig.enableMiscContext
-          ? this.getMiscByIds(project.misc || [], userId)
+          ? this.getMiscByIds(project.misc || [], settingsOwnerId)
           : Promise.resolve(EMPTY_CONTEXT_SETTINGS),
       ]);
       const recentChapters =

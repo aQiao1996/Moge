@@ -2,20 +2,20 @@
  * API 响应基础接口
  */
 export interface ApiResponse<T = unknown> {
-  data?: T;
-  message?: string;
-  success?: boolean;
-  code?: number;
-  timestamp?: string;
+  code: number;
+  message: string;
+  data: T;
 }
 
 /**
  * API 错误接口
  */
 export interface ApiError {
+  code: number;
   message: string;
-  code?: string;
-  status?: number;
+  timestamp: string;
+  path: string;
+  method: string;
   details?: unknown;
 }
 

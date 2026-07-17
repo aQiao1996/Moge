@@ -23,13 +23,15 @@ export class RateLimitMiddleware implements NestMiddleware {
   private readonly buckets = new Map<string, RateLimitBucket>();
   private readonly windowMs = parsePositiveInteger(process.env.RATE_LIMIT_WINDOW_MS, 60_000);
   private readonly maxRequests = parsePositiveInteger(process.env.RATE_LIMIT_MAX, 120);
+  private nextCleanupAt = 0;
 
   use(
-    req: Pick<Request, 'ip' | 'path' | 'headers'>,
+    req: Pick<Request, 'ip' | 'path' | 'method' | 'headers'>,
     res: RateLimitResponse,
     next: NextFunction
   ): void {
     const now = Date.now();
+    this.cleanupExpiredBuckets(now);
     const key = this.getClientKey(req);
     const bucket = this.buckets.get(key);
 
@@ -45,6 +47,9 @@ export class RateLimitMiddleware implements NestMiddleware {
       res.status(429).json({
         code: 429,
         message: '请求过于频繁，请稍后再试',
+        timestamp: new Date(now).toISOString(),
+        path: req.path,
+        method: req.method,
       });
       return;
     }
@@ -53,11 +58,23 @@ export class RateLimitMiddleware implements NestMiddleware {
     next();
   }
 
-  private getClientKey(req: Pick<Request, 'ip' | 'path' | 'headers'>): string {
-    const forwardedFor = req.headers?.['x-forwarded-for'];
-    const forwardedIp = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-    const clientIp = forwardedIp?.split(',')[0]?.trim() || req.ip || 'unknown';
+  private getClientKey(req: Pick<Request, 'ip' | 'path' | 'method' | 'headers'>): string {
+    const clientIp = req.ip || 'unknown';
 
     return `${clientIp}:${req.path}`;
+  }
+
+  private cleanupExpiredBuckets(now: number): void {
+    if (now < this.nextCleanupAt) {
+      return;
+    }
+
+    for (const [key, bucket] of this.buckets) {
+      if (bucket.resetAt <= now) {
+        this.buckets.delete(key);
+      }
+    }
+
+    this.nextCleanupAt = now + this.windowMs;
   }
 }

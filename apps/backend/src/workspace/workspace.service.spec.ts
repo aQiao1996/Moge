@@ -67,6 +67,7 @@ describe('WorkspaceService', () => {
   let prisma: MockPrismaService;
   let service: WorkspaceService;
   let workspaceRecord: WorkspaceRecord;
+  let transactionTail: Promise<void>;
 
   beforeEach(() => {
     workspaceRecord = {
@@ -77,6 +78,7 @@ describe('WorkspaceService', () => {
       notes: [],
       inspirations: [],
     };
+    transactionTail = Promise.resolve();
 
     prisma = {
       misc_settings: {
@@ -150,6 +152,21 @@ describe('WorkspaceService', () => {
           Promise.resolve(args?.where?.applyStatus === 'APPLIED' ? 2 : 5)
         ),
       },
+      $executeRaw: jest.fn(() => Promise.resolve(0)),
+      $transaction: jest.fn(async (callback: (tx: MockPrismaService) => Promise<unknown>) => {
+        const previousTransaction = transactionTail;
+        let releaseTransaction: () => void = () => undefined;
+        transactionTail = new Promise<void>((resolve) => {
+          releaseTransaction = resolve;
+        });
+
+        await previousTransaction;
+        try {
+          return await callback(prisma);
+        } finally {
+          releaseTransaction();
+        }
+      }),
     } as unknown as MockPrismaService;
 
     service = new WorkspaceService(prisma);
@@ -186,6 +203,17 @@ describe('WorkspaceService', () => {
 
     const deleted = await service.deleteIdea(userId, idea.id);
     expect(deleted.ideas).toEqual([]);
+  });
+
+  it('preserves concurrent workspace writes for the same user', async () => {
+    await Promise.all([
+      service.createTodo(userId, '完成角色小传'),
+      service.createTodo(userId, '补齐世界观'),
+    ]);
+
+    const items = await service.getWorkspaceItems(userId);
+
+    expect(items.todos.map((todo) => todo.text).sort()).toEqual(['完成角色小传', '补齐世界观']);
   });
 
   it('includes AI usage overview in workspace summary', async () => {

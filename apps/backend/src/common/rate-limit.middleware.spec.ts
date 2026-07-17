@@ -28,6 +28,7 @@ function createRequest(ip = '127.0.0.1', path = '/auth/login') {
   return {
     ip,
     path,
+    method: 'GET',
     headers: {},
   };
 }
@@ -74,6 +75,9 @@ describe('RateLimitMiddleware', () => {
     expect(response.json).toHaveBeenCalledWith({
       code: 429,
       message: '请求过于频繁，请稍后再试',
+      timestamp: expect.any(String) as string,
+      path: '/auth/login',
+      method: 'GET',
     });
   });
 
@@ -90,5 +94,46 @@ describe('RateLimitMiddleware', () => {
 
     expect(next).toHaveBeenCalledTimes(2);
     expect(response.status).not.toHaveBeenCalled();
+  });
+
+  it('ignores a spoofed forwarded IP when Express resolves the same client IP', () => {
+    process.env.RATE_LIMIT_WINDOW_MS = '60000';
+    process.env.RATE_LIMIT_MAX = '1';
+    const middleware = new RateLimitMiddleware();
+    const response = createResponse();
+    const next = jest.fn();
+
+    middleware.use(
+      { ...createRequest(), headers: { 'x-forwarded-for': '198.51.100.10' } },
+      response,
+      next
+    );
+    middleware.use(
+      { ...createRequest(), headers: { 'x-forwarded-for': '203.0.113.20' } },
+      response,
+      next
+    );
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(response.status).toHaveBeenCalledWith(429);
+  });
+
+  it('removes expired buckets during periodic request cleanup', () => {
+    process.env.RATE_LIMIT_WINDOW_MS = '1000';
+    process.env.RATE_LIMIT_MAX = '10';
+    const middleware = new RateLimitMiddleware();
+    const response = createResponse();
+    const next = jest.fn();
+    const buckets = (
+      middleware as unknown as { buckets: Map<string, { count: number; resetAt: number }> }
+    ).buckets;
+
+    middleware.use(createRequest('127.0.0.1'), response, next);
+    expect(buckets.size).toBe(1);
+
+    jest.setSystemTime(new Date('2026-06-23T08:00:02.000Z'));
+    middleware.use(createRequest('127.0.0.2'), response, next);
+
+    expect(buckets.size).toBe(1);
   });
 });

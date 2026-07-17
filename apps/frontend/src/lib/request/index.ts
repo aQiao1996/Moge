@@ -1,3 +1,5 @@
+import type { ApiError as ApiErrorResponse, ApiResponse } from '@moge/types';
+
 /**
  * 客户端处理器接口
  * 定义客户端通知、认证等回调函数
@@ -44,25 +46,10 @@ export interface FetchOptions {
 }
 
 /**
- * API响应数据接口
- */
-export interface ApiResponse<T = unknown> {
-  code: number;
-  message: string;
-  data: T;
-}
-
-/**
  * API错误接口
  */
 export interface ApiError extends Error {
-  response?: {
-    code: number;
-    message: string;
-    method: HttpMethod;
-    path: string;
-    timestamp: string;
-  };
+  response?: ApiErrorResponse;
 }
 
 function isApiError(error: unknown): error is ApiError {
@@ -140,14 +127,14 @@ function isApiResponse<T>(data: unknown): data is ApiResponse<T> {
     data !== null &&
     typeof data === 'object' &&
     'code' in data &&
+    typeof data.code === 'number' &&
     'message' in data &&
+    typeof data.message === 'string' &&
     'data' in data
   );
 }
 
-function isErrorResponse(
-  data: unknown
-): data is { code: number; message: string; timestamp: string; path: string; method: string } {
+function isErrorResponse(data: unknown): data is ApiErrorResponse {
   return (
     data !== null &&
     typeof data === 'object' &&
@@ -308,10 +295,10 @@ const fetchRequest = async <T>(
     clearTimeout(timeoutId);
     await checkStatus(res);
     const data = (await res.json()) as unknown;
-    if (isApiResponse<T>(data)) {
-      return responseInterceptor<T>(data);
+    if (!isApiResponse<T>(data)) {
+      throw new Error('接口响应格式不正确');
     }
-    return data as ApiResponse<T>;
+    return responseInterceptor<T>(data);
   } catch (err) {
     clearTimeout(timeoutId);
     errorHandler(err, silent);

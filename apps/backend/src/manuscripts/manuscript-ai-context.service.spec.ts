@@ -134,6 +134,76 @@ describe('ManuscriptAiContextService', () => {
     expect(prisma.manuscript_chapter.findMany).not.toHaveBeenCalled();
   });
 
+  it('loads project owner settings for a project collaborator', async () => {
+    const prisma = {
+      projects: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 9,
+          userId: 200,
+          characters: ['1'],
+          systems: [],
+          worlds: [],
+          misc: [],
+          aiConfig: {
+            provider: 'moonshot',
+            model: 'moonshot-v1-32k',
+            temperature: new Prisma.Decimal('0.40'),
+            maxTokens: 4096,
+            enableCharacterContext: true,
+            enableSystemContext: false,
+            enableWorldContext: false,
+            enableMiscContext: false,
+            enableChapterSummaryContext: false,
+            enableProjectMemoryContext: false,
+            contextLengthStrategy: 'COMPACT',
+            resultApplyStrategy: 'CANDIDATE',
+            defaultContinuePresetId: null,
+            defaultPolishPresetId: null,
+            defaultExpandPresetId: null,
+          },
+        }),
+      },
+      character_settings: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 1, name: '项目角色', background: '项目设定' }]),
+      },
+      system_settings: { findMany: jest.fn() },
+      world_settings: { findMany: jest.fn() },
+      misc_settings: { findMany: jest.fn() },
+      manuscript_chapter: { findMany: jest.fn() },
+    };
+    const service = new ManuscriptAiContextService(prisma as unknown as PrismaService);
+
+    const result = await service.loadManuscriptContext(
+      {
+        id: 3,
+        userId: 200,
+        projectId: 9,
+        characters: [],
+        systems: [],
+        worlds: [],
+        misc: [],
+      },
+      100
+    );
+
+    expect(prisma.projects.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 9,
+        OR: [{ userId: 100 }, { members: { some: { userId: 100 } } }],
+      },
+      include: { aiConfig: true },
+    });
+    expect(prisma.character_settings.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 200,
+        id: { in: [1] },
+      },
+    });
+    expect(result.settingsContext).toContain('项目角色');
+  });
+
   it('loads recent previous chapter context when chapter summary context is enabled', async () => {
     const prisma = {
       projects: {
